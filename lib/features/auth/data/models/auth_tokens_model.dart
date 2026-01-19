@@ -1,4 +1,4 @@
-import '../../../domain/entities/auth_tokens.dart';
+import '../../domain/entities/auth_tokens.dart';
 
 /// Data model for AuthTokens, extends the domain entity.
 class AuthTokensModel extends AuthTokens {

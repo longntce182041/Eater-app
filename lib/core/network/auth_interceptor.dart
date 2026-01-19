@@ -50,8 +50,13 @@ class AuthInterceptor extends Interceptor {
   }
 
   /// Attempts to refresh the access token.
+  /// 
+  /// NOTE: This is a placeholder implementation. When implementing the actual
+  /// token refresh logic, uncomment and configure the code below with your
+  /// secure storage provider.
   Future<void> _refreshToken() async {
-    // TODO: Implement token refresh logic
+    // TODO: Implement token refresh logic when secure storage is configured
+    // Example implementation:
     // final refreshToken = await _ref.read(secureStorageProvider).getRefreshToken();
     // if (refreshToken == null) {
     //   throw const TokenExpiredException();
@@ -69,7 +74,11 @@ class AuthInterceptor extends Interceptor {
     //   accessToken: newAccessToken,
     //   refreshToken: newRefreshToken,
     // );
-    throw const TokenExpiredException();
+    
+    // Placeholder: Always throws until implemented
+    throw const TokenExpiredException(
+      message: 'Token refresh not implemented. Configure secure storage first.',
+    );
   }
 
   /// Retries the failed request with new access token.

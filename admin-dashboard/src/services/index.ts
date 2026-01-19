@@ -1,0 +1,10 @@
+export { apiClient } from './apiClient';
+export { authService } from './authService';
+export { usersService } from './usersService';
+export { nutritionistsService } from './nutritionistsService';
+export { recipesService } from './recipesService';
+export { ingredientsService } from './ingredientsService';
+export { micronutrientsService } from './micronutrientsService';
+export { knowledgeBaseService } from './knowledgeBaseService';
+export { reviewsService } from './reviewsService';
+export { analyticsService } from './analyticsService';

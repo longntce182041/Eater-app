@@ -1,7 +1,8 @@
+// File: `eater-backend/src/middleware/authMiddleware.js`
 const jwt = require("jsonwebtoken");
 const { jwtConfig } = require("../config/jwt");
 
-function authMiddleware(req, res, next) {
+function protect(req, res, next) {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
@@ -18,4 +19,16 @@ function authMiddleware(req, res, next) {
   }
 }
 
-module.exports = { authMiddleware };
+function authorize(...roles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    if (roles.length && !roles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Forbidden: insufficient permissions" });
+    }
+    return next();
+  };
+}
+
+module.exports = { protect, authorize };

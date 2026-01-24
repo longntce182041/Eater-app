@@ -4,9 +4,9 @@ import React from "react";
 export function AppLayout({ children }) {
   return (
     <div className="app-layout">
-      <header>Admin Panel Header</header>
+      <header></header>
       <div className="app-body">
-        <aside>Sidebar Navigation</aside>
+        <aside></aside>
         <main>{children}</main>
       </div>
     </div>

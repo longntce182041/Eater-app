@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/user.management.controller");
-// const { protect, authorize } = require("../../middleware/auth.middleware");
+const { protect, authorize } = require("../../middleware/authMiddleware");
 
 // GET List & Create
 router.get("/", userController.getUsers); // Nên thêm protect, authorize('admin')

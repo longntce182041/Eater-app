@@ -2,9 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const ingredientController = require("../controllers/ingredient.management.controller");
-
-// Middleware bảo vệ (Admin mới được thêm sửa xóa) - Tùy bạn gắn vào
-// const { protect, authorize } = require("../../middleware/auth.middleware");
+const { protect, authorize } = require("../../middleware/authMiddleware");
 
 // GET List & Search
 router.get("/", ingredientController.getIngredients);

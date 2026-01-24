@@ -150,7 +150,7 @@ const UserPage = () => {
                     </select>
                 </div>
 
-                {/* Nút Add New */}
+                {/* Nút Create New */}
                 <button
                     onClick={handleOpenCreate}
                     style={{
@@ -159,7 +159,7 @@ const UserPage = () => {
                         display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold', whiteSpace: 'nowrap'
                     }}
                 >
-                    <Plus size={18}/> Add User
+                    <Plus size={18}/> Create User
                 </button>
             </div>
 

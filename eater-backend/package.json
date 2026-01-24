@@ -7,6 +7,7 @@
     "dev": "nodemon ./bin/www"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cookie-parser": "~1.4.4",
     "cors": "^2.8.6",
     "debug": "~2.6.9",
@@ -15,6 +16,7 @@
     "hbs": "~4.0.4",
     "helmet": "^8.1.0",
     "http-errors": "~1.6.3",
+    "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
     "morgan": "~1.9.1"

@@ -1,8 +1,8 @@
 const express = require("express");
 
 const authRoutes = require("./auth.routes");
+const profileRoutes = require("./profile.routes");
 // const usersRoutes = require("./users.routes");
-// const profileRoutes = require("./profile.routes");
 // const preferencesRoutes = require("./preferences.routes");
 // const mealPlansRoutes = require("./mealPlans.routes");
 // const recipesRoutes = require("./recipes.routes");
@@ -12,8 +12,8 @@ const authRoutes = require("./auth.routes");
 const router = express.Router();
 
 router.use("/auth", authRoutes);
+router.use("/profile", profileRoutes);
 // router.use("/users", usersRoutes);
-// router.use("/profile", profileRoutes);
 // router.use("/preferences", preferencesRoutes);
 // router.use("/meal-plans", mealPlansRoutes);
 // router.use("/recipes", recipesRoutes);

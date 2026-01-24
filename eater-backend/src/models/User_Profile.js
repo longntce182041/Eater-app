@@ -4,7 +4,7 @@ const User_ProfileSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Users", // must match model name defined in User.js
       required: true,
     },
     age: { type: Number, required: true },

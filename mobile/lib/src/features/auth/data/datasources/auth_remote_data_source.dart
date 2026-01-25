@@ -1,38 +1,45 @@
 import 'package:dio/dio.dart';
 
-import '../../../../core/constants/api_endpoints.dart';
+import '../auth_api_client.dart';
 import '../models/auth_tokens_model.dart';
 import '../models/auth_user_model.dart';
 
 class AuthRemoteDataSource {
   final Dio dio;
+  final AuthApiClient api;
 
-  AuthRemoteDataSource(this.dio);
+  AuthRemoteDataSource(this.dio, this.api);
 
   Future<AuthTokensModel> login({
     required String email,
     required String password,
   }) async {
-    // TODO: call dio.post(ApiEndpoints.login, data: {...})
-    throw UnimplementedError();
+    final res = await api.login(email: email, password: password);
+    final data = res.data['data'] ?? res.data;
+    return AuthTokensModel.fromJson(Map<String, dynamic>.from(data));
   }
 
   Future<AuthTokensModel> register({
     required String email,
     required String password,
   }) async {
-    throw UnimplementedError();
+    final res = await api.register(email: email, password: password);
+    final data = res.data['data'] ?? res.data;
+    return AuthTokensModel.fromJson(Map<String, dynamic>.from(data));
   }
 
   Future<void> resetPassword(String email) async {
-    throw UnimplementedError();
+    await api.requestPasswordReset(email: email);
   }
 
   Future<AuthTokensModel> refreshToken(String refreshToken) async {
-    throw UnimplementedError();
+    final res = await api.refresh(refreshToken: refreshToken);
+    final data = res.data['data'] ?? res.data;
+    return AuthTokensModel.fromJson(Map<String, dynamic>.from(data));
   }
 
   Future<AuthUserModel> getCurrentUser() async {
-    throw UnimplementedError();
+    // Placeholder: implement when profile endpoint and auth header wiring are ready.
+    throw UnimplementedError('getCurrentUser not implemented');
   }
 }

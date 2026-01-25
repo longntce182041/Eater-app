@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -9,10 +10,17 @@ const Routes = require("./src/api/routes");
 const app = express();
 
 app.use(helmet());
-app.use(cors({
-    origin: "http://localhost:5173", // Chỉ cho phép Frontend của bạn gọi vào
-    credentials: true
-}));
+// CORS configuration for mobile apps and web clients
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(",")
+      : "*", // Allow all origins in development
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 //connect to database

@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 const RecipesIngredientSchema = new mongoose.Schema(
   {
     recipeId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "Recipe",
       required: true,
     },
     ingredientId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "Ingredient",
       required: true,
     },

@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 const mealPlanItemSchema = new mongoose.Schema(
   {
     mealPlanId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "MealPlan",
       required: true,
     },
     recipeId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "Recipe",
       required: true,
     },

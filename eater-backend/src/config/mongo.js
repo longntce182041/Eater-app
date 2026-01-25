@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { createCollections } = require("../utils/createCollections");
 
 const mongoConfig = {
   uri:
@@ -13,7 +12,6 @@ const connectMongo = async () => {
     await mongoose.connect(mongoConfig.uri);
     const { host, name } = mongoose.connection;
     console.log(`MongoDB connected: ${host}/${name}`);
-    await createCollections();
   } catch (err) {
     console.error("MongoDB connection error:", err.message);
     process.exit(1);

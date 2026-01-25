@@ -1,0 +1,454 @@
+{
+  "users": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "email": "user1@example.com",
+      "passwordHash": "$2b$10$xyz...encrypted...password",
+      "role": "user",
+      "isActive": true,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "507f1f77bcf86cd799439012",
+      "email": "nutritionist1@example.com",
+      "passwordHash": "$2b$10$xyz...encrypted...password",
+      "role": "nutritionist",
+      "isActive": true,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "507f1f77bcf86cd799439013",
+      "email": "admin@example.com",
+      "passwordHash": "$2b$10$xyz...encrypted...password",
+      "role": "admin",
+      "isActive": true,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "507f1f77bcf86cd799439014",
+      "email": "user2@example.com",
+      "passwordHash": "$2b$10$xyz...encrypted...password",
+      "role": "user",
+      "isActive": true,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "userProfiles": [
+      {
+        "_id": "607f1f77bcf86cd799439011",
+        "userId": "507f1f77bcf86cd799439011",
+        "age": 30,
+        "gender": "male",
+        "height": 180,
+        "weight": 75,
+        "dietaryPreferences": ["vegetarian"],
+        "allergies": ["peanuts", "shellfish"],
+        "activityLevel": "moderate",
+        "healthGoals": "weight loss",
+        "cookingSkillLevel": "intermediate",
+        "available_cooking_time": 30,
+        "daily_calorie_target": 2000,
+        "createdAt": "2024-01-20T10:00:00Z",
+        "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "607f1f77bcf86cd799439012",
+      "userId": "507f1f77bcf86cd799439012",
+      "age": 28,
+      "gender": "female",
+      "height": 165,
+      "weight": 60,
+      "dietaryPreferences": ["vegan"],
+      "allergies": ["dairy"],
+      "activityLevel": "light",
+      "healthGoals": "muscle gain",
+      "cookingSkillLevel": "advanced",
+      "available_cooking_time": 60,
+      "daily_calorie_target": 1800,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "607f1f77bcf86cd799439013",
+      "userId": "507f1f77bcf86cd799439014",
+      "age": 35,
+      "gender": "female",
+      "height": 170,
+      "weight": 68,
+      "dietaryPreferences": ["gluten-free"],
+      "allergies": [],
+      "activityLevel": "active",
+      "healthGoals": "maintain weight",
+      "cookingSkillLevel": "beginner",
+      "available_cooking_time": 45,
+      "daily_calorie_target": 2200,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+
+  ],
+  "ingredients": [
+    {
+      "_id": "707f1f77bcf86cd799439011",
+      "name": "Chicken Breast",
+      "ImageUrl": "https://example.com/chicken-breast.jpg",
+      "calories_per_unit": 165,
+      "protein": 31,
+      "carbs": 0,
+      "fats": 3.6,
+      "description": "Skinless chicken breast, high in protein",
+      "unit": "100g",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "707f1f77bcf86cd799439012",
+      "name": "Brown Rice",
+      "ImageUrl": "https://example.com/brown-rice.jpg",
+      "calories_per_unit": 111,
+      "protein": 2.6,
+      "carbs": 23,
+      "fats": 0.9,
+      "description": "Whole grain brown rice, good source of fiber",
+      "unit": "100g",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "707f1f77bcf86cd799439013",
+      "name": "Broccoli",
+      "ImageUrl": "https://example.com/broccoli.jpg",
+      "calories_per_unit": 34,
+      "protein": 2.8,
+      "carbs": 7,
+      "fats": 0.4,
+      "description": "Fresh green broccoli, rich in vitamins",
+      "unit": "100g",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "micronutrients": [
+    {
+      "_id": "807f1f77bcf86cd799439011",
+      "name": "Vitamin A",
+      "unit": "mcg",
+      "description": "Important for vision and immune function",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "807f1f77bcf86cd799439012",
+      "name": "Vitamin C",
+      "unit": "mg",
+      "description": "Essential for immune system and collagen formation",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "807f1f77bcf86cd799439013",
+      "name": "Iron",
+      "unit": "mg",
+      "description": "Required for oxygen transport in blood",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "dietTypes": [
+    {
+      "_id": "907f1f77bcf86cd799439011",
+      "name": "Vegan",
+      "carb_ratio": 60,
+      "protein_ratio": 20,
+      "fat_ratio": 20,
+      "description": "Plant-based diet excluding all animal products",
+      "source": "WHO",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "907f1f77bcf86cd799439012",
+      "name": "Keto",
+      "carb_ratio": 5,
+      "protein_ratio": 25,
+      "fat_ratio": 70,
+      "description": "Low-carb, high-fat diet for weight loss",
+      "source": "Nutritionists",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "907f1f77bcf86cd799439013",
+      "name": "Mediterranean",
+      "carb_ratio": 55,
+      "protein_ratio": 20,
+      "fat_ratio": 25,
+      "description": "Heart-healthy diet with emphasis on vegetables and olive oil",
+      "source": "WHO",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "recipes": [
+    {
+      "_id": "a07f1f77bcf86cd799439011",
+      "name": "Grilled Chicken with Brown Rice",
+      "description": "Delicious and healthy grilled chicken served with brown rice and steamed broccoli",
+      "imageUrl": "https://example.com/grilled-chicken-bowl.jpg",
+      "cookingTime": 45,
+      "baseServings": 300,
+      "status": "published",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "a07f1f77bcf86cd799439012",
+      "name": "Vegetable Stir Fry",
+      "description": "Quick and easy vegetable stir fry with Asian-inspired flavors",
+      "imageUrl": "https://example.com/veg-stir-fry.jpg",
+      "cookingTime": 20,
+      "baseServings": 250,
+      "status": "published",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "recipesSteps": [
+    {
+      "_id": "c07f1f77bcf86cd799439011",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "stepNumber": 1,
+      "instruction": "Preheat grill to medium-high heat (200°C)",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "c07f1f77bcf86cd799439012",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "stepNumber": 2,
+      "instruction": "Season chicken breast with salt, pepper, and olive oil",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "c07f1f77bcf86cd799439013",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "stepNumber": 3,
+      "instruction": "Grill chicken for 6-7 minutes per side until cooked through",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "c07f1f77bcf86cd799439014",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "stepNumber": 4,
+      "instruction": "Cook rice according to package instructions",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "recipesIngredients": [
+    {
+      "_id": "b07f1f77bcf86cd799439011",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "ingredientId": "707f1f77bcf86cd799439011",
+      "base_quantity": "150",
+      "unit": "g",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "b07f1f77bcf86cd799439012",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "ingredientId": "707f1f77bcf86cd799439012",
+      "base_quantity": "100",
+      "unit": "g",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "b07f1f77bcf86cd799439013",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "ingredientId": "707f1f77bcf86cd799439013",
+      "base_quantity": "150",
+      "unit": "g",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "recipesReviews": [
+    {
+      "_id": "f07f1f77bcf86cd799439011",
+      "userId": "507f1f77bcf86cd799439011",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "rating": 5,
+      "comment": "Great recipe! Very tasty and healthy.",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "f07f1f77bcf86cd799439012",
+      "userId": "507f1f77bcf86cd799439012",
+      "recipeId": "a07f1f77bcf86cd799439012",
+      "rating": 4,
+      "comment": "Delicious but could use more seasoning",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "recipeNutritions": [
+    {
+      "_id": "h07f1f77bcf86cd799439011",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "calories": 450,
+      "protein": 50,
+      "fat": 10,
+      "carbohydrates": 40,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "h07f1f77bcf86cd799439012",
+      "recipeId": "a07f1f77bcf86cd799439012",
+      "calories": 250,
+      "protein": 15,
+      "fat": 8,
+      "carbohydrates": 35,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "recipeDietTypes": [
+    {
+      "_id": "i07f1f77bcf86cd799439011",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "dietTypeId": "907f1f77bcf86cd799439013",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "i07f1f77bcf86cd799439012",
+      "recipeId": "a07f1f77bcf86cd799439012",
+      "dietTypeId": "907f1f77bcf86cd799439011",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "recipeMicronutrientValues": [
+    {
+      "_id": "g07f1f77bcf86cd799439011",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "micronutrientId": "807f1f77bcf86cd799439011",
+      "amount": 500,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "g07f1f77bcf86cd799439012",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "micronutrientId": "807f1f77bcf86cd799439012",
+      "amount": 45,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "ingredientMicronutrientValues": [
+    {
+      "_id": "j07f1f77bcf86cd799439011",
+      "ingredientId": "707f1f77bcf86cd799439011",
+      "micronutrientId": "807f1f77bcf86cd799439012",
+      "amount": 15,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "j07f1f77bcf86cd799439012",
+      "ingredientId": "707f1f77bcf86cd799439013",
+      "micronutrientId": "807f1f77bcf86cd799439013",
+      "amount": 0.8,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "mealPlans": [
+    {
+      "_id": "d07f1f77bcf86cd799439011",
+      "userId": "507f1f77bcf86cd799439011",
+      "nutritionistId": "507f1f77bcf86cd799439012",
+      "date": "2024-01-21T00:00:00Z",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }, 
+    {
+      "_id": "d07f1f77bcf86cd799439012",
+      "userId": "507f1f77bcf86cd799439012",
+      "nutritionistId": null,
+      "date": "2024-01-22T00:00:00Z",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "mealPlanItems": [
+    {
+      "_id": "e07f1f77bcf86cd799439011",
+      "mealPlanId": "d07f1f77bcf86cd799439011",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "mealType": "lunch",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "e07f1f77bcf86cd799439012",
+      "mealPlanId": "d07f1f77bcf86cd799439011",
+      "recipeId": "a07f1f77bcf86cd799439012",
+      "mealType": "dinner",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "e07f1f77bcf86cd799439013",
+      "mealPlanId": "d07f1f77bcf86cd799439012",
+      "recipeId": "a07f1f77bcf86cd799439011",
+      "mealType": "breakfast",
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "dietaryReferences": [
+    {
+      "_id": "l07f1f77bcf86cd799439011",
+      "userId": "507f1f77bcf86cd799439011",
+      "diet_typeId": "907f1f77bcf86cd799439013",
+      "allergies": ["peanuts", "shellfish"],
+      "dislikesIngredients": [],
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    },
+    {
+      "_id": "l07f1f77bcf86cd799439012",
+      "userId": "507f1f77bcf86cd799439012",
+      "diet_typeId": "907f1f77bcf86cd799439011",
+      "allergies": ["dairy"],
+      "dislikesIngredients": ["mushroom"],
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ],
+  "nutritionists": [
+    {
+      "_id": "k07f1f77bcf86cd799439011",
+      "userId": "507f1f77bcf86cd799439012",
+      "fullName": "Jane Smith",
+      "specialization": "Weight Management",
+      "experience": 10,
+      "certifications_url": ["https://example.com/cert1.pdf"],
+      "verified": true,
+      "createdAt": "2024-01-20T10:00:00Z",
+      "updatedAt": "2024-01-20T10:00:00Z"
+    }
+  ]
+}

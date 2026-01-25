@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const recipeNutrionSchema = new mongoose.Schema(
   {
     recipeId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "Recipe",
       required: true,
     },

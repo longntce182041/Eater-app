@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 const DietaryReferencesSchema = new mongoose.Schema(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "User",
       required: true,
     },
     diet_typeId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "DietType",
       required: true,
     },

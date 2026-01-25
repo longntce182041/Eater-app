@@ -1,6 +1,7 @@
 const express = require("express");
 
 const authRoutes = require("./auth.routes");
+const healthRoutes = require("./health.routes");
 // const usersRoutes = require("./users.routes");
 // const profileRoutes = require("./profile.routes");
 // const preferencesRoutes = require("./preferences.routes");
@@ -12,6 +13,7 @@ const authRoutes = require("./auth.routes");
 const router = express.Router();
 
 router.use("/auth", authRoutes);
+router.use("/user", healthRoutes);
 // router.use("/users", usersRoutes);
 // router.use("/profile", profileRoutes);
 // router.use("/preferences", preferencesRoutes);

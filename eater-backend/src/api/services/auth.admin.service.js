@@ -1,6 +1,7 @@
 const User = require("../../models/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { jwtConfig } = require("../../config/jwt");
 
 class AuthAdminService {
   async loginAdmin(email, password) {
@@ -22,14 +23,14 @@ class AuthAdminService {
       throw new Error("Invalid credentials");
     }
 
-    // 4. Tạo JWT Token
+    // 4. Tạo JWT Token (Dùng jwtConfig để đồng bộ với middleware xác thực)
     const payload = {
       userId: user._id,
       role: user.role,
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET || "secret_key", {
-      expiresIn: process.env.JWT_EXPIRE || "1d",
+    const token = jwt.sign(payload, jwtConfig.secret, {
+      expiresIn: jwtConfig.expiresIn,
     });
 
     // 5. Trả về thông tin (không trả passwordHash)

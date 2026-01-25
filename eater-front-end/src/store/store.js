@@ -1,16 +1,11 @@
 // File: src/store/store.js
 
 import { configureStore } from "@reduxjs/toolkit";
+import authReducer from "./slices/authSlice.js";
 
-// --- KHI NÀO CÓ FILE SLICE THÌ BỎ COMMENT CÁC DÒNG DƯỚI ---
-// import authReducer from "./slices/authSlice.js";
-// import usersReducer from "./slices/usersSlice.js";
-// ... các import khác
-
+// Minimal store configuration: include `auth` reducer so combineReducers is valid.
 export const store = configureStore({
     reducer: {
-        // auth: authReducer,
-        // users: usersReducer,
-        // ...
+        auth: authReducer,
     },
 });

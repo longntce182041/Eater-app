@@ -5,6 +5,8 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import DashboardPage from "../pages/dashboard";
 import UsersPage from "../pages/users/index.jsx";
 import IngredientsPage from "../pages/ingredients/index.jsx";
+import MicronutrientsPage from "../pages/micronutrients/index.jsx";
+import BackupsPage from "../pages/backups/index.jsx";
 import LoginPage from "../pages/auth/index.jsx";
 
 // Import Layout (Cái khung sidebar)
@@ -38,6 +40,8 @@ export function AppRoutes() {
                     <Route path="dashboard" element={<DashboardPage />} />
                     <Route path="users" element={<UsersPage />} />
                     <Route path="ingredients" element={<IngredientsPage />} />
+                    <Route path="micronutrients" element={<MicronutrientsPage />} />
+                    <Route path="backups" element={<BackupsPage />} />
 
                     {/* Các route khác thêm vào đây */}
                 </Route>

@@ -13,8 +13,8 @@ const UserSchema = new mongoose.Schema(
     isEmailVerified: { type: Boolean, default: false },
     emailVerificationToken: { type: String, default: null },
     emailVerificationTokenExpires: { type: Date, default: null },
-    passwordResetToken: { type: String, default: null },
-    passwordResetTokenExpires: { type: Date, default: null },
+    passwordResetOtp: { type: String, default: null },
+    passwordResetOtpExpires: { type: Date, default: null },
   },
   { timestamps: true },
 );
@@ -22,7 +22,7 @@ const UserSchema = new mongoose.Schema(
 // Index for faster lookups
 UserSchema.index({ email: 1 });
 UserSchema.index({ emailVerificationToken: 1 });
-UserSchema.index({ passwordResetToken: 1 });
+UserSchema.index({ passwordResetOtp: 1 });
 
 const User = mongoose.model("Users", UserSchema);
 

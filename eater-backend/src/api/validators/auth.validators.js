@@ -55,9 +55,15 @@ const requestPasswordResetSchema = Joi.object({
 
 // Reset password validation schema
 const resetPasswordSchema = Joi.object({
-  token: Joi.string().required().messages({
-    "any.required": "Reset token is required",
-  }),
+  otp: Joi.string()
+    .length(6)
+    .pattern(/^[0-9]{6}$/)
+    .required()
+    .messages({
+      "string.length": "OTP must be 6 digits",
+      "string.pattern.base": "OTP must be numeric",
+      "any.required": "OTP is required",
+    }),
   newPassword: Joi.string()
     .min(8)
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)

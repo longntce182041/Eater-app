@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const { jwtConfig } = require("../../config/jwt");
 const userRepository = require("../repositories/user.repository");
 const { AppError } = require("../../utils/errors");
+const { sendPasswordResetEmail } = require("../../utils/mailer");
 
 // Hash password with bcrypt
 async function hashPassword(password) {
@@ -21,9 +22,9 @@ function generateEmailVerificationToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
-// Generate password reset token
-function generatePasswordResetToken() {
-  return crypto.randomBytes(32).toString("hex");
+// Generate 6-digit OTP
+function generatePasswordResetOtp() {
+  return ("000000" + Math.floor(Math.random() * 1_000_000)).slice(-6);
 }
 
 // Generate JWT tokens
@@ -148,7 +149,7 @@ async function verifyEmail({ token }) {
   };
 }
 
-// Request password reset
+// Request password reset (OTP)
 async function requestPasswordReset({ email }) {
   // Find user by email
   const user = await userRepository.findByEmail(email);
@@ -160,34 +161,36 @@ async function requestPasswordReset({ email }) {
     };
   }
 
-  // Generate password reset token
-  const passwordResetToken = generatePasswordResetToken();
-  const passwordResetTokenExpires = new Date();
-  passwordResetTokenExpires.setHours(
-    passwordResetTokenExpires.getHours() + 1,
-  ); // Token expires in 1 hour
+  // Generate password reset OTP (6 digits)
+  const passwordResetOtp = generatePasswordResetOtp();
+  const passwordResetOtpExpires = new Date();
+  passwordResetOtpExpires.setMinutes(
+    passwordResetOtpExpires.getMinutes() + 15,
+  ); // OTP expires in 15 minutes
 
-  // Update user with reset token
+  // Update user with reset OTP
   await userRepository.updateUser(user._id, {
-    passwordResetToken,
-    passwordResetTokenExpires,
+    passwordResetOtp,
+    passwordResetOtpExpires,
+    passwordResetToken: null,
+    passwordResetTokenExpires: null,
   });
 
-  // In production, you would send password reset email here
-  // For now, we'll return the token in the response (in production, remove this)
+  // Send password reset email with OTP
+  await sendPasswordResetEmail({ to: email, otp: passwordResetOtp });
+
   return {
     message:
       "If the email exists, a password reset link has been sent",
-    passwordResetToken, // Remove this in production - only for development
   };
 }
 
-// Reset password
-async function resetPassword({ token, newPassword }) {
-  // Find user by reset token
-  const user = await userRepository.findByPasswordResetToken(token);
+// Reset password via OTP
+async function resetPassword({ otp, newPassword }) {
+  // Find user by reset OTP
+  const user = await userRepository.findByPasswordResetOtp(otp);
   if (!user) {
-    throw new AppError("Invalid or expired reset token", 400);
+    throw new AppError("Invalid or expired OTP", 400);
   }
 
   // Hash new password
@@ -198,6 +201,8 @@ async function resetPassword({ token, newPassword }) {
     passwordHash,
     passwordResetToken: null,
     passwordResetTokenExpires: null,
+    passwordResetOtp: null,
+    passwordResetOtpExpires: null,
     isEmailVerified: true,
   });
 

@@ -7,6 +7,10 @@ const User_ProfileSchema = new mongoose.Schema(
       ref: "Users", // must match model name defined in User.js
       required: true,
     },
+    firstName: { type: String, default: "" },
+    lastName: { type: String, default: "" },
+    phoneNumber: { type: String, default: "" },
+    avatar: { type: String, default: "" }, // URL to avatar image
     age: { type: Number, required: true },
     gender: { type: String, enum: ["male", "female", "other"], required: true },
     height: { type: Number, required: true }, // in centimeters

@@ -48,10 +48,6 @@ async function requestPasswordReset(req, res, next) {
     return res.status(200).json({
       status: "success",
       message: result.message,
-      // In production, don't include the token in response
-      ...(result.passwordResetToken && {
-        passwordResetToken: result.passwordResetToken,
-      }),
     });
   } catch (err) {
     return next(err);
@@ -60,8 +56,8 @@ async function requestPasswordReset(req, res, next) {
 
 async function resetPassword(req, res, next) {
   try {
-    const { token, newPassword } = req.body;
-    const result = await authService.resetPassword({ token, newPassword });
+    const { otp, newPassword } = req.body;
+    const result = await authService.resetPassword({ otp, newPassword });
     return res.status(200).json({
       status: "success",
       message: result.message,

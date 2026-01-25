@@ -27,6 +27,13 @@ async function findByPasswordResetToken(token) {
   });
 }
 
+async function findByPasswordResetOtp(otp) {
+  return User.findOne({
+    passwordResetOtp: otp,
+    passwordResetOtpExpires: { $gt: new Date() },
+  });
+}
+
 async function updateUser(userId, updateData) {
   return User.findByIdAndUpdate(userId, updateData, { new: true });
 }
@@ -45,6 +52,7 @@ module.exports = {
   findById,
   findByEmailVerificationToken,
   findByPasswordResetToken,
+  findByPasswordResetOtp,
   updateUser,
   updateUserByEmail,
 };

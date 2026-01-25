@@ -2,6 +2,32 @@ const Joi = require("joi");
 
 // Create profile validation schema
 const createProfileSchema = Joi.object({
+    firstName: Joi.string()
+        .max(50)
+        .default("")
+        .messages({
+            "string.max": "First name must not exceed 50 characters",
+        }),
+    lastName: Joi.string()
+        .max(50)
+        .default("")
+        .messages({
+            "string.max": "Last name must not exceed 50 characters",
+        }),
+    phoneNumber: Joi.string()
+        .pattern(/^[0-9+\-()\s]*$/)
+        .max(20)
+        .default("")
+        .messages({
+            "string.pattern.base": "Phone number is invalid",
+            "string.max": "Phone number must not exceed 20 characters",
+        }),
+    avatar: Joi.string()
+        .uri()
+        .default("")
+        .messages({
+            "string.uri": "Avatar must be a valid URL",
+        }),
     age: Joi.number()
         .integer()
         .min(1)
@@ -86,6 +112,28 @@ const createProfileSchema = Joi.object({
 
 // Update profile validation schema (all fields are optional)
 const updateProfileSchema = Joi.object({
+    firstName: Joi.string()
+        .max(50)
+        .messages({
+            "string.max": "First name must not exceed 50 characters",
+        }),
+    lastName: Joi.string()
+        .max(50)
+        .messages({
+            "string.max": "Last name must not exceed 50 characters",
+        }),
+    phoneNumber: Joi.string()
+        .pattern(/^[0-9+\-()\s]*$/)
+        .max(20)
+        .messages({
+            "string.pattern.base": "Phone number is invalid",
+            "string.max": "Phone number must not exceed 20 characters",
+        }),
+    avatar: Joi.string()
+        .uri()
+        .messages({
+            "string.uri": "Avatar must be a valid URL",
+        }),
     age: Joi.number()
         .integer()
         .min(1)

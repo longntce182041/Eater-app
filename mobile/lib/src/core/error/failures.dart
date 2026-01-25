@@ -6,13 +6,21 @@ abstract class Failure {
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure(String message, {Object? cause}) : super(message, cause: cause);
+  const ServerFailure({required String message, Object? cause})
+    : super(message, cause: cause);
 }
 
 class CacheFailure extends Failure {
-  const CacheFailure(String message, {Object? cause}) : super(message, cause: cause);
+  const CacheFailure({required String message, Object? cause})
+    : super(message, cause: cause);
 }
 
 class AuthFailure extends Failure {
-  const AuthFailure(String message, {Object? cause}) : super(message, cause: cause);
+  const AuthFailure({required String message, Object? cause})
+    : super(message, cause: cause);
+}
+
+class NotFoundFailure extends Failure {
+  const NotFoundFailure({required String message, Object? cause})
+    : super(message, cause: cause);
 }

@@ -13,9 +13,12 @@ app.use(helmet());
 // CORS configuration for mobile apps and web clients
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(",")
-      : "*", // Allow all origins in development
+    origin:
+      process.env.ALLOWED_ORIGINS === "*"
+        ? "*"
+        : process.env.ALLOWED_ORIGINS
+          ? process.env.ALLOWED_ORIGINS.split(",")
+          : "*", // Allow all origins in development
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

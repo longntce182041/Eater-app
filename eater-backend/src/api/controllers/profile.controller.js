@@ -8,18 +8,21 @@ const profileService = require("../services/profile.service");
  * @param {Function} next - Express next middleware function
  */
 async function getProfile(req, res, next) {
-    try {
-        const userId = req.user.sub; // From JWT token
-        const result = await profileService.getProfile(userId);
+  try {
+    const userId = req.user.sub; // From JWT token
+    const result = await profileService.getProfile(userId);
 
-        return res.status(200).json({
-            status: "success",
-            message: "Profile retrieved successfully",
-            data: result.profile,
-        });
-    } catch (err) {
-        return next(err);
-    }
+    return res.status(200).json({
+      status: "success",
+      message: "Profile retrieved successfully",
+      data: {
+        profile: result.profile,
+        dietaryReferences: result.dietaryReferences || null,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
 }
 
 /**
@@ -30,18 +33,18 @@ async function getProfile(req, res, next) {
  * @param {Function} next - Express next middleware function
  */
 async function createProfile(req, res, next) {
-    try {
-        const userId = req.user.sub; // From JWT token
-        const result = await profileService.createProfile(userId, req.body);
+  try {
+    const userId = req.user.sub; // From JWT token
+    const result = await profileService.createProfile(userId, req.body);
 
-        return res.status(201).json({
-            status: "success",
-            message: result.message,
-            data: result.profile,
-        });
-    } catch (err) {
-        return next(err);
-    }
+    return res.status(201).json({
+      status: "success",
+      message: result.message,
+      data: result.profile,
+    });
+  } catch (err) {
+    return next(err);
+  }
 }
 
 /**
@@ -52,22 +55,30 @@ async function createProfile(req, res, next) {
  * @param {Function} next - Express next middleware function
  */
 async function updateProfile(req, res, next) {
-    try {
-        const userId = req.user.sub; // From JWT token
-        const result = await profileService.updateProfile(userId, req.body);
+  try {
+    const userId = req.user.sub; // From JWT token
+    console.log("updateProfile request body:", req.body);
+    console.log(
+      "updateProfile body types:",
+      Object.entries(req.body).map(([k, v]) => `${k}: ${typeof v}`),
+    );
+    const result = await profileService.updateProfile(userId, req.body);
 
-        return res.status(200).json({
-            status: "success",
-            message: result.message,
-            data: result.profile,
-        });
-    } catch (err) {
-        return next(err);
-    }
+    return res.status(200).json({
+      status: "success",
+      message: result.message,
+      data: {
+        profile: result.profile,
+        dietaryReferences: result.dietaryReferences || null,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
 }
 
 module.exports = {
-    getProfile,
-    createProfile,
-    updateProfile,
+  getProfile,
+  createProfile,
+  updateProfile,
 };

@@ -12,7 +12,7 @@ const {
 const router = express.Router();
 
 /**
- * @route   POST /api/auth/register
+ * @route   POST /api/auth/user/register
  * @desc    Register a new user account
  * @access  Public
  */
@@ -23,14 +23,14 @@ router.post(
 );
 
 /**
- * @route   POST /api/auth/login
+ * @route   POST /api/auth/user/login
  * @desc    Login user and return JWT tokens
  * @access  Public
  */
 router.post("/login", validateRequest(loginSchema), authController.login);
 
 /**
- * @route   POST /api/auth/verify-email
+ * @route   POST /api/auth/user/verify-email
  * @desc    Verify user email with verification token
  * @access  Public
  */
@@ -41,7 +41,7 @@ router.post(
 );
 
 /**
- * @route   POST /api/auth/request-password-reset
+ * @route   POST /api/auth/user/request-password-reset
  * @desc    Request password reset - sends reset token to email
  * @access  Public
  */
@@ -52,7 +52,7 @@ router.post(
 );
 
 /**
- * @route   POST /api/auth/reset-password
+ * @route   POST /api/auth/user/reset-password
  * @desc    Reset password with reset token
  * @access  Public
  */
@@ -63,14 +63,14 @@ router.post(
 );
 
 /**
- * @route   POST /api/auth/refresh
+ * @route   POST /api/auth/user/refresh
  * @desc    Refresh access token using refresh token
  * @access  Public
  */
 router.post("/refresh", authController.refreshToken);
 
 /**
- * @route   POST /api/auth/logout
+ * @route   POST /api/auth/user/logout
  * @desc    Logout user (invalidate refresh token)
  * @access  Public
  */

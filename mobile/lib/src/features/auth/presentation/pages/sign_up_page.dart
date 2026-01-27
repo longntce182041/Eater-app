@@ -37,13 +37,11 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Sign up successful. Please sign in with your credentials.',
-          ),
+          content: Text('Sign up successful! Let\'s set up your profile.'),
         ),
       );
       if (!mounted) return;
-      context.go('/sign-in');
+      context.go('/user-info');
     }
   }
 

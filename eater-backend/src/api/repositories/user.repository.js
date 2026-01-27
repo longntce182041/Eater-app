@@ -1,4 +1,4 @@
-const User = require("../../models/User_Profile");
+const User = require("../../models/User");
 
 async function createUser(data) {
   const user = new User(data);
@@ -39,9 +39,13 @@ async function updateUser(userId, updateData) {
 }
 
 async function updateUserByEmail(email, updateData) {
-  return User.findOneAndUpdate({ email: email.toLowerCase().trim() }, updateData, {
-    new: true,
-  });
+  return User.findOneAndUpdate(
+    { email: email.toLowerCase().trim() },
+    updateData,
+    {
+      new: true,
+    },
+  );
 }
 
 // Additional methods for admin/user management, deactivation, etc.

@@ -11,7 +11,7 @@ class AuthApiClient {
     required String password,
   }) {
     return _dio.post(
-      '$baseUrl/auth/register',
+      '$baseUrl/auth/user/register',
       data: {'email': email, 'password': password},
     );
   }
@@ -21,7 +21,7 @@ class AuthApiClient {
     required String password,
   }) {
     return _dio.post(
-      '$baseUrl/auth/login',
+      '$baseUrl/auth/user/login',
       data: {'email': email, 'password': password},
     );
   }
@@ -32,7 +32,7 @@ class AuthApiClient {
 
   Future<Response<dynamic>> requestPasswordReset({required String email}) {
     return _dio.post(
-      '$baseUrl/auth/request-password-reset',
+      '$baseUrl/auth/user/request-password-reset',
       data: {'email': email},
     );
   }
@@ -42,21 +42,21 @@ class AuthApiClient {
     required String newPassword,
   }) {
     return _dio.post(
-      '$baseUrl/auth/reset-password',
+      '$baseUrl/auth/user/reset-password',
       data: {'otp': otp, 'newPassword': newPassword},
     );
   }
 
   Future<Response<dynamic>> refresh({required String refreshToken}) {
     return _dio.post(
-      '$baseUrl/auth/refresh',
+      '$baseUrl/auth/user/refresh',
       data: {'refreshToken': refreshToken},
     );
   }
 
   Future<Response<dynamic>> logout({required String refreshToken}) {
     return _dio.post(
-      '$baseUrl/auth/logout',
+      '$baseUrl/auth/user/logout',
       data: {'refreshToken': refreshToken},
     );
   }

@@ -2,13 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/data/token_storage.dart';
+import '../../shared/providers/auth_token_provider.dart';
 
 class AuthNotifier extends ChangeNotifier {
   final TokenStorage _tokenStorage;
+  final Ref _ref;
   bool _isAuthenticated = false;
   bool _isInitialized = false;
 
-  AuthNotifier(this._tokenStorage) {
+  AuthNotifier(this._tokenStorage, this._ref) {
     _init();
   }
 
@@ -16,8 +18,19 @@ class AuthNotifier extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
 
   Future<void> _init() async {
-    final token = await _tokenStorage.getAccessToken();
-    _isAuthenticated = token != null && token.isNotEmpty;
+    final accessToken = await _tokenStorage.getAccessToken();
+    final refreshToken = await _tokenStorage.getRefreshToken();
+
+    _isAuthenticated = accessToken != null && accessToken.isNotEmpty;
+
+    // Load tokens into authTokenProvider for Dio interceptor
+    if (accessToken != null && refreshToken != null) {
+      _ref.read(authTokenProvider.notifier).state = AuthTokenProvider(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      );
+    }
+
     _isInitialized = true;
     notifyListeners();
   }
@@ -33,5 +46,5 @@ class AuthNotifier extends ChangeNotifier {
 }
 
 final authNotifierProvider = ChangeNotifierProvider<AuthNotifier>((ref) {
-  return AuthNotifier(TokenStorage());
+  return AuthNotifier(TokenStorage(), ref);
 });

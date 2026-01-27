@@ -1,8 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/env/app_config.dart';
 import '../../../../config/env/env_loader.dart';
+import '../../../../shared/providers/auth_token_provider.dart';
 import '../../data/auth_api_client.dart';
 import '../../data/auth_repository.dart';
 import '../../data/token_storage.dart';
@@ -52,12 +56,25 @@ class AuthState {
 
 class AuthController extends StateNotifier<AuthState> {
   final AuthRepository _repo;
-  AuthController(this._repo) : super(const AuthState());
+  final Ref _ref;
+
+  AuthController(this._repo, this._ref) : super(const AuthState());
 
   Future<void> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final res = await _repo.login(email: email, password: password);
+
+      // Update auth token provider with the tokens
+      final accessToken = res['accessToken'] as String?;
+      final refreshToken = res['refreshToken'] as String?;
+      if (accessToken != null && refreshToken != null) {
+        _ref.read(authTokenProvider.notifier).state = AuthTokenProvider(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+        );
+      }
+
       state = state.copyWith(
         isLoading: false,
         user: res['user'] as Map<String, dynamic>?,
@@ -71,6 +88,31 @@ class AuthController extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final res = await _repo.register(email: email, password: password);
+
+      // Update auth token provider with the tokens
+      final accessToken = res['accessToken'] as String?;
+      final refreshToken = res['refreshToken'] as String?;
+
+      final accessPreview = accessToken != null
+          ? accessToken.substring(0, math.min(accessToken.length, 20))
+          : 'null';
+      final refreshPreview = refreshToken != null
+          ? refreshToken.substring(0, math.min(refreshToken.length, 20))
+          : 'null';
+      debugPrint(
+        'Register response - accessToken: $accessPreview..., refreshToken: $refreshPreview...',
+      );
+
+      if (accessToken != null && refreshToken != null) {
+        _ref.read(authTokenProvider.notifier).state = AuthTokenProvider(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+        );
+        debugPrint('Auth tokens updated in authTokenProvider');
+      } else {
+        debugPrint('No tokens in register response');
+      }
+
       state = state.copyWith(
         isLoading: false,
         user: res['user'] as Map<String, dynamic>?,
@@ -100,6 +142,11 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     await _repo.logout();
+    // Clear the auth token provider
+    _ref.read(authTokenProvider.notifier).state = const AuthTokenProvider(
+      accessToken: null,
+      refreshToken: null,
+    );
     state = const AuthState();
   }
 
@@ -115,6 +162,6 @@ class AuthController extends StateNotifier<AuthState> {
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
   (ref) {
-    return AuthController(ref.watch(authRepositoryProvider));
+    return AuthController(ref.watch(authRepositoryProvider), ref);
   },
 );

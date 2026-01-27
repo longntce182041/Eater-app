@@ -1,6 +1,7 @@
 // src/api/controllers/ingredient.management.controller.js
 const ingredientService = require("../services/ingredient.management.service");
 const { validateIngredient } = require("../validators/ingredient.management.validators");
+const { getActionMessage } = require("../../utils/actionMessage.util");
 
 class IngredientManagementController {
     // GET /api/ingredients
@@ -31,7 +32,8 @@ class IngredientManagementController {
             if (!isValid) return res.status(400).json({ success: false, errors });
 
             const newIngredient = await ingredientService.createIngredient(req.body);
-            res.status(201).json({ success: true, message: "Ingredient created successfully", data: newIngredient });
+            const message = getActionMessage('create', 'Ingredient');
+            res.status(201).json({ success: true, message, data: newIngredient });
         } catch (error) {
             res.status(400).json({ success: false, message: error.message });
         }
@@ -42,7 +44,8 @@ class IngredientManagementController {
         try {
             // Validate sơ bộ (nếu cần thiết có thể dùng hàm validate riêng cho update)
             const updatedIngredient = await ingredientService.updateIngredient(req.params.id, req.body);
-            res.json({ success: true, message: "Ingredient updated successfully", data: updatedIngredient });
+            const message = getActionMessage('update', 'Ingredient');
+            res.json({ success: true, message, data: updatedIngredient });
         } catch (error) {
             res.status(400).json({ success: false, message: error.message });
         }
@@ -52,7 +55,8 @@ class IngredientManagementController {
     async deleteIngredient(req, res) {
         try {
             await ingredientService.deleteIngredient(req.params.id);
-            res.json({ success: true, message: "Ingredient deleted successfully" });
+            const message = getActionMessage('delete', 'Ingredient');
+            res.json({ success: true, message });
         } catch (error) {
             res.status(400).json({ success: false, message: error.message });
         }

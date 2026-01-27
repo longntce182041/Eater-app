@@ -1,7 +1,7 @@
 /** @type {import('jest').Config} */
 module.exports = {
   // Thư mục gốc của source code
-  roots: ["<rootDir>/src", "<rootDir>/tests"],
+  //roots: ["<rootDir>/src", "<rootDir>/tests"],
 
   // Môi trường chạy test (backend → node)
   testEnvironment: "node",
@@ -28,7 +28,7 @@ module.exports = {
   coverageDirectory: "coverage",
 
   // Thiết lập biến môi trường trước khi chạy test (nếu cần)
-  setupFiles: ["<rootDir>/tests/setupEnv.js"],
+  //setupFiles: ["<rootDir>/tests/setupEnv.js"],
 
   // Nếu dùng module alias, có thể map ở đây
   // moduleNameMapper: {...}

@@ -40,3 +40,8 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Bắt buộc thông báo phải nổi lên trên cùng của mọi thứ */
+.Toastify__toast-container {
+  z-index: 9999999 !important;
+}

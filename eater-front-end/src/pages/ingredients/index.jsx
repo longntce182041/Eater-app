@@ -30,27 +30,20 @@ const IngredientPage = () => {
         description: ''
     });
 
-    // available micronutrients for dropdown
     const [availableMicros, setAvailableMicros] = useState([]);
-    // selected micronutrients with amounts
     const [selectedMicros, setSelectedMicros] = useState([]);
     const [showDetail, setShowDetail] = useState(false);
     const [detailData, setDetailData] = useState(null);
 
-    // --- LOGIC VALIDATE TRÊN GIAO DIỆN ---
-
-    // 1. Chặn các ký tự e, E, +, - trong ô input number
     const blockInvalidChar = (e) => ['e', 'E', '+', '-', ',', '.'].includes(e.key) && e.preventDefault();
 
-    // 2. Hàm xử lý thay đổi số (Giới hạn 0 - 10,000)
     const handleNumberChange = (field, value) => {
         let val = value;
-        if (val > 10000) val = 10000; // Giới hạn tối đa 10k
-        if (val < 0) val = 0;        // Giới hạn tối thiểu 0
+        if (val > 10000) val = 10000;
+        if (val < 0) val = 0;
         setFormData({ ...formData, [field]: val });
     };
 
-    // 1. Gọi API lấy danh sách
     const fetchIngredients = async () => {
         try {
             setLoading(true);
@@ -78,13 +71,11 @@ const IngredientPage = () => {
         return () => clearTimeout(timer);
     }, [filters]);
 
-    // load micronutrients for dropdown once
     useEffect(() => {
         const fetchMicros = async () => {
             try {
                 const res = await axiosClient.get('/micronutrients', { params: { limit: 1000 } });
                 if (res.data && res.data.success) {
-                    // backend returns { data: { micronutrients: [...] } } or an array directly
                     setAvailableMicros(res.data.data?.micronutrients || res.data.data || []);
                 }
             } catch (err) {
@@ -118,37 +109,14 @@ const IngredientPage = () => {
                     ImageUrl: data.ImageUrl || '',
                     description: data.description || ''
                 });
-
-                // populate selectedMicros from returned micronutrients (keep micronutrientId + amount)
                 const micros = (data.micronutrients || []).map(m => ({ micronutrientId: m.micronutrientId || m._id || m.id, amount: m.amount }));
                 setSelectedMicros(micros);
             } else {
-                // fallback to item
-                setFormData({
-                    name: item.name,
-                    calories_per_unit: item.calories_per_unit,
-                    protein: item.protein,
-                    carbs: item.carbs,
-                    fats: item.fats,
-                    unit: item.unit,
-                    ImageUrl: item.ImageUrl || '',
-                    description: item.description || ''
-                });
+                setFormData({ ...item, ImageUrl: item.ImageUrl || '', description: item.description || '' });
                 setSelectedMicros([]);
             }
         } catch (err) {
-            console.error('Failed to load ingredient detail', err);
-            // fallback
-            setFormData({
-                name: item.name,
-                calories_per_unit: item.calories_per_unit,
-                protein: item.protein,
-                carbs: item.carbs,
-                fats: item.fats,
-                unit: item.unit,
-                ImageUrl: item.ImageUrl || '',
-                description: item.description || ''
-            });
+            setFormData({ ...item, ImageUrl: item.ImageUrl || '', description: item.description || '' });
             setSelectedMicros([]);
         }
         setShowModal(true);
@@ -157,11 +125,15 @@ const IngredientPage = () => {
     const handleDelete = async (id) => {
         if(!window.confirm("Delete this ingredient?")) return;
         try {
-            await axiosClient.delete(`/ingredients/delete/${id}`);
-            toast.success("Ingredient deleted");
+            // ✅ SỬA: Lấy message từ backend
+            const res = await axiosClient.delete(`/ingredients/delete/${id}`);
+
+            // Hiện thông báo động
+            toast.success(res.data.message);
+
             fetchIngredients();
         } catch (error) {
-            toast.error("Error deleting");
+            toast.error(error.response?.data?.message || "Error deleting");
         }
     };
 
@@ -181,17 +153,22 @@ const IngredientPage = () => {
         e.preventDefault();
         try {
             const payload = { ...formData, micronutrients: selectedMicros };
+            let res; // ✅ Khai báo biến res
+
             if (isEditing) {
-                await axiosClient.put(`/ingredients/update/${currentId}`, payload);
-                toast.success("Updated successfully!");
+                // ✅ Gán vào res
+                res = await axiosClient.put(`/ingredients/update/${currentId}`, payload);
             } else {
-                await axiosClient.post('/ingredients/create', payload);
-                toast.success("Created successfully!");
+                // ✅ Gán vào res
+                res = await axiosClient.post('/ingredients/create', payload);
             }
+
+            // ✅ HIỆN THÔNG BÁO TỪ BACKEND
+            toast.success(res.data.message);
+
             setShowModal(false);
             fetchIngredients();
         } catch (error) {
-            // Hiển thị lỗi từ Backend Validator trả về
             const serverMessage = error.response?.data?.message;
             const validatorErrors = error.response?.data?.errors;
 
@@ -204,6 +181,7 @@ const IngredientPage = () => {
         }
     };
 
+    // ... PHẦN RENDER BÊN DƯỚI GIỮ NGUYÊN ...
     return (
         <div>
             <h2 style={{ color: '#30a5ff', marginBottom: '20px' }}>Ingredients Management</h2>
@@ -232,7 +210,7 @@ const IngredientPage = () => {
                         style={{ width: '100%', padding: '10px 10px 10px 35px', borderRadius: '4px', border: '1px solid #ddd', cursor: 'pointer' }}
                     >
                         <option value="">All Units</option>
-                        <option value="100g">gram</option>
+                        <option value="gram">gram</option>
                         <option value="ml">ml</option>
                         <option value="piece">piece</option>
                         <option value="cup">cup</option>
@@ -273,7 +251,7 @@ const IngredientPage = () => {
                 </div>
             )}
 
-            {/* --- MODAL --- */}
+            {/* --- MODAL CREATE/EDIT --- */}
             {showModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
                     <div style={{ background: 'white', padding: '30px', borderRadius: '8px', width: '500px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
@@ -301,7 +279,7 @@ const IngredientPage = () => {
                                 <div>
                                     <label style={{ display: 'block', fontSize: '13px' }}>Unit</label>
                                     <select value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}>
-                                        <option value="100g">gram</option>
+                                        <option value="gram">gram</option>
                                         <option value="ml">ml</option>
                                         <option value="piece">piece</option>
                                         <option value="cup">cup</option>
@@ -334,7 +312,6 @@ const IngredientPage = () => {
                                 <textarea rows="2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}></textarea>
                             </div>
 
-                            {/* Micronutrients selector */}
                             <div style={{ marginBottom: '12px' }}>
                                 <label style={{ display: 'block', fontSize: '13px', marginBottom: '6px' }}>Micronutrients (optional)</label>
                                 {selectedMicros.map((m, idx) => (
@@ -351,7 +328,6 @@ const IngredientPage = () => {
                                             <option value="">Select micronutrient</option>
                                             {availableMicros
                                                 .filter(a => {
-                                                    // allow current selected value to be shown, otherwise exclude already selected micros
                                                     const id = a._id || a.id;
                                                     const already = selectedMicros.some((s, si) => s.micronutrientId === id && si !== idx);
                                                     return !already || (m.micronutrientId && (m.micronutrientId === id));
@@ -359,12 +335,12 @@ const IngredientPage = () => {
                                                 .map(a => <option key={a._id || a.id} value={a._id || a.id}>{a.name}</option>)}
                                         </select>
                                         <input type="number" min="0" onKeyDown={blockInvalidChar} value={m.amount}
-                                            onChange={e => {
-                                                const copy = [...selectedMicros];
-                                                copy[idx].amount = e.target.value;
-                                                setSelectedMicros(copy);
-                                            }}
-                                            placeholder="amount" style={{ width: '110px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+                                               onChange={e => {
+                                                   const copy = [...selectedMicros];
+                                                   copy[idx].amount = e.target.value;
+                                                   setSelectedMicros(copy);
+                                               }}
+                                               placeholder="amount" style={{ width: '110px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
                                         <button type="button" onClick={() => { const copy = selectedMicros.filter((_, i) => i !== idx); setSelectedMicros(copy); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#f0243f' }}><Trash2 size={16}/></button>
                                     </div>
                                 ))}
@@ -398,20 +374,20 @@ const IngredientPage = () => {
                         {detailData.micronutrients && detailData.micronutrients.length ? (
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
-                                    <tr style={{ textAlign: 'left', borderBottom: '1px solid #eee' }}>
-                                        <th style={{ padding: '8px' }}>Name</th>
-                                        <th style={{ padding: '8px' }}>Amount</th>
-                                        <th style={{ padding: '8px' }}>Unit</th>
-                                    </tr>
+                                <tr style={{ textAlign: 'left', borderBottom: '1px solid #eee' }}>
+                                    <th style={{ padding: '8px' }}>Name</th>
+                                    <th style={{ padding: '8px' }}>Amount</th>
+                                    <th style={{ padding: '8px' }}>Unit</th>
+                                </tr>
                                 </thead>
                                 <tbody>
-                                    {detailData.micronutrients.map((m, i) => (
-                                        <tr key={i} style={{ borderBottom: '1px solid #fafafa' }}>
-                                            <td style={{ padding: '8px' }}>{m.name || (m.micronutrientId)}</td>
-                                            <td style={{ padding: '8px' }}>{m.amount}</td>
-                                            <td style={{ padding: '8px' }}>{m.unit || '-'}</td>
-                                        </tr>
-                                    ))}
+                                {detailData.micronutrients.map((m, i) => (
+                                    <tr key={i} style={{ borderBottom: '1px solid #fafafa' }}>
+                                        <td style={{ padding: '8px' }}>{m.name || (m.micronutrientId)}</td>
+                                        <td style={{ padding: '8px' }}>{m.amount}</td>
+                                        <td style={{ padding: '8px' }}>{m.unit || '-'}</td>
+                                    </tr>
+                                ))}
                                 </tbody>
                             </table>
                         ) : (

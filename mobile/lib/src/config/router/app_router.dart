@@ -15,6 +15,7 @@ import '../../features/userHeath/presentation/screens/select_allergies_page.dart
 import '../../features/userHeath/presentation/screens/select_dislikes_page.dart';
 import '../../features/userHeath/presentation/screens/select_activity_level_page.dart';
 import '../../features/userHeath/presentation/screens/select_cooking_page.dart';
+import '../../features/userHeath/presentation/screens/select_cooking_time_page.dart';
 import '../../features/userHeath/presentation/screens/select_calories_page.dart';
 import 'auth_notifier.dart';
 
@@ -48,6 +49,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state.matchedLocation.startsWith('/select-dislikes') ||
           state.matchedLocation.startsWith('/select-activity-level') ||
           state.matchedLocation.startsWith('/select-cooking') ||
+          state.matchedLocation.startsWith('/select-cooking-time') ||
           state.matchedLocation.startsWith('/select-calories') ||
           state.matchedLocation.startsWith('/profile-summary');
 
@@ -69,6 +71,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           !state.matchedLocation.startsWith('/select-dislikes') &&
           !state.matchedLocation.startsWith('/select-activity-level') &&
           !state.matchedLocation.startsWith('/select-cooking') &&
+          !state.matchedLocation.startsWith('/select-cooking-time') &&
           !state.matchedLocation.startsWith('/select-calories') &&
           !state.matchedLocation.startsWith('/profile-summary')) {
         return '/home';
@@ -126,6 +129,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/select-cooking',
         builder: (context, state) => const SelectCookingPage(),
+      ),
+      GoRoute(
+        path: '/select-cooking-time',
+        builder: (context, state) => const SelectCookingTimePage(),
       ),
       GoRoute(
         path: '/select-calories',

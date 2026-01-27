@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { DietType } = require("../../models/diet_types");
 const { DietaryReferences } = require("../../models/dietary_references");
+const { AppError } = require("../../utils/errors");
 const User = require("../../models/User");
 const { User_Profile } = require("../../models/User_Profile");
 
@@ -50,16 +51,19 @@ async function setUserProfile(userId, profileData) {
 async function setDietaryReference(userId, dietaryData) {
   let dietaryReferences = await DietaryReferences.findOne({
     userId: new mongoose.Types.ObjectId(userId),
-    diet_typeId: dietaryData.diet_typeId,
   });
+
   if (!dietaryReferences) {
+    // Create new record during onboarding
     dietaryReferences = new DietaryReferences({
       userId: new mongoose.Types.ObjectId(userId),
       ...dietaryData,
     });
   } else {
+    // Update existing record
     Object.assign(dietaryReferences, dietaryData);
   }
+
   return dietaryReferences.save();
 }
 

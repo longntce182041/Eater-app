@@ -65,7 +65,7 @@ class _SelectCookingPageState extends ConsumerState<SelectCookingPage> {
   void _onNext() {
     if (_selectedId == null) return;
     ref.read(dietaryRefProvider.notifier).setCookingSkillLevel(_selectedId!);
-    context.push('/select-calories');
+    context.push('/select-cooking-time');
   }
 
   @override

@@ -1,0 +1,85 @@
+@startuml Analyze User Profile Sequence Diagram
+
+title Analyze User Profile - Sequence Diagram
+
+actor Client
+participant "analyze_user_profile()" as AUP
+participant "build_health_metrics()" as BHM
+participant "calculate_bmr()" as CBMR
+participant "calculate_tdee()" as CTDEE
+participant "calculate_target_calories()" as CTC
+entity "UserProfile" as UP
+entity "HealthMetrics" as HM
+
+== Input ==
+Client -> AUP: analyze_user_profile(user: UserProfile, health_goals: list[str])
+
+== Extract Primary Goal ==
+AUP -> AUP: Extract primary_goal from health_goals\n(default: "maintenance")
+
+== Calculate Health Metrics ==
+AUP -> BHM: build_health_metrics(user, primary_goal)
+activate BHM
+
+BHM -> CBMR: calculate_bmr(user)
+activate CBMR
+CBMR -> UP: Get user.weight_kg, user.height_cm, user.age, user.gender
+UP --> CBMR: Return user attributes
+note right of CBMR
+  Mifflin-St Jeor equation:
+  Male: 10×weight + 6.25×height - 5×age + 5
+  Female: 10×weight + 6.25×height - 5×age - 161
+end note
+CBMR --> BHM: Return bmr (float)
+deactivate CBMR
+
+BHM -> CTDEE: calculate_tdee(user, bmr)
+activate CTDEE
+CTDEE -> UP: Get user.activity_level
+UP --> CTDEE: Return activity_level
+note right of CTDEE
+  Activity Multipliers:
+  sedentary: 1.2
+  light: 1.375
+  moderate: 1.55
+  active: 1.725
+  very_active: 1.9
+end note
+CTDEE --> BHM: Return tdee (float)
+deactivate CTDEE
+
+BHM -> CTC: calculate_target_calories(tdee, health_goal)
+activate CTC
+note right of CTC
+  Goal Adjustments:
+  weight_loss: -500 cal
+  aggressive_weight_loss: -750 cal
+  weight_gain: +500 cal
+  muscle_gain: +300 cal
+  maintenance: 0 cal
+  
+  Min safe calories: 1200
+end note
+CTC --> BHM: Return target_calories (float)
+deactivate CTC
+
+BHM -> HM: Create HealthMetrics(\n  bmr=round(bmr, 2),\n  tdee=round(tdee, 2),\n  target_calories=round(target_calories, 2)\n)
+HM --> BHM: Return HealthMetrics object
+
+BHM --> AUP: Return health_metrics
+deactivate BHM
+
+== Calculate BMI ==
+AUP -> UP: Get user.weight_kg, user.height_cm
+UP --> AUP: Return weight, height
+AUP -> AUP: Calculate BMI = weight_kg / (height_cm/100)²
+
+== Determine BMI Category ==
+AUP -> AUP: Categorize BMI:\n< 18.5: underweight\n18.5-25: normal_weight\n25-30: overweight\n≥ 30: obese
+
+== Build Response ==
+AUP -> AUP: Build analysis response dict:\n- user_id\n- health_metrics\n- bmi\n- bmi_category\n- primary_health_goal\n- activity_level\n- analysis_summary
+
+AUP --> Client: Return analysis dict
+
+@enduml

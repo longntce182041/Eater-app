@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const DietTypesSchema = new mongoose.Schema(
   {
     Diet_TypeId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       required: true,
       unique: true,
     },

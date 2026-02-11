@@ -3,19 +3,19 @@ const mongoose = require("mongoose");
 const mealPlans = new mongoose.Schema(
   {
     userId: {
-      type: String,
-      ref: "Users",
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
     nutritionistId: {
-      type: String,
-      ref: "Nutritionists",
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Nutritionist",
     },
     date: { type: Date, required: true },
   },
   { timestamps: true },
 );
 
-const MealPlan = mongoose.model("MealPlans", mealPlans);
+const MealPlan = mongoose.model("MealPlan", mealPlans);
 
 module.exports = { MealPlan };

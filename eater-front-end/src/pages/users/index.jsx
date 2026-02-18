@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axiosClient from '../../api/axiosClient';
-import { Trash2, Edit, Plus, X, Eye, EyeOff, Search, Filter } from 'lucide-react'; // Import thêm icon
+import { Trash2, Edit, Plus, X, Eye, EyeOff, Search, Filter } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const UserPage = () => {
@@ -29,11 +29,10 @@ const UserPage = () => {
         isActive: true
     });
 
-    // 1. Gọi API lấy danh sách (Kèm Search & Filter)
+    // 1. Gọi API lấy danh sách
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            // Gửi params keyword và role lên backend
             const res = await axiosClient.get('/users', {
                 params: {
                     keyword: filters.keyword,
@@ -51,11 +50,10 @@ const UserPage = () => {
         }
     };
 
-    // Gọi mỗi khi filters thay đổi (Debounce nhẹ hoặc bấm enter thì tốt hơn, nhưng làm đơn giản trước)
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchUsers();
-        }, 500); // Đợi 0.5s sau khi gõ mới tìm để đỡ lag server
+        }, 500);
         return () => clearTimeout(timer);
     }, [filters]);
 
@@ -63,7 +61,7 @@ const UserPage = () => {
     const handleOpenCreate = () => {
         setIsEditing(false);
         setFormData({ email: '', password: '', role: 'user', isActive: true });
-        setShowPassword(false); // Reset trạng thái mắt
+        setShowPassword(false);
         setShowModal(true);
     };
 
@@ -81,15 +79,19 @@ const UserPage = () => {
         setShowModal(true);
     };
 
-    // 4. Xóa User
+    // 4. Xóa User (Soft Delete)
     const handleDelete = async (id) => {
         if(!window.confirm("Are you sure you want to deactivate this user?")) return;
         try {
-            await axiosClient.delete(`/users/delete/${id}`);
-            toast.success("User deactivated!");
+            // ✅ SỬA: Lấy message từ backend
+            const res = await axiosClient.delete(`/users/delete/${id}`);
+
+            // Hiện thông báo động từ backend
+            toast.success(res.data.message);
+
             fetchUsers();
         } catch (error) {
-            toast.error("Failed to delete user");
+            toast.error(error.response?.data?.message || "Failed to delete user");
         }
     };
 
@@ -97,15 +99,22 @@ const UserPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            let res; // ✅ Khai báo biến response
+
             if (isEditing) {
                 const updateData = { ...formData };
                 if (!updateData.password) delete updateData.password;
-                await axiosClient.put(`/users/update/${currentUser._id}`, updateData);
-                toast.success("User updated successfully");
+
+                // ✅ SỬA: Gán kết quả vào res
+                res = await axiosClient.put(`/users/update/${currentUser._id}`, updateData);
             } else {
-                await axiosClient.post('/users/create', formData);
-                toast.success("User created successfully");
+                // ✅ SỬA: Gán kết quả vào res
+                res = await axiosClient.post('/users/create', formData);
             }
+
+            // ✅ HIỆN THÔNG BÁO TỪ BACKEND
+            toast.success(res.data.message);
+
             setShowModal(false);
             fetchUsers();
         } catch (error) {
@@ -117,13 +126,13 @@ const UserPage = () => {
     return (
         <div>
             <h2 style={{ color: '#30a5ff', marginBottom: '20px' }}>User Management</h2>
+            {/* --- NÚT TEST --- */}
 
-            {/* --- TOOLBAR: SEARCH & FILTER --- */}
+            {/* --- TOOLBAR --- */}
             <div style={{
                 background: 'white', padding: '15px', borderRadius: '5px', marginBottom: '20px',
                 display: 'flex', gap: '15px', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
             }}>
-                {/* Ô Tìm kiếm */}
                 <div style={{ position: 'relative', flex: 1 }}>
                     <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
                     <input
@@ -135,7 +144,6 @@ const UserPage = () => {
                     />
                 </div>
 
-                {/* Ô Lọc Role */}
                 <div style={{ position: 'relative', width: '200px' }}>
                     <Filter size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
                     <select
@@ -150,7 +158,6 @@ const UserPage = () => {
                     </select>
                 </div>
 
-                {/* Nút Create New */}
                 <button
                     onClick={handleOpenCreate}
                     style={{
@@ -183,13 +190,13 @@ const UserPage = () => {
                             <tr key={user._id} style={{ borderBottom: '1px solid #eee', color: '#666' }}>
                                 <td style={{ padding: '12px' }}>{user.email}</td>
                                 <td style={{ padding: '12px' }}>
-                    <span style={{
-                        padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase',
-                        background: user.role === 'admin' ? '#30a5ff' : (user.role === 'nutritionist' ? '#ffb53e' : '#eee'),
-                        color: user.role === 'admin' || user.role === 'nutritionist' ? 'white' : '#333'
-                    }}>
-                      {user.role}
-                    </span>
+                                    <span style={{
+                                        padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase',
+                                        background: user.role === 'admin' ? '#30a5ff' : (user.role === 'nutritionist' ? '#ffb53e' : '#eee'),
+                                        color: user.role === 'admin' || user.role === 'nutritionist' ? 'white' : '#333'
+                                    }}>
+                                      {user.role}
+                                    </span>
                                 </td>
                                 <td style={{ padding: '12px' }}>
                                     {user.isActive ? (
@@ -242,7 +249,6 @@ const UserPage = () => {
                                 />
                             </div>
 
-                            {/* Ô PASSWORD CÓ CON MẮT */}
                             <div style={{ marginBottom: '15px' }}>
                                 <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                                     Password {isEditing && <small style={{color: '#999'}}>(Leave empty to keep)</small>}
@@ -255,7 +261,6 @@ const UserPage = () => {
                                         style={{ width: '100%', padding: '8px 35px 8px 8px', borderRadius: '4px', border: '1px solid #ccc' }}
                                         required={!isEditing}
                                     />
-                                    {/* Icon mắt bấm vào được */}
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}

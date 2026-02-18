@@ -52,6 +52,28 @@ const validateIngredient = (data) => {
     const fatsError = validateNumberField(data.fats, "Fats");
     if (fatsError) errors.fats = fatsError;
 
+    // 4. Optional: validate micronutrients array
+    if (data.micronutrients !== undefined) {
+        if (!Array.isArray(data.micronutrients)) {
+            errors.micronutrients = "Micronutrients must be an array";
+        } else {
+            const micronErrors = [];
+            data.micronutrients.forEach((m, idx) => {
+                const itemErrors = {};
+                if (!m || !m.micronutrientId) itemErrors.micronutrientId = "micronutrientId is required";
+                if (m.amount === undefined || m.amount === null || m.amount === "") {
+                    itemErrors.amount = "amount is required";
+                } else if (isNaN(Number(m.amount))) {
+                    itemErrors.amount = "amount must be a number";
+                } else if (Number(m.amount) < 0) {
+                    itemErrors.amount = "amount cannot be negative";
+                }
+                if (Object.keys(itemErrors).length) micronErrors[idx] = itemErrors;
+            });
+            if (micronErrors.length) errors.micronutrients = micronErrors;
+        }
+    }
+
 
     return {
         errors,

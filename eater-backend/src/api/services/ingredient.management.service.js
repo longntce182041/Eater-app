@@ -1,5 +1,6 @@
 // src/api/services/ingredient.management.service.js
 const { Ingredient } = require("../../models/ingredients"); // Đảm bảo đường dẫn đúng tới file model
+const { IngredientMicronutrientValues } = require("../../models/ingredient_micronutrient_values");
 
 class IngredientManagementService {
     // 1. Get All + Search + Pagination
@@ -40,7 +41,19 @@ class IngredientManagementService {
     async getIngredientById(id) {
         const ingredient = await Ingredient.findById(id);
         if (!ingredient) throw new Error("Ingredient not found");
-        return ingredient;
+
+        // Load linked micronutrient values from join table and populate micronutrient details
+        const micronValues = await IngredientMicronutrientValues.find({ ingredientId: id }).populate('micronutrientId', 'name unit');
+        const micronutrients = micronValues.map(mv => ({
+            micronutrientId: mv.micronutrientId?._id || mv.micronutrientId,
+            name: mv.micronutrientId?.name || null,
+            unit: mv.micronutrientId?.unit || null,
+            amount: mv.amount,
+        }));
+
+        const result = ingredient.toObject();
+        result.micronutrients = micronutrients;
+        return result;
     }
 
     // 3. Create
@@ -60,7 +73,19 @@ class IngredientManagementService {
             unit: data.unit
         });
 
-        return await newIngredient.save();
+        const saved = await newIngredient.save();
+
+        // Nếu có micronutrients kèm theo, tạo các bản ghi trong bảng phụ
+        if (data.micronutrients && Array.isArray(data.micronutrients) && data.micronutrients.length) {
+            const docs = data.micronutrients.map(m => ({
+                ingredientId: saved._id,
+                micronutrientId: m.micronutrientId,
+                amount: Number(m.amount)
+            }));
+            await IngredientMicronutrientValues.insertMany(docs);
+        }
+
+        return saved;
     }
 
     // 4. Update
@@ -77,7 +102,24 @@ class IngredientManagementService {
         // Cập nhật dữ liệu
         Object.assign(ingredient, data);
 
-        return await ingredient.save();
+        const updated = await ingredient.save();
+
+        // Nếu gửi lên danh sách micronutrients, cập nhật bảng phụ tương ứng
+        if (data.micronutrients !== undefined) {
+            // Xóa các bản ghi cũ cho ingredient này
+            await IngredientMicronutrientValues.deleteMany({ ingredientId: updated._id });
+
+            if (Array.isArray(data.micronutrients) && data.micronutrients.length) {
+                const docs = data.micronutrients.map(m => ({
+                    ingredientId: updated._id,
+                    micronutrientId: m.micronutrientId,
+                    amount: Number(m.amount)
+                }));
+                await IngredientMicronutrientValues.insertMany(docs);
+            }
+        }
+
+        return updated;
     }
 
     // 5. Delete (Xóa cứng - Xóa hẳn khỏi DB vì nguyên liệu rác không cần giữ)

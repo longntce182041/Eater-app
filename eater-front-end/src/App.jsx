@@ -8,7 +8,6 @@ function App() {
         <>
             <ToastContainer position="top-right" autoClose={3000} />
 
-            {/* Chỉ gọi duy nhất component này, KHÔNG viết thêm chữ gì ở đây */}
             <AppRoutes />
         </>
     );

@@ -1,5 +1,6 @@
 const userService = require("../services/user.management.service");
 const { validateCreateUser, validateUpdateUser } = require("../validators/user.management.validators");
+const { getActionMessage } = require("../../utils/actionMessage.util");
 
 class UserManagementController {
     // GET /api/users (List, Search, Filter)
@@ -29,7 +30,8 @@ class UserManagementController {
             if (!isValid) return res.status(400).json({ success: false, errors });
 
             const newUser = await userService.createUser(req.body);
-            res.status(201).json({ success: true, message: "User created successfully", data: newUser });
+            const message = getActionMessage('create', 'User');
+            res.status(201).json({ success: true, message, data: newUser });
         } catch (error) {
             res.status(400).json({ success: false, message: error.message });
         }
@@ -42,7 +44,8 @@ class UserManagementController {
             if (!isValid) return res.status(400).json({ success: false, errors });
 
             const updatedUser = await userService.updateUser(req.params.id, req.body);
-            res.json({ success: true, message: "User updated successfully", data: updatedUser });
+            const message = getActionMessage('update', 'User');
+            res.json({ success: true, message, data: updatedUser });
         } catch (error) {
             res.status(400).json({ success: false, message: error.message });
         }
@@ -52,7 +55,8 @@ class UserManagementController {
     async deleteUser(req, res) {
         try {
             await userService.softDeleteUser(req.params.id);
-            res.json({ success: true, message: "User has been deactivated (Soft deleted)" });
+            const message = getActionMessage('delete', 'User');
+            res.json({ success: true, message });
         } catch (error) {
             res.status(400).json({ success: false, message: error.message });
         }

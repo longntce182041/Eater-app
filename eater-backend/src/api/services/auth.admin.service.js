@@ -1,4 +1,4 @@
-const User = require("../../models/user");
+const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { jwtConfig } = require("../../config/jwt");
@@ -40,7 +40,7 @@ class AuthAdminService {
         id: user._id,
         email: user.email,
         role: user.role,
-        isActive: user.isActive
+        isActive: user.isActive,
       },
     };
   }

@@ -25,7 +25,9 @@ function authorize(...roles) {
       return res.status(401).json({ message: "Not authenticated" });
     }
     if (roles.length && !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Forbidden: insufficient permissions" });
+      return res
+        .status(403)
+        .json({ message: "Forbidden: insufficient permissions" });
     }
     return next();
   };

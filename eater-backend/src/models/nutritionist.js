@@ -1,10 +1,10 @@
 const { verify } = require("jsonwebtoken");
 const mongoose = require("mongoose");
-const NutritionstistSchema = new mongoose.Schema(
+const NutritionistSchema = new mongoose.Schema(
   {
     userId: {
-      type: String,
-      ref: "Users",
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
     fullName: { type: String, required: true },
@@ -15,5 +15,5 @@ const NutritionstistSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
-const Nutritionist = mongoose.model("Nutritionists", NutritionstistSchema);
+const Nutritionist = mongoose.model("Nutritionist", NutritionistSchema);
 module.exports = { Nutritionist };

@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 const ingredientMicronutrientValuesSchema = new mongoose.Schema(
   {
     ingredientId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Ingredient",
       required: true,
     },
     micronutrientId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Micronutrient",
       required: true,
     },
@@ -17,7 +17,7 @@ const ingredientMicronutrientValuesSchema = new mongoose.Schema(
   { timestamps: true },
 );
 const IngredientMicronutrientValues = mongoose.model(
-  "IngredientMicronutrientValues",
+  "IngredientMicronutrientValue",
   ingredientMicronutrientValuesSchema,
 );
 

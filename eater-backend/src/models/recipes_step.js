@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const RecipesStepSchema = new mongoose.Schema(
   {
     recipeId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Recipe",
       required: true,
     },

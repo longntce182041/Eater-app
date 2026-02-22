@@ -15,7 +15,7 @@ python -m uvicorn app.main:app --reload --port 8000
 ## 📍 Endpoint 1: Complete Pipeline (All 3 Steps)
 
 **Method**: `POST`  
-**URL**: `http://localhost:8000/api/v1/pipeline/complete-pipeline`
+**URL**: `http://localhost:8000/api/pipeline/complete-pipeline`
 
 **Headers**:
 ```
@@ -138,7 +138,7 @@ Use this only when body_profile is not available:
 ## 📍 Endpoint 2: Step 1 - Analyze Dietary Preferences
 
 **Method**: `POST`  
-**URL**: `http://localhost:8000/api/v1/pipeline/step1/analyze-dietary-preferences`
+**URL**: `http://localhost:8000/api/pipeline/step1/analyze-dietary-preferences`
 
 **Headers**:
 ```
@@ -176,7 +176,7 @@ Content-Type: application/json
 ## 📍 Endpoint 3: Step 2 - Analyze Health Goals
 
 **Method**: `POST`  
-**URL**: `http://localhost:8000/api/v1/pipeline/step2/analyze-health-goals`
+**URL**: `http://localhost:8000/api/pipeline/step2/analyze-health-goals`
 
 **Headers**:
 ```
@@ -238,7 +238,7 @@ Content-Type: application/json
 ## 📍 Endpoint 4: Step 3 - Generate Meal Plan
 
 **Method**: `POST`  
-**URL**: `http://localhost:8000/api/v1/pipeline/step3/generate-meal-plan`
+**URL**: `http://localhost:8000/api/pipeline/step3/generate-meal-plan`
 
 **Headers**:
 ```
@@ -337,7 +337,7 @@ Content-Type: application/json
 ## 📍 Endpoint 5: Get Supported Diet Types
 
 **Method**: `GET`  
-**URL**: `http://localhost:8000/api/v1/pipeline/supported-diet-types`
+**URL**: `http://localhost:8000/api/pipeline/supported-diet-types`
 
 **No body required**
 
@@ -406,7 +406,7 @@ POST http://localhost:3000/api/ai/user-profile/analyze
 **2️⃣ Then: Generate Meal Plan (using body_profile)**
 ```javascript
 // AI service endpoint (new pipeline)
-POST http://localhost:8000/api/v1/pipeline/complete-pipeline
+POST http://localhost:8000/api/pipeline/complete-pipeline
 
 {
   "user_id": "user_12345",
@@ -638,7 +638,14 @@ You can also access the Swagger UI for interactive testing:
 
 **URL**: http://localhost:8000/docs
 
-This provides:
+Registered endpoints:
+- `/api/pipeline/complete-pipeline`
+- `/api/pipeline/step1/analyze-dietary-preferences`
+- `/api/pipeline/step2/analyze-health-goals`
+- `/api/pipeline/step3/generate-meal-plan`
+- `/api/pipeline/supported-diet-types`
+
+The Swagger UI provides:
 - Interactive API documentation
 - Built-in "Try it out" functionality
 - Automatic request/response examples

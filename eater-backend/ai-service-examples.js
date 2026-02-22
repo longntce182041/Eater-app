@@ -228,7 +228,7 @@ async function exampleMealPlanPipeline() {
       process.env.AI_SERVICE_URL || "http://localhost:8000";
 
     const mealPlanResponse = await axios.post(
-      `${AI_SERVICE_URL}/api/v1/pipeline/complete-pipeline`,
+      `${AI_SERVICE_URL}/api/pipeline/complete-pipeline`,
       pipelineRequest,
       {
         headers: { "Content-Type": "application/json" },

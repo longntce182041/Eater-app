@@ -17,6 +17,28 @@ router.post(
 );
 
 /**
+ * @route   POST /api/ai/meal-plan/save
+ * @desc    Save AI-generated meal plan to database
+ * @access  Private
+ */
+router.post(
+  "/meal-plan/save",
+  // authMiddleware,
+  aiController.saveMealPlanFromAI,
+);
+
+/**
+ * @route   POST /api/ai/meal-plan/generate-complete
+ * @desc    Complete meal plan generation - Analyzes profile, fetches recipes, generates plan, and saves to DB
+ * @access  Private
+ */
+router.post(
+  "/meal-plan/generate-complete",
+  // authMiddleware,
+  aiController.generateCompleteMealPlan,
+);
+
+/**
  * @route   GET /api/ai/meal-plans
  * @desc    Get user's meal plans
  * @access  Private

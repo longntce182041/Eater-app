@@ -240,14 +240,14 @@ ai_meal_planing_service/
 
 ### Complete Pipeline Endpoint
 
-**POST** `/api/v1/pipeline/complete-pipeline`
+**POST** `/api/pipeline/complete-pipeline`
 
 Executes all 3 steps in sequence.
 
 #### ✅ Preferred: Using body_profile from Upstream
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/pipeline/complete-pipeline" \
+curl -X POST "http://localhost:8000/api/pipeline/complete-pipeline" \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "user_123",
@@ -274,7 +274,7 @@ curl -X POST "http://localhost:8000/api/v1/pipeline/complete-pipeline" \
 If `body_profile` is not available, provide individual fields:
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/pipeline/complete-pipeline" \
+curl -X POST "http://localhost:8000/api/pipeline/complete-pipeline" \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "user_123",
@@ -297,17 +297,17 @@ curl -X POST "http://localhost:8000/api/v1/pipeline/complete-pipeline" \
 ### Individual Step Endpoints
 
 #### Step 1: Analyze Dietary Preferences
-**POST** `/api/v1/pipeline/step1/analyze-dietary-preferences`
+**POST** `/api/pipeline/step1/analyze-dietary-preferences`
 
 #### Step 2: Analyze Health Goals
-**POST** `/api/v1/pipeline/step2/analyze-health-goals`
+**POST** `/api/pipeline/step2/analyze-health-goals`
 
 #### Step 3: Generate Meal Plan
-**POST** `/api/v1/pipeline/step3/generate-meal-plan`
+**POST** `/api/pipeline/step3/generate-meal-plan`
 
 ### Utility Endpoints
 
-**GET** `/api/v1/pipeline/supported-diet-types` - Get list of supported diet types
+**GET** `/api/pipeline/supported-diet-types` - Get list of supported diet types
 
 ---
 

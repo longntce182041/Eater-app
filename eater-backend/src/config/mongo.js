@@ -1,10 +1,9 @@
 const mongoose = require("mongoose");
 
-
 const mongoConfig = {
   uri:
     process.env.MONGODB_URI ||
-    "mongodb://127.0.0.1:27017/ai_healthy_meal_planner-1",
+    "mongodb://127.0.0.1:27017/ai_healthy_meal_planner",
   // mongoose 9+ uses sane defaults; explicit options removed
 };
 
@@ -13,7 +12,6 @@ const connectMongo = async () => {
     await mongoose.connect(mongoConfig.uri);
     const { host, name } = mongoose.connection;
     console.log(`MongoDB connected: ${host}/${name}`);
-
   } catch (err) {
     console.error("MongoDB connection error:", err.message);
     process.exit(1);

@@ -116,10 +116,83 @@ async function analyzeUserProfile(userProfile) {
   }
 }
 
+/**
+ * Generate meal plan using complete AI pipeline with recipe database
+ * @param {Object} params - Pipeline parameters
+ * @param {string} params.user_id - User identifier
+ * @param {Object} params.body_profile - Body profile from analyzeUserProfile
+ * @param {Array<string>} params.diet_types - Diet type preferences
+ * @param {Array<string>} params.allergies - Allergic ingredients
+ * @param {Array<string>} params.disliked_ingredients - Disliked ingredients
+ * @param {string} params.health_goal - Health goal (weight_loss, muscle_gain, maintain, etc.)
+ * @param {number} params.days - Number of days to generate
+ * @param {Array<Object>} params.recipe_database - Optional: Custom recipe database
+ * @returns {Promise<Object>} Complete meal plan with all pipeline steps
+ */
+async function generateMealPlanPipeline(params) {
+  try {
+    const response = await aiClient.post(
+      "/api/pipeline/complete-pipeline",
+      params,
+    );
+    return response.data;
+  } catch (error) {
+    const errorMsg = error.response?.data?.detail || error.message;
+    console.error(
+      "Pipeline Error Details:",
+      JSON.stringify(error.response?.data, null, 2),
+    );
+    throw new Error(
+      `Meal plan pipeline failed: ${typeof errorMsg === "object" ? JSON.stringify(errorMsg) : errorMsg}`,
+    );
+  }
+}
+
+/**
+ * Generate meal plan step 3 only (with custom recipe database)
+ * @param {Object} params - Generation parameters
+ * @param {Object} params.body_profile - User's metabolic data
+ * @param {Object} params.diet_constraints - Diet constraints from step 1
+ * @param {Object} params.goal_profile - Goal profile from step 2
+ * @param {Array<Object>} params.recipe_database - Custom recipe database
+ * @param {number} params.days - Number of days
+ * @returns {Promise<Object>} Generated meal plan
+ */
+async function generateMealPlanWithRecipes(params) {
+  try {
+    const response = await aiClient.post(
+      "/api/pipeline/step3/generate-meal-plan",
+      params,
+    );
+    return response.data;
+  } catch (error) {
+    const errorMsg = error.response?.data?.detail || error.message;
+    throw new Error(`Meal plan generation failed: ${errorMsg}`);
+  }
+}
+
+/**
+ * Get recipe database information
+ * @returns {Promise<Object>} Recipe database info
+ */
+async function getRecipeDatabaseInfo() {
+  try {
+    const response = await aiClient.get("/api/recipe-database/info");
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      `Failed to retrieve recipe database info: ${error.message}`,
+    );
+  }
+}
+
 module.exports = {
   aiClient,
   generateMealPlan,
   healthCheck,
   getServiceStatus,
   analyzeUserProfile,
+  generateMealPlanPipeline,
+  generateMealPlanWithRecipes,
+  getRecipeDatabaseInfo,
 };

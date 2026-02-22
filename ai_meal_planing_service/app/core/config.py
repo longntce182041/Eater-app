@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    API_V1_PREFIX: str = "/api/v1"
+    API_V1_PREFIX: str = "/api"  # Changed from /api/v1 to match actual deployment
     ENV: str = "development"
     DEBUG: bool = True
 

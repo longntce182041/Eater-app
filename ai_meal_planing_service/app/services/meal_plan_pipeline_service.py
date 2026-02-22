@@ -161,12 +161,19 @@ class MealPlanPipelineService:
         # ================================================================
         logger.info("Step 3: Generating personalized meal plan")
         
+        # Use recipe database from request if provided, otherwise use service default
+        recipe_database = request.recipe_database if request.recipe_database else self.recipe_database
+        if recipe_database:
+            logger.info(f"Using custom recipe database with {len(recipe_database)} recipes")
+        else:
+            logger.info("Using mock recipe database (no custom recipes provided)")
+        
         # Body profile already prepared from upstream (no recalculation needed)
         meal_plan_result = generate_meal_plan(
             body_profile=body_profile,
             diet_constraints=diet_constraints,
             goal_profile=goal_profile,
-            recipe_database=self.recipe_database
+            recipe_database=recipe_database
         )
         
         meal_plan = meal_plan_result.meal_plan
@@ -202,6 +209,8 @@ class MealPlanPipelineService:
         """
         Validate pipeline request before execution.
         
+        Validates either body_profile OR individual fields.
+        
         Args:
             request: Pipeline request to validate
             
@@ -212,20 +221,32 @@ class MealPlanPipelineService:
         if not request.user_id:
             return False, "user_id is required"
         
-        if request.bmr <= 0:
-            return False, "bmr must be positive"
-        
-        if request.tdee <= 0:
-            return False, "tdee must be positive"
-        
-        if request.weight_kg <= 0:
-            return False, "weight_kg must be positive"
-        
-        if request.height_cm <= 0:
-            return False, "height_cm must be positive"
-        
-        if request.age <= 0 or request.age > 120:
-            return False, "age must be between 1 and 120"
+        # Validate body profile (preferred) OR individual fields (fallback)
+        if request.body_profile:
+            # Validate body_profile fields
+            if request.body_profile.bmr <= 0:
+                return False, "body_profile.bmr must be positive"
+            if request.body_profile.tdee <= 0:
+                return False, "body_profile.tdee must be positive"
+            if request.body_profile.age <= 0 or request.body_profile.age > 120:
+                return False, "body_profile.age must be between 1 and 120"
+        else:
+            # Validate individual fields (fallback mode)
+            if not all([request.bmr, request.tdee, request.weight_kg, 
+                       request.height_cm, request.age, request.gender]):
+                return False, ("Either 'body_profile' or all individual fields "
+                             "(bmr, tdee, weight_kg, height_cm, age, gender) must be provided")
+            
+            if request.bmr <= 0:
+                return False, "bmr must be positive"
+            if request.tdee <= 0:
+                return False, "tdee must be positive"
+            if request.weight_kg <= 0:
+                return False, "weight_kg must be positive"
+            if request.height_cm <= 0:
+                return False, "height_cm must be positive"
+            if request.age <= 0 or request.age > 120:
+                return False, "age must be between 1 and 120"
         
         # All validations passed
         return True, None

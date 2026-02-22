@@ -1,4 +1,6 @@
 const aiService = require("../services/ai.services");
+const recipeService = require("../services/recipe.service");
+const aiClient = require("../../integrations/ai/aiClient");
 const {
   healthCheck,
   getServiceStatus,
@@ -241,6 +243,199 @@ async function analyzeUserProfile(req, res) {
   }
 }
 
+/**
+ * Save AI-generated meal plan to database
+ * @route POST /api/ai/meal-plan/save
+ */
+async function saveMealPlanFromAI(req, res) {
+  try {
+    const userId = req.user?.id || req.body.userId;
+    const { mealPlan, options } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    if (!mealPlan) {
+      return res.status(400).json({
+        success: false,
+        message: "Meal plan data is required",
+      });
+    }
+
+    console.log(`Saving AI-generated meal plan for user ${userId}`);
+
+    const result = await aiService.saveAIMealPlanToDatabase(
+      userId,
+      mealPlan,
+      options || {},
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Meal plan saved successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error saving meal plan:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to save meal plan",
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * Complete meal plan generation - All-in-one endpoint
+ * Analyzes profile -> Fetches recipes -> Generates meal plan -> Saves to database
+ * @route POST /api/ai/meal-plan/generate-complete
+ */
+async function generateCompleteMealPlan(req, res) {
+  try {
+    const {
+      userId,
+      age,
+      gender,
+      height_cm,
+      weight_kg,
+      goal_weight_kg,
+      health_goals,
+      activity_level,
+      dietTypes = [],
+      allergies = [],
+      disliked_ingredients = [],
+      days = 1,
+    } = req.body;
+
+    // Validation
+    if (
+      !userId ||
+      !age ||
+      !gender ||
+      !height_cm ||
+      !weight_kg ||
+      !goal_weight_kg ||
+      !health_goals ||
+      !activity_level
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Missing required fields: userId, age, gender, height_cm, weight_kg, goal_weight_kg, health_goals, activity_level",
+      });
+    }
+
+    console.log(`🚀 Starting complete meal plan generation for user ${userId}`);
+
+    // Step 1: Analyze user profile
+    console.log("📊 Step 1: Analyzing user profile...");
+    const profileResponse = await aiClient.analyzeUserProfile({
+      user_id: userId,
+      age,
+      gender,
+      height_cm,
+      weight_kg,
+      goal_weight_kg,
+      health_goals,
+      activity_level,
+    });
+
+    const body_profile = {
+      age: age,
+      gender: gender,
+      bmi: profileResponse.bmi,
+      bmr: profileResponse.health_metrics.bmr,
+      tdee: profileResponse.health_metrics.tdee,
+      activity_level: activity_level,
+    };
+
+    console.log(
+      `✅ Profile analyzed - BMR: ${body_profile.bmr}, TDEE: ${body_profile.tdee}, BMI: ${body_profile.bmi}`,
+    );
+
+    // Step 2: Fetch recipes from MongoDB
+    console.log("🗄️  Step 2: Fetching recipes from MongoDB...");
+    console.log("Diet types requested:", dietTypes);
+    const recipes = await recipeService.getRecipesForAI({
+      dietTypes: dietTypes.length > 0 ? dietTypes : undefined,
+    });
+    console.log(`Recipe count after fetch: ${recipes.length}`);
+
+    if (recipes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No recipes found in database. Please add recipes first.",
+      });
+    }
+
+    console.log(`✅ Fetched ${recipes.length} recipes from database`);
+
+    // Step 3: Generate meal plan with AI
+    console.log("🍽️  Step 3: Generating meal plan with AI...");
+    const mealPlanResult = await aiClient.generateMealPlanPipeline({
+      user_id: userId,
+      body_profile: body_profile,
+      diet_types: dietTypes,
+      allergies: allergies,
+      disliked_ingredients: disliked_ingredients,
+      health_goal: health_goals,
+      days: days,
+      recipe_database: recipes,
+    });
+
+    console.log(
+      `✅ Meal plan generated with ${mealPlanResult.meal_plan?.meals?.length || 0} meals`,
+    );
+
+    // Step 4: Save to database
+    console.log("💾 Step 4: Saving meal plan to database...");
+    const savedResult = await aiService.saveAIMealPlanToDatabase(
+      userId,
+      mealPlanResult,
+      {
+        dietTypes: dietTypes,
+        healthGoal: health_goals,
+        days: days,
+        startDate: new Date(),
+      },
+    );
+
+    console.log(`✅ Meal plan saved with ID: ${savedResult.mealPlan._id}`);
+
+    return res.status(201).json({
+      success: true,
+      message: "Meal plan generated and saved successfully",
+      data: {
+        profile: {
+          bmi: body_profile.bmi,
+          bmr: body_profile.bmr,
+          tdee: body_profile.tdee,
+          bmi_category: profileResponse.bmi_category,
+        },
+        mealPlan: savedResult.mealPlan,
+        items: savedResult.items,
+        summary: {
+          totalMeals: savedResult.summary.totalMeals,
+          days: savedResult.summary.days,
+          avgCaloriesPerDay: savedResult.summary.avgCaloriesPerDay,
+          recipesUsed: recipes.length,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error in complete meal plan generation:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to generate meal plan",
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   generateMealPlan,
   getUserMealPlans,
@@ -249,4 +444,6 @@ module.exports = {
   checkAIServiceHealth,
   getAIServiceStatus,
   analyzeUserProfile,
+  saveMealPlanFromAI,
+  generateCompleteMealPlan,
 };

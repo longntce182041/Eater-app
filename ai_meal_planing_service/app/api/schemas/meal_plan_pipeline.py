@@ -85,16 +85,16 @@ class HealthGoalInput(BaseModel):
     )
     target_weight: Optional[float] = Field(
         None,
+        gt=0,
         description="Target weight in kg (optional)"
     )
     timeline_weeks: Optional[int] = Field(
         None,
-        ge=1,
-        le=52,
-        description="Timeline to achieve goal in weeks (optional)"
+        description="Timeline to achieve goal in weeks (optional, 1-52 weeks if provided)"
     )
     user_tdee: Optional[float] = Field(
         None,
+        gt=0,
         description="User's Total Daily Energy Expenditure (optional but preferred)"
     )
 
@@ -217,8 +217,8 @@ class MealPlanPipelineRequest(BaseModel):
     
     # For Function 2: Health Goals
     health_goal: HealthGoalType = Field(..., description="Health objective")
-    target_weight: Optional[float] = Field(None, description="Target weight in kg")
-    timeline_weeks: Optional[int] = Field(None, ge=1, le=52, description="Timeline in weeks")
+    target_weight: Optional[float] = Field(None, description="Target weight in kg (>0 if provided)")
+    timeline_weeks: Optional[int] = Field(None, description="Timeline in weeks (1-52 if provided)")
     
     # For Function 3: Body Profile (UPSTREAM INTEGRATION)
     body_profile: Optional[BodyProfile] = Field(
@@ -229,14 +229,20 @@ class MealPlanPipelineRequest(BaseModel):
     # Fallback: Individual body profile fields (if body_profile not provided)
     bmr: Optional[float] = Field(None, description="Basal Metabolic Rate (fallback)")
     tdee: Optional[float] = Field(None, description="Total Daily Energy Expenditure (fallback)")
-    weight_kg: Optional[float] = Field(None, gt=0, description="Current weight (fallback)")
-    height_cm: Optional[float] = Field(None, gt=0, description="Height in cm (fallback)")
-    age: Optional[int] = Field(None, ge=1, le=120, description="Age (fallback)")
+    weight_kg: Optional[float] = Field(None, description="Current weight in kg (>0 if provided)")
+    height_cm: Optional[float] = Field(None, description="Height in cm (>0 if provided)")
+    age: Optional[int] = Field(None, description="Age in years (1-120 if provided)")
     gender: Optional[str] = Field(None, description="Gender (fallback)")
     activity_level: Optional[str] = Field(None, description="Activity level (fallback)")
     
     # Generation parameters
     days: int = Field(default=1, ge=1, le=30, description="Number of days")
+    
+    # Recipe database (optional - uses mock if not provided)
+    recipe_database: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        description="Custom recipe database from backend (optional, uses mock if not provided)"
+    )
 
 
 class MealPlanPipelineResponse(BaseModel):

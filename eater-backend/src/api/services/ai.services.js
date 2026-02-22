@@ -1,9 +1,11 @@
 const { User_Profile } = require("../../models/User_Profile");
 const { DietaryReferences } = require("../../models/dietary_references");
 const { MealPlan } = require("../../models/meal_plans");
+const { MealPlanItem } = require("../../models/meal_plan_item");
 const { UserHealthMetrics } = require("../../models/user_heath_metrics");
 const { Recipe } = require("../../models/Recipe");
 const aiClient = require("../../integrations/ai/aiClient");
+const mongoose = require("mongoose");
 
 /**
  * Fetch user profile data
@@ -140,7 +142,110 @@ async function generateAIMealPlan(userId, days = 7, useML = false) {
 }
 
 /**
- * Save generated meal plan to database
+ * Save AI-generated meal plan to database
+ * @param {string} userId - User ID
+ * @param {Object} aiMealPlan - Meal plan data from AI pipeline
+ * @param {Object} options - Additional options
+ * @returns {Promise<Object>} Saved meal plan with items
+ */
+async function saveAIMealPlanToDatabase(userId, aiMealPlan, options = {}) {
+  try {
+    // Extract meal plan data - handle both old and new response formats
+    const mealPlanData = aiMealPlan.meal_plan || aiMealPlan;
+    const meals = mealPlanData.meals || [];
+    const days = mealPlanData.days || [];
+
+    // Use the flat meals array if available, otherwise use days structure
+    const allMeals =
+      meals.length > 0 ? meals : days.flatMap((day) => day.meals || []);
+    const numDays = options.days || days.length || 1;
+
+    // Calculate totals
+    const totalCalories = allMeals.reduce(
+      (sum, meal) => sum + (meal.calories || meal.estimated_calories || 0),
+      0,
+    );
+    const avgCaloriesPerDay = totalCalories / numDays;
+
+    // Create main meal plan document
+    const mealPlan = new MealPlan({
+      userId: new mongoose.Types.ObjectId(userId),
+      date: options.startDate || new Date(),
+      days: numDays,
+      targetCalories:
+        aiMealPlan.goal_profile?.target_calories ||
+        mealPlanData.daily_calories ||
+        avgCaloriesPerDay,
+      actualCalories: avgCaloriesPerDay,
+      dietTypes:
+        aiMealPlan.diet_constraints?.diet_types || options.dietTypes || [],
+      healthGoal: aiMealPlan.goal_profile?.primary_goal || options.healthGoal,
+      status: "active",
+      aiGenerated: true,
+      metadata: {
+        pipelineVersion: aiMealPlan.pipeline_metadata?.pipeline_version,
+        stepsExecuted: aiMealPlan.pipeline_metadata?.steps_executed,
+        candidateRecipes:
+          aiMealPlan.pipeline_metadata?.generation_metadata
+            ?.candidate_recipes_count,
+        calorieMatchAccuracy:
+          aiMealPlan.pipeline_metadata?.generation_metadata
+            ?.calorie_match_percentage,
+        generatedAt: new Date(),
+      },
+    });
+
+    await mealPlan.save();
+    console.log(`✅ Meal plan saved with ID: ${mealPlan._id}`);
+
+    // Save meal plan items
+    const mealPlanItems = [];
+
+    for (const meal of allMeals) {
+      // Convert recipe_id from string to ObjectId if needed
+      let recipeObjectId;
+      try {
+        recipeObjectId = new mongoose.Types.ObjectId(meal.recipe_id);
+      } catch (error) {
+        console.warn(`⚠️ Invalid recipe ID: ${meal.recipe_id}, skipping meal`);
+        continue;
+      }
+
+      const mealItem = new MealPlanItem({
+        mealPlanId: mealPlan._id,
+        recipeId: recipeObjectId,
+        mealType: meal.meal_type?.toLowerCase() || "snack",
+        servings: meal.servings || 1,
+        calories: meal.calories || meal.estimated_calories || 0,
+        protein: meal.protein_g || 0,
+        carbohydrates: meal.carbs_g || 0,
+        fat: meal.fat_g || 0,
+      });
+
+      await mealItem.save();
+      mealPlanItems.push(mealItem);
+    }
+
+    console.log(`✅ Saved ${mealPlanItems.length} meal plan items`);
+
+    return {
+      success: true,
+      mealPlan: mealPlan.toObject(),
+      items: mealPlanItems.map((item) => item.toObject()),
+      summary: {
+        totalMeals: mealPlanItems.length,
+        days: numDays,
+        avgCaloriesPerDay: avgCaloriesPerDay,
+      },
+    };
+  } catch (error) {
+    console.error("❌ Error saving meal plan to database:", error);
+    throw new Error(`Failed to save meal plan: ${error.message}`);
+  }
+}
+
+/**
+ * Save generated meal plan to database (legacy function - kept for backward compatibility)
  * @param {string} userId - User ID
  * @param {Object} mealPlanData - Meal plan data from AI service
  * @returns {Promise<Object>} Saved meal plan
@@ -331,6 +436,7 @@ module.exports = {
   prepareUserDataForAI,
   generateAIMealPlan,
   saveMealPlan,
+  saveAIMealPlanToDatabase,
   getUserMealPlans,
   getRecommendedRecipes,
   generateAndSaveMealPlan,

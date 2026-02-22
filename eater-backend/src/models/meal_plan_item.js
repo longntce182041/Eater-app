@@ -17,6 +17,27 @@ const mealPlanItemSchema = new mongoose.Schema(
       enum: ["breakfast", "lunch", "dinner", "snack"],
       required: true,
     },
+    servings: {
+      type: Number,
+      required: true,
+      default: 1,
+    },
+    calories: {
+      type: Number,
+      required: true,
+    },
+    protein: {
+      type: Number,
+      default: 0,
+    },
+    carbohydrates: {
+      type: Number,
+      default: 0,
+    },
+    fat: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true },
 );

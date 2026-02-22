@@ -78,7 +78,7 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
           ),
         );
         // Navigate to profile summary or home
-        if (context.mounted) {
+        if (mounted) {
           context.go('/home');
         }
       } else {
@@ -99,7 +99,7 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
     final double sliderValue = (_dailyCalories ?? 2000).toDouble();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9E5D7),
+      backgroundColor: const Color(0xFFF5F1E8),
       body: SafeArea(
         child: Column(
           children: [
@@ -116,7 +116,7 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       height: 1.2,
-                      color: Colors.black87,
+                      color: Color(0xFF2D2D2D),
                     ),
                   ),
                   SizedBox(height: 10),
@@ -146,7 +146,7 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -172,6 +172,9 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
                                     hintText: '2000',
+                                    hintStyle: const TextStyle(
+                                      color: Color(0xFF000000),
+                                    ),
                                     suffixText: 'kcal',
                                     filled: true,
                                     fillColor: Colors.grey[100],
@@ -187,6 +190,7 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w700,
+                                    color: Color(0xFF000000),
                                   ),
                                   onChanged: (value) {
                                     setState(() {
@@ -282,10 +286,10 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
+          color: Colors.white.withValues(alpha: 0.95),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -392,7 +396,7 @@ class _ProgressSegment extends StatelessWidget {
       child: Container(
         height: 8,
         decoration: BoxDecoration(
-          color: isActive ? color : color.withOpacity(0.3),
+          color: isActive ? color : color.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(8),
         ),
       ),
@@ -421,7 +425,7 @@ class _InfoCard extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -470,7 +474,7 @@ class _RecommendationsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

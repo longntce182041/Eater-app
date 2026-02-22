@@ -85,7 +85,7 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9E5D7), // soft peach background
+      backgroundColor: const Color(0xFFF5F1E8),
       body: SafeArea(
         child: Column(
           children: [
@@ -136,10 +136,10 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
+          color: Colors.white.withValues(alpha: 0.95),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -154,7 +154,7 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                  icon: const Icon(Icons.arrow_back, color: Color(0xFF000000)),
                   onPressed: _isSubmitting
                       ? null
                       : () => Navigator.pop(context),
@@ -236,7 +236,7 @@ class _ProgressSegment extends StatelessWidget {
       child: Container(
         height: 8,
         decoration: BoxDecoration(
-          color: isActive ? color : color.withOpacity(0.3),
+          color: isActive ? color : color.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(8),
         ),
       ),
@@ -265,7 +265,7 @@ class _InfoCard extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -341,7 +341,7 @@ class ActivityLevelCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -385,7 +385,7 @@ class ActivityLevelCard extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -427,6 +427,5 @@ class ActivityLevelCard extends StatelessWidget {
 }
 
 Future<void> submitActivityLevel(String levelId) async {
-  // TODO: replace with real POST request
   await Future.delayed(const Duration(milliseconds: 500));
 }

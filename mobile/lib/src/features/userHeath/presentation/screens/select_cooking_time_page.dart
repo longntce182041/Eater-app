@@ -73,7 +73,7 @@ class _SelectCookingTimePageState extends ConsumerState<SelectCookingTimePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE6D9F5),
+      backgroundColor: const Color(0xFFF5F1E8),
       body: SafeArea(
         child: Column(
           children: [
@@ -89,7 +89,7 @@ class _SelectCookingTimePageState extends ConsumerState<SelectCookingTimePage> {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: const Color(0xFF2D2D2D),
                       height: 1.2,
                     ),
                   ),
@@ -132,10 +132,10 @@ class _SelectCookingTimePageState extends ConsumerState<SelectCookingTimePage> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
+          color: Colors.white.withValues(alpha: 0.95),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -230,7 +230,7 @@ class _ProgressSegment extends StatelessWidget {
       child: Container(
         height: 8,
         decoration: BoxDecoration(
-          color: isActive ? color : color.withOpacity(0.3),
+          color: isActive ? color : color.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(8),
         ),
       ),
@@ -259,7 +259,7 @@ class _InfoCard extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -327,7 +327,7 @@ class _CookingTimeCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -342,7 +342,7 @@ class _CookingTimeCard extends StatelessWidget {
                 height: 56,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.purple.withOpacity(0.2)
+                      ? Colors.purple.withValues(alpha: 0.2)
                       : Colors.grey[100],
                   shape: BoxShape.circle,
                 ),
@@ -370,7 +370,7 @@ class _CookingTimeCard extends StatelessWidget {
                       subtitle,
                       style: const TextStyle(
                         fontSize: 14,
-                        color: Colors.black54,
+                        color: Color(0xFF000000),
                       ),
                     ),
                   ],

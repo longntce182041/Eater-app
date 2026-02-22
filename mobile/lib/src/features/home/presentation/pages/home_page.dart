@@ -6,11 +6,24 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F1E8),
       appBar: AppBar(
-        title: const Text('Eater'),
+        backgroundColor: const Color(0xFFF5F1E8),
+        elevation: 0,
+        title: const Text(
+          'Eater',
+          style: TextStyle(
+            color: Color(0xFF2D2D2D),
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
+            icon: const Icon(
+              Icons.notifications_outlined,
+              color: Color(0xFF2D2D2D),
+            ),
             onPressed: () {},
           ),
         ],
@@ -22,16 +35,22 @@ class HomePage extends StatelessWidget {
             // Welcome Header
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.7),
-                  ],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF9800), Color(0xFFFFB74D)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,13 +77,17 @@ class HomePage extends StatelessWidget {
 
             // Quick Stats
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Today\'s Overview',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2D2D2D),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -75,7 +98,7 @@ class HomePage extends StatelessWidget {
                           'Calories',
                           '0 / 2000',
                           Icons.local_fire_department,
-                          Colors.orange,
+                          const Color(0xFFFF9800),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -85,7 +108,7 @@ class HomePage extends StatelessWidget {
                           'Meals',
                           '0 / 3',
                           Icons.restaurant,
-                          Colors.green,
+                          const Color(0xFF4CAF50),
                         ),
                       ),
                     ],
@@ -96,7 +119,7 @@ class HomePage extends StatelessWidget {
 
             // Upcoming Meals
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -108,11 +131,15 @@ class HomePage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: Color(0xFF2D2D2D),
                         ),
                       ),
                       TextButton(
                         onPressed: () {},
-                        child: const Text('View All'),
+                        child: const Text(
+                          'View All',
+                          style: TextStyle(color: Color(0xFFFF9800)),
+                        ),
                       ),
                     ],
                   ),
@@ -129,13 +156,17 @@ class HomePage extends StatelessWidget {
 
             // Quick Actions
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Quick Actions',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2D2D2D),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _buildQuickActionCard(
@@ -153,6 +184,7 @@ class HomePage extends StatelessWidget {
                     Icons.restaurant_menu,
                     () {},
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -170,22 +202,46 @@ class HomePage extends StatelessWidget {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 12),
-          Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF000000),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D2D2D),
+            ),
           ),
         ],
       ),
@@ -202,22 +258,44 @@ class HomePage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          Icon(icon, size: 64, color: Colors.grey[400]),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF9800).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              icon,
+              size: 64,
+              color: const Color(0xFFFF9800).withValues(alpha: 0.4),
+            ),
+          ),
           const SizedBox(height: 16),
           Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2D2D2D),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
           ),
         ],
       ),
@@ -233,28 +311,29 @@ class HomePage extends StatelessWidget {
   ) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFFFF9800).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: Theme.of(context).colorScheme.primary,
-                size: 24,
-              ),
+              child: Icon(icon, color: const Color(0xFFFF9800), size: 28),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -266,17 +345,18 @@ class HomePage extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      color: Color(0xFF2D2D2D),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF999999)),
           ],
         ),
       ),

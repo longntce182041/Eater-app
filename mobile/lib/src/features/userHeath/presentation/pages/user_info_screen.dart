@@ -337,7 +337,7 @@ class _InputFieldCardState extends State<_InputFieldCard> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -356,14 +356,14 @@ class _InputFieldCardState extends State<_InputFieldCard> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF2D2D2D),
+                      color: Color(0xFF000000),
                     ),
                     decoration: InputDecoration(
                       hintText: widget.placeholder,
                       hintStyle: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
-                        color: Colors.grey[400],
+                        color: Color(0xFF000000),
                       ),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16),

@@ -116,7 +116,7 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE6D9F5), // Light purple background
+      backgroundColor: const Color(0xFFF5F1E8),
       body: SafeArea(
         child: Column(
           children: [
@@ -145,7 +145,7 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Color(0xFF2D2D2D),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -154,7 +154,7 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
                     'Let us know what foods you dislike or don\'t eat',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black54,
+                      color: Color(0xFF666666),
                       height: 1.4,
                     ),
                   ),
@@ -166,7 +166,7 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -174,10 +174,14 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
                     ),
                     child: TextField(
                       controller: _searchController,
+                      style: const TextStyle(color: Color(0xFF000000)),
                       decoration: InputDecoration(
                         hintText: 'All products',
-                        hintStyle: TextStyle(color: Colors.grey[600]),
-                        prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                        hintStyle: TextStyle(color: Color(0xFF000000)),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Color(0xFF000000),
+                        ),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 20,
@@ -263,10 +267,10 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
+          color: Colors.white.withValues(alpha: 0.95),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -332,7 +336,7 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
       child: Container(
         height: 8,
         decoration: BoxDecoration(
-          color: isActive ? color : color.withOpacity(0.3),
+          color: isActive ? color : color.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(4),
         ),
       ),
@@ -358,7 +362,7 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -379,7 +383,7 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
             ),
             if (showRemoveIcon) ...[
               const SizedBox(width: 8),
-              Icon(Icons.close, size: 18, color: Colors.grey[600]),
+              Icon(Icons.close, size: 18, color: Color(0xFF000000)),
             ],
           ],
         ),

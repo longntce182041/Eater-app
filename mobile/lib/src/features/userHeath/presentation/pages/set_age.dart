@@ -86,8 +86,10 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
               controller: controller,
               keyboardType: TextInputType.number,
               autofocus: true,
+              style: const TextStyle(color: Color(0xFF000000)),
               decoration: InputDecoration(
                 hintText: 'Age (18-80)',
+                hintStyle: const TextStyle(color: Color(0xFF000000)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -204,7 +206,7 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
                               borderRadius: BorderRadius.circular(30),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),

@@ -49,71 +49,172 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign Up')),
-      body: Center(
+      backgroundColor: const Color(0xFFF5F1E8),
+      body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!RegExp(
-                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                    ).hasMatch(v.trim())) {
-                      return 'Invalid email address';
-                    }
-                    return null;
-                  },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Create Account',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D2D2D),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Join us to start your health journey',
+                      style: TextStyle(fontSize: 16, color: Color(0xFF000000)),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText:
-                        'Password (min 8 chars, uppercase, lowercase, number)',
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(color: Color(0xFF000000)),
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          labelStyle: const TextStyle(color: Color(0xFF000000)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.transparent,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.transparent,
+                            ),
+                          ),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!RegExp(
+                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                          ).hasMatch(v.trim())) {
+                            return 'Invalid email address';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        style: const TextStyle(color: Color(0xFF000000)),
+                        decoration: InputDecoration(
+                          labelText:
+                              'Password (min 8 chars, uppercase, lowercase, number)',
+                          labelStyle: const TextStyle(color: Color(0xFF000000)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.transparent,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.transparent,
+                            ),
+                          ),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          if (v.length < 8) {
+                            return 'Password must be at least 8 characters';
+                          }
+                          final pattern = RegExp(
+                            r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)',
+                          );
+                          if (!pattern.hasMatch(v)) {
+                            return 'Must contain uppercase, lowercase, and number';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: state.isLoading ? null : _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF9800),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 4,
+                          ),
+                          child: state.isLoading
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Text(
+                                  'Sign Up',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Already have an account? ',
+                            style: TextStyle(color: Color(0xFF000000)),
+                          ),
+                          TextButton(
+                            onPressed: () => context.pop(),
+                            child: const Text(
+                              'Sign In',
+                              style: TextStyle(
+                                color: Color(0xFFFF9800),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    if (v.length < 8) {
-                      return 'Password must be at least 8 characters';
-                    }
-                    final pattern = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)');
-                    if (!pattern.hasMatch(v)) {
-                      return 'Must contain uppercase, lowercase, and number';
-                    }
-                    return null;
-                  },
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: state.isLoading ? null : _submit,
-                  child: state.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Sign Up'),
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () => context.pop(),
-                  child: const Text('Already have an account? Sign In'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

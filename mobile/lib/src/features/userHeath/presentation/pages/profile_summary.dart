@@ -63,7 +63,10 @@ class ProfileSummaryPage extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Text(
                         'Please review your information',
-                        style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF000000),
+                        ),
                       ),
                     ],
                   ),
@@ -196,7 +199,7 @@ class ProfileSummaryPage extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -207,7 +210,7 @@ class ProfileSummaryPage extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFF9800).withOpacity(0.1),
+              color: const Color(0xFFFF9800).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: const Color(0xFFFF9800), size: 24),
@@ -219,7 +222,7 @@ class ProfileSummaryPage extends ConsumerWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF000000)),
                 ),
                 const SizedBox(height: 4),
                 Text(

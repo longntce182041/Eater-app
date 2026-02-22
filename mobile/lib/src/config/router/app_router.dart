@@ -3,11 +3,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/routes/auth_routes.dart';
 import '../../features/home/presentation/pages/main_navigation_page.dart';
-import '../../features/userHeath/presentation/pages/setAge.dart';
-import '../../features/userHeath/presentation/pages/setHeight.dart';
-import '../../features/userHeath/presentation/pages/setWeight.dart';
-import '../../features/userHeath/presentation/pages/setGenderActivity.dart';
-import '../../features/userHeath/presentation/pages/profileSummary.dart';
+import '../../features/userHeath/presentation/pages/set_age.dart';
+import '../../features/userHeath/presentation/pages/set_height.dart';
+import '../../features/userHeath/presentation/pages/set_weight.dart';
+import '../../features/userHeath/presentation/pages/set_gender_activity.dart';
+import '../../features/userHeath/presentation/pages/profile_summary.dart';
 import '../../features/userHeath/presentation/pages/dietary_references_screen.dart';
 import '../../features/userHeath/presentation/pages/user_info_screen.dart';
 import '../../features/userHeath/presentation/screens/select_diet_type_page.dart';

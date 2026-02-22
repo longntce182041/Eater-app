@@ -14,6 +14,7 @@ const ingredientRoutes = require("./ingredient.management.routes");
 const healthRoutes = require("./health.routes");
 const micronutrientRoutes = require("./micronutrient.management.routes");
 const adminBackupRoutes = require("./admin.backup.routes");
+const aiRoutes = require("./ai.routes");
 
 const router = express.Router();
 router.use("/auth/user", authUserRoutes);
@@ -22,6 +23,7 @@ router.use("/users", userRoutes);
 router.use("/profile", profileRoutes);
 router.use("/ingredients", ingredientRoutes);
 router.use("/health", healthRoutes);
+router.use("/ai", aiRoutes);
 // router.use("/preferences", preferencesRoutes);
 // router.use("/meal-plans", mealPlansRoutes);
 router.use("/recipes", recipesRoutes);

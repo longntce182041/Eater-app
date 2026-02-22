@@ -6,11 +6,13 @@ import DashboardPage from "../pages/dashboard";
 import UsersPage from "../pages/users/index.jsx";
 import IngredientsPage from "../pages/ingredients/index.jsx";
 import MicronutrientsPage from "../pages/micronutrients/index.jsx";
+import RecipesPage from "../pages/recipes/index.jsx";
 import BackupsPage from "../pages/backups/index.jsx";
 import LoginPage from "../pages/auth/index.jsx";
 
 // Import Layout (Cái khung sidebar)
 import AdminLayout from "../components/layout/AdminLayout";
+
 
 // --- 1. Tạo Component Bảo Vệ (Chặn người chưa login) ---
 const PrivateRoute = () => {
@@ -41,6 +43,7 @@ export function AppRoutes() {
                     <Route path="users" element={<UsersPage />} />
                     <Route path="ingredients" element={<IngredientsPage />} />
                     <Route path="micronutrients" element={<MicronutrientsPage />} />
+                    <Route path="recipes" element={<RecipesPage />} />
                     <Route path="backups" element={<BackupsPage />} />
 
                     {/* Các route khác thêm vào đây */}

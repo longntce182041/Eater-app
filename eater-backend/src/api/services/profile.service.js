@@ -3,6 +3,7 @@ const profileRepository = require("../repositories/profile.repository");
 const userRepository = require("../repositories/user.repository");
 const { AppError } = require("../../utils/errors");
 const { DietaryReferences } = require("../../models/dietary_references");
+const { UserHealthMetrics } = require("../../models/user_heath_metrics");
 
 // Helper to pick only allowed fields from input
 function pickFields(source, allowed) {
@@ -33,14 +34,20 @@ async function getProfile(userId) {
     );
   }
 
-  // Also fetch dietary references (optional)
+  // Fetch dietary references (optional)
   const dietaryReferences = await DietaryReferences.findOne({
     userId: new mongoose.Types.ObjectId(userId),
   }).populate("diet_typeId");
 
+  // Fetch health metrics (optional)
+  const healthMetrics = await UserHealthMetrics.findOne({
+    userId: userId,
+  }).sort({ calculatedAt: -1 }); // Get latest metrics
+
   return {
     profile,
     dietaryReferences,
+    healthMetrics,
   };
 }
 
@@ -88,11 +95,11 @@ async function updateProfile(userId, updateData) {
   }
 
   // Split incoming data into User_Profile fields vs DietaryReferences fields
+  // NOTE: avatar is removed from allowed fields
   const profileFields = [
     "firstName",
     "lastName",
     "phoneNumber",
-    "avatar",
     "age",
     "gender",
     "height",
@@ -137,6 +144,7 @@ async function updateProfile(userId, updateData) {
           message: "Profile updated successfully",
           profile,
           dietaryReferences: null,
+          healthMetrics: null,
         };
       }
     } else {
@@ -150,10 +158,16 @@ async function updateProfile(userId, updateData) {
     ).populate("diet_typeId");
   }
 
+  // Fetch latest health metrics
+  const healthMetrics = await UserHealthMetrics.findOne({
+    userId: userId,
+  }).sort({ calculatedAt: -1 });
+
   return {
     message: "Profile updated successfully",
     profile,
     dietaryReferences,
+    healthMetrics,
   };
 }
 

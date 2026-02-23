@@ -2,46 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/providers/dio_provider.dart';
-
-// Model for diet type
-class DietTypeModel {
-  final String id;
-  final String name;
-  final String description;
-  final double carbRatio;
-  final double proteinRatio;
-  final double fatRatio;
-
-  DietTypeModel({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.carbRatio,
-    required this.proteinRatio,
-    required this.fatRatio,
-  });
-
-  factory DietTypeModel.fromJson(Map<String, dynamic> json) {
-    return DietTypeModel(
-      id: (json['Diet_TypeId']?.toString() ?? json['_id']?.toString() ?? ''),
-      name: json['name']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      carbRatio: (json['carb_ratio'] ?? 0).toDouble(),
-      proteinRatio: (json['protein_ratio'] ?? 0).toDouble(),
-      fatRatio: (json['fat_ratio'] ?? 0).toDouble(),
-    );
-  }
-}
-
-// Provider to fetch diet types
-final dietTypesProvider = FutureProvider<List<DietTypeModel>>((ref) async {
-  final dio = ref.watch(dioProvider);
-  final res = await dio.get('/api/health/diet-types');
-  final List list = res.data is List ? res.data : (res.data['data'] ?? []);
-  return list
-      .map((e) => DietTypeModel.fromJson(Map<String, dynamic>.from(e)))
-      .toList();
-});
+import '../../../home/domain/profile_models.dart';
 
 // Data model for dietary references
 class DietaryRefData {
@@ -95,6 +56,16 @@ class DietaryRefData {
     };
   }
 }
+
+// Provider to fetch diet types from backend
+final dietTypesProvider = FutureProvider<List<DietTypeModel>>((ref) async {
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/api/health/diet-types');
+  final List list = res.data is List ? res.data : (res.data['data'] ?? []);
+  return list
+      .map((e) => DietTypeModel.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+});
 
 // State class
 class DietaryRefState {

@@ -33,4 +33,32 @@ class ProfileApiClient {
       rethrow;
     }
   }
+
+  Future<List<DietTypeModel>> getDietTypes() async {
+    final res = await _dio.get('/api/health/diet-types');
+    final list = res.data as List<dynamic>;
+    return list
+        .map((item) => DietTypeModel.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<HealthMetricsModel> analyzeUserProfile(String userId) async {
+    debugPrint('Calling analyzeUserProfile API with userId: $userId');
+    try {
+      final res = await _dio.post(
+        '/api/ai/user-profile/analyze',
+        data: {'userId': userId},
+      );
+      debugPrint('analyzeUserProfile response: ${res.data}');
+      final data = res.data as Map<String, dynamic>;
+      // Response format: {success: true, data: {metrics: {...}, analysis: {...}}}
+      final metricsData = data['data'] as Map<String, dynamic>;
+      return HealthMetricsModel.fromJson(
+        metricsData['metrics'] as Map<String, dynamic>,
+      );
+    } on DioException catch (e) {
+      debugPrint('analyzeUserProfile error: ${e.response?.data}');
+      rethrow;
+    }
+  }
 }

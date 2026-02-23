@@ -2,7 +2,7 @@ const profileService = require("../services/profile.service");
 
 /**
  * @controller Get user profile
- * @desc Retrieve the current user's profile information
+ * @desc Retrieve the current user's profile information including health metrics
  * @param {Request} req - Express request object with user info in req.user
  * @param {Response} res - Express response object
  * @param {Function} next - Express next middleware function
@@ -18,6 +18,7 @@ async function getProfile(req, res, next) {
       data: {
         profile: result.profile,
         dietaryReferences: result.dietaryReferences || null,
+        healthMetrics: result.healthMetrics || null,
       },
     });
   } catch (err) {
@@ -70,6 +71,7 @@ async function updateProfile(req, res, next) {
       data: {
         profile: result.profile,
         dietaryReferences: result.dietaryReferences || null,
+        healthMetrics: result.healthMetrics || null,
       },
     });
   } catch (err) {

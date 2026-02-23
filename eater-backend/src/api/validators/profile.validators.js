@@ -112,7 +112,7 @@ const updateProfileSchema = Joi.object({
     "number.base": "Weight must be a number",
     "number.positive": "Weight must be greater than 0",
   }),
-  goal_weight: Joi.number().positive().messages({
+  goal_weight: Joi.number().positive().allow(null).messages({
     "number.base": "Goal weight must be a number",
     "number.positive": "Goal weight must be greater than 0",
   }),

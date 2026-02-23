@@ -125,18 +125,22 @@ async function updateProfile(userId, updateData) {
 
   if (Object.keys(dietaryUpdate).length) {
     if (!dietaryReferences) {
-      if (!dietaryUpdate.diet_typeId) {
-        // Cannot create without required diet_typeId
-        throw new AppError(
-          "Dietary references not found. Provide 'diet_typeId' to create a new record.",
-          404,
-        );
+      // Only create dietary references if diet_typeId is provided
+      if (dietaryUpdate.diet_typeId) {
+        dietaryReferences = new DietaryReferences({
+          userId: new mongoose.Types.ObjectId(userId),
+          ...dietaryUpdate,
+        });
+      } else {
+        // Skip dietary update if no dietary record exists and no diet_typeId provided
+        return {
+          message: "Profile updated successfully",
+          profile,
+          dietaryReferences: null,
+        };
       }
-      dietaryReferences = new DietaryReferences({
-        userId: new mongoose.Types.ObjectId(userId),
-        ...dietaryUpdate,
-      });
     } else {
+      // Update existing dietary record
       Object.assign(dietaryReferences, dietaryUpdate);
     }
     await dietaryReferences.save();

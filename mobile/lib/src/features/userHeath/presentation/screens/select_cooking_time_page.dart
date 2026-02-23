@@ -89,7 +89,7 @@ class _SelectCookingTimePageState extends ConsumerState<SelectCookingTimePage> {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2D2D2D),
+                      color: Color(0xFF2D2D2D),
                       height: 1.2,
                     ),
                   ),

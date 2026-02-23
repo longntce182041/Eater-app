@@ -12,6 +12,11 @@ const Recipes = new mongoose.Schema(
   { timestamps: true },
 );
 
+// Indexes for performance optimization
+Recipes.index({ name: 'text', description: 'text' }); // Full-text search
+Recipes.index({ status: 1, createdAt: -1 }); // Filter + Sort optimization
+Recipes.index({ cookingTime: 1 }); // Cooking time filter
+
 const Recipe = mongoose.model("Recipe", Recipes);
 
 module.exports = { Recipe };

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'home_page.dart';
 import 'profile_page.dart';
+import 'recipes_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -16,7 +17,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   final List<Widget> _pages = [
     const HomePage(),
     const Center(child: Text('Meal Plans')),
-    const Center(child: Text('Recipes')),
+    const RecipesPage(),
     const ProfilePage(),
   ];
 

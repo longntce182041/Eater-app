@@ -173,7 +173,8 @@ class MealPlanPipelineService:
             body_profile=body_profile,
             diet_constraints=diet_constraints,
             goal_profile=goal_profile,
-            recipe_database=recipe_database
+            recipe_database=recipe_database,
+            days=request.days  # Pass number of days to generate
         )
         
         meal_plan = meal_plan_result.meal_plan

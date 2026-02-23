@@ -182,7 +182,7 @@ class MealPlanGenerationInput(BaseModel):
     body_profile: BodyProfile = Field(..., description="User's metabolic data")
     diet_constraints: DietConstraints = Field(..., description="Diet constraints from Function 1")
     goal_profile: GoalProfile = Field(..., description="Goal profile from Function 2")
-    days: int = Field(default=1, ge=1, le=30, description="Number of days to generate")
+    days: int = Field(default=1, ge=1, le=7, description="Number of days to generate")
 
 
 class MealPlanGenerationOutput(BaseModel):
@@ -236,7 +236,7 @@ class MealPlanPipelineRequest(BaseModel):
     activity_level: Optional[str] = Field(None, description="Activity level (fallback)")
     
     # Generation parameters
-    days: int = Field(default=1, ge=1, le=30, description="Number of days")
+    days: int = Field(default=1, ge=1, le=7, description="Number of days")
     
     # Recipe database (optional - uses mock if not provided)
     recipe_database: Optional[List[Dict[str, Any]]] = Field(

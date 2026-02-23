@@ -22,6 +22,7 @@ from app.api.schemas.meal_plan_pipeline import (
     MealPlanGenerationOutput
 )
 import logging
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -93,16 +94,18 @@ class MealPlanGenerator:
         body_profile: BodyProfile,
         diet_constraints: DietConstraints,
         goal_profile: GoalProfile,
-        recipe_database: Optional[List[Dict[str, Any]]] = None
+        recipe_database: Optional[List[Dict[str, Any]]] = None,
+        days: int = 1
     ) -> MealPlanGenerationOutput:
         """
-        Generate a personalized meal plan.
+        Generate a personalized meal plan for N days.
         
         Processing Flow:
         1. Determine target daily calories
         2. Filter candidate recipes by diet constraints
         3. Distribute calories across meals
-        4. Select recipes for each meal type
+        4. Generate meals for each day with recipe variety
+           (different recipes per day while respecting user constraints)
         5. Balance macros
         6. Assemble final meal plan
         
@@ -111,21 +114,12 @@ class MealPlanGenerator:
             diet_constraints: Diet constraints from Function 1
             goal_profile: Goal profile from Function 2
             recipe_database: Optional recipe database (mock if None)
+            days: Number of days to generate meals for (default: 1, max: 30)
             
         Returns:
             MealPlanGenerationOutput with generated meal plan
-            
-        Example:
-            >>> generator = MealPlanGenerator()
-            >>> result = generator.generate(
-            ...     body_profile=BodyProfile(...),
-            ...     diet_constraints=DietConstraints(...),
-            ...     goal_profile=GoalProfile(...)
-            ... )
-            >>> result.meal_plan.daily_calories
-            2000
         """
-        logger.info("Starting meal plan generation")
+        logger.info(f"Starting meal plan generation for {days} days")
         
         # Step 1: Determine target daily calories
         target_calories = self._get_target_calories(body_profile, goal_profile)
@@ -134,7 +128,7 @@ class MealPlanGenerator:
         if recipe_database is None:
             recipe_database = self._get_mock_recipe_database()
         
-        # Step 3: Filter candidate recipes
+        # Step 3: Filter candidate recipes (respects user constraints)
         candidates = self._filter_recipes(recipe_database, diet_constraints)
         
         if not candidates:
@@ -145,11 +139,12 @@ class MealPlanGenerator:
         # Step 4: Distribute calories across meals
         meal_calorie_targets = self._distribute_calories(target_calories)
         
-        # Step 5: Select recipes for each meal
-        meals = self._select_meals(
+        # Step 5: Generate meals for N days with variety
+        meals = self._select_meals_with_variety(
             candidates,
             meal_calorie_targets,
-            goal_profile
+            goal_profile,
+            days
         )
         
         # Step 6: Calculate totals
@@ -157,7 +152,7 @@ class MealPlanGenerator:
         
         # Step 7: Build meal plan
         meal_plan = MealPlan(
-            daily_calories=total_calories,
+            daily_calories=total_calories / days if days > 0 else total_calories,
             meals=meals,
             total_protein_g=total_protein,
             total_carbs_g=total_carbs,
@@ -167,13 +162,14 @@ class MealPlanGenerator:
         # Metadata
         metadata = {
             "target_calories": target_calories,
-            "calorie_match_percentage": (total_calories / target_calories * 100),
+            "calorie_match_percentage": (total_calories / (target_calories * days) * 100) if days > 0 else 0,
             "candidate_recipes_count": len(candidates),
-            "meals_generated": len(meals)
+            "meals_generated": len(meals),
+            "days_generated": days
         }
         
-        logger.info(f"Meal plan generated: {len(meals)} meals, "
-                   f"{total_calories:.0f} calories (target: {target_calories:.0f})")
+        logger.info(f"Meal plan generated: {len(meals)} meals over {days} days, "
+                   f"{total_calories:.0f} total calories (target: {target_calories * days:.0f})")
         
         return MealPlanGenerationOutput(
             meal_plan=meal_plan,
@@ -285,15 +281,10 @@ class MealPlanGenerator:
         goal_profile: GoalProfile
     ) -> List[MealItem]:
         """
-        Select specific recipes for each meal type.
+        Select specific recipes for each meal type (SINGLE DAY).
         
-        Args:
-            candidates: Filtered candidate recipes
-            meal_targets: Calorie targets per meal type
-            goal_profile: User's goal profile
-            
-        Returns:
-            List of selected MealItems
+        This is the old method - kept for backward compatibility.
+        Use _select_meals_with_variety for multi-day planning.
         """
         meals = []
         
@@ -312,8 +303,10 @@ class MealPlanGenerator:
             # Sort by score (highest first)
             scored_recipes.sort(key=lambda x: x[1], reverse=True)
             
-            # Select top recipe
-            selected_recipe = scored_recipes[0][0]
+            # Select from top 3-5 recipes (for variety) instead of always picking #1
+            # This ensures different recipes across different meal plans
+            top_n = min(5, len(scored_recipes))  # Use top 5 recipes as pool
+            selected_recipe = random.choice(scored_recipes[:top_n])[0]
             
             # Calculate servings to match calorie target
             recipe_calories_per_serving = selected_recipe.get('calories_per_serving', 400)
@@ -333,6 +326,93 @@ class MealPlanGenerator:
             )
             
             meals.append(meal)
+        
+        return meals
+    
+    def _select_meals_with_variety(
+        self,
+        candidates: List[Dict[str, Any]],
+        meal_targets: Dict[MealType, float],
+        goal_profile: GoalProfile,
+        days: int = 1
+    ) -> List[MealItem]:
+        """
+        Select recipes for N days with VARIETY.
+        
+        Strategy:
+        1. For each meal type on each day, score all recipes
+        2. Rotate through top N recipes per meal type (not per day)
+        3. Each meal type gets different recipe rotation:
+           - Breakfast Day 1: recipe #1, Breakfast Day 2: recipe #2, etc.
+           - Lunch Day 1: recipe #2, Lunch Day 2: recipe #3, etc.
+           - Dinner Day 1: recipe #3, Dinner Day 2: recipe #4, etc.
+           - Snack Day 1: recipe #4, Snack Day 2: recipe #5, etc.
+        4. Respects all dietary constraints throughout
+        
+        Args:
+            candidates: Filtered recipes that respect user constraints
+            meal_targets: Calorie targets per meal type
+            goal_profile: User's goal profile
+            days: Number of days to generate for
+            
+        Returns:
+            List of MealItem for N days (personalized + varied)
+        """
+        meals = []
+        
+        # Track meal type index for rotation offset
+        meal_type_list = list(meal_targets.keys())
+        
+        for day_num in range(days):
+            logger.info(f"  Generating meals for day {day_num + 1}/{days}")
+            
+            for meal_type_idx, meal_type in enumerate(meal_type_list):
+                target_calories = meal_targets[meal_type]
+                
+                # Score and rank recipes for this meal type
+                scored_recipes = [
+                    (recipe, self.recipe_scorer.calculate_score(recipe, goal_profile))
+                    for recipe in candidates
+                    if self._is_appropriate_for_meal_type(recipe, meal_type)
+                ]
+                
+                if not scored_recipes:
+                    logger.warning(f"No recipes available for {meal_type} on day {day_num + 1}")
+                    continue
+                
+                # Sort by score (highest first)
+                scored_recipes.sort(key=lambda x: x[1], reverse=True)
+                
+                # Rotate through top N recipes per meal type, not per day
+                # Example: Breakfast uses (day 0 + offset 0), Lunch uses (day 0 + offset 1), etc.
+                top_n = min(7, len(scored_recipes))  # Consider top 7 recipes for rotation
+                rotation_index = (day_num + meal_type_idx) % top_n
+                selected_recipe = scored_recipes[rotation_index][0]
+                
+                recipe_id = selected_recipe['id']
+                
+                # Log recipe selection (for debugging)
+                logger.debug(f"    {meal_type}: Using recipe #{rotation_index + 1} "
+                           f"'{selected_recipe.get('name')}' (score: {scored_recipes[rotation_index][1]:.1f})")
+                
+                # Calculate servings to match calorie target
+                recipe_calories_per_serving = selected_recipe.get('calories_per_serving', 400)
+                servings = target_calories / recipe_calories_per_serving
+                servings = round(servings, 2)
+                
+                # Create meal item
+                meal = MealItem(
+                    meal_type=meal_type,
+                    recipe_id=recipe_id,
+                    recipe_name=selected_recipe.get('name', 'Unknown'),
+                    servings=servings,
+                    estimated_calories=target_calories,
+                    protein_g=selected_recipe.get('protein_g', 0) * servings,
+                    carbs_g=selected_recipe.get('carbs_g', 0) * servings,
+                    fat_g=selected_recipe.get('fat_g', 0) * servings
+                )
+                
+                meals.append(meal)
         
         return meals
     
@@ -460,10 +540,11 @@ def generate_meal_plan(
     body_profile: BodyProfile,
     diet_constraints: DietConstraints,
     goal_profile: GoalProfile,
-    recipe_database: Optional[List[Dict[str, Any]]] = None
+    recipe_database: Optional[List[Dict[str, Any]]] = None,
+    days: int = 1
 ) -> MealPlanGenerationOutput:
     """
-    Convenience function to generate meal plan.
+    Convenience function to generate meal plan for N days.
     
     This is the main entry point for Function 3.
     
@@ -472,9 +553,10 @@ def generate_meal_plan(
         diet_constraints: Diet constraints from Function 1
         goal_profile: Goal profile from Function 2
         recipe_database: Optional recipe database
+        days: Number of days to generate meals for (1-30)
         
     Returns:
         MealPlanGenerationOutput with meal plan
     """
     generator = MealPlanGenerator()
-    return generator.generate(body_profile, diet_constraints, goal_profile, recipe_database)
+    return generator.generate(body_profile, diet_constraints, goal_profile, recipe_database, days)

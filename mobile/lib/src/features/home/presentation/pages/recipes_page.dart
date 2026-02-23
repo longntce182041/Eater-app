@@ -89,15 +89,20 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
                         child: TextField(
                           controller: _searchController,
                           onChanged: _onSearch,
+                          style: const TextStyle(
+                            color: Color(0xFF000000),
+                            fontSize: 16,
+                          ),
+                          cursorColor: const Color(0xFF000000),
                           decoration: InputDecoration(
                             hintText: 'Search',
                             hintStyle: TextStyle(
-                              color: Colors.grey[400],
+                              color: const Color.fromARGB(255, 0, 0, 0),
                               fontSize: 16,
                             ),
                             prefixIcon: Icon(
                               Icons.search,
-                              color: Colors.grey[400],
+                              color: const Color.fromARGB(255, 0, 0, 0),
                             ),
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(

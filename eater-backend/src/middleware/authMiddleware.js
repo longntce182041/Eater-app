@@ -12,7 +12,10 @@ function protect(req, res, next) {
 
   try {
     const payload = jwt.verify(token, jwtConfig.secret);
-    req.user = payload; // { id, role, ... }
+    req.user = {
+      ...payload,
+      id: payload.id || payload.sub || payload.userId,
+    };
     return next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid or expired token" });

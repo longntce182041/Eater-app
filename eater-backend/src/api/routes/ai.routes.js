@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const aiController = require("../controllers/ai.controller");
 const aiValidators = require("../validators/ai.validators");
-// const authMiddleware = require("../../middleware/auth"); // Uncomment if auth is needed
+const { protect } = require("../../middleware/authMiddleware");
 
 /**
  * @route   POST /api/ai/meal-plan/generate
@@ -11,7 +11,7 @@ const aiValidators = require("../validators/ai.validators");
  */
 router.post(
   "/meal-plan/generate",
-  // authMiddleware, // Uncomment to require authentication
+  protect,
   aiValidators.validateMealPlanGeneration,
   aiController.generateMealPlan,
 );
@@ -48,6 +48,17 @@ router.get(
   // authMiddleware,
   aiValidators.validateGetMealPlans,
   aiController.getUserMealPlans,
+);
+
+/**
+ * @route   GET /api/ai/meal-plans/latest
+ * @desc    Get user's latest meal plan with items
+ * @access  Private
+ */
+router.get(
+  "/meal-plans/latest",
+  protect,
+  aiController.getLatestMealPlan,
 );
 
 /**

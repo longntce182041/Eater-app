@@ -15,17 +15,26 @@ class ProfilePage extends ConsumerWidget {
     final state = ref.watch(profileNotifierProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F1E8),
       appBar: AppBar(
-        title: const Text('Profile'),
+        backgroundColor: const Color(0xFFF5F1E8),
         elevation: 0,
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            color: Color(0xFF2D2D2D),
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: const Icon(Icons.edit, color: Color(0xFF2D2D2D)),
             onPressed: () =>
                 ref.read(profileNotifierProvider.notifier).toggleEdit(),
           ),
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, color: Color(0xFF2D2D2D)),
             onPressed: () => _handleLogout(context, ref),
           ),
         ],
@@ -98,7 +107,7 @@ class _ProfileContentState extends State<_ProfileContent> {
   Widget build(BuildContext context) {
     final isEditing = widget.isEditing;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       child: Form(
         key: _formKey,
         child: Column(
@@ -106,9 +115,13 @@ class _ProfileContentState extends State<_ProfileContent> {
           children: [
             const Text(
               'Basic Profile',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D2D2D),
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             _textField(
               'First Name',
               firstName ?? '',
@@ -173,9 +186,13 @@ class _ProfileContentState extends State<_ProfileContent> {
             const SizedBox(height: 24),
             const Text(
               'Dietary References',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D2D2D),
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             _textField(
               'Diet Type Id',
               dietTypeId ?? '',
@@ -226,11 +243,24 @@ class _ProfileContentState extends State<_ProfileContent> {
             if (isEditing)
               SizedBox(
                 width: double.infinity,
+                height: 56,
                 child: ElevatedButton(
                   onPressed: _onSave,
-                  child: const Text('Save Changes'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF9800),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 4,
+                  ),
+                  child: const Text(
+                    'Save Changes',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -281,13 +311,28 @@ class _ProfileContentState extends State<_ProfileContent> {
     required ValueChanged<String> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
         initialValue: initial,
         enabled: enabled,
+        style: const TextStyle(color: Color(0xFF000000)),
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
+          labelStyle: const TextStyle(color: Color(0xFF000000)),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.transparent),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.transparent),
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.transparent),
+          ),
         ),
         onChanged: onChanged,
       ),
@@ -301,14 +346,29 @@ class _ProfileContentState extends State<_ProfileContent> {
     required ValueChanged<String> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
         initialValue: initial,
         enabled: enabled,
         keyboardType: TextInputType.number,
+        style: const TextStyle(color: Color(0xFF000000)),
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
+          labelStyle: const TextStyle(color: Color(0xFF000000)),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.transparent),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.transparent),
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.transparent),
+          ),
         ),
         onChanged: onChanged,
       ),
@@ -323,20 +383,41 @@ class _ProfileContentState extends State<_ProfileContent> {
     required ValueChanged<String?> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 5,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: value,
-            isExpanded: true,
-            items: options
-                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                .toList(),
-            onChanged: enabled ? onChanged : null,
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: const TextStyle(color: Color(0xFF000000)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.transparent),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.transparent),
+            ),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              items: options
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: enabled ? onChanged : null,
+            ),
           ),
         ),
       ),

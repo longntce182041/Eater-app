@@ -40,7 +40,7 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
     final dietTypesAsync = ref.watch(dietTypesProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE6D9F5), // Light purple background
+      backgroundColor: const Color(0xFFF5F1E8),
       body: SafeArea(
         child: Column(
           children: [
@@ -72,14 +72,14 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Color(0xFF2D2D2D),
                     ),
                   ),
                   const SizedBox(height: 8),
                   // Subtitle
                   const Text(
                     'Which diet best fits your preferences?',
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
               ),
@@ -153,7 +153,7 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
       child: Container(
         height: 8,
         decoration: BoxDecoration(
-          color: isActive ? color : color.withOpacity(0.3),
+          color: isActive ? color : color.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(4),
         ),
       ),
@@ -174,7 +174,7 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -306,7 +306,7 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: const Center(

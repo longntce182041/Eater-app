@@ -9,14 +9,25 @@ const { RecipeNutrition } = require('../../models/recipe_nutrion');
 class RecipeService {
     // 1. Get All
     async getAllRecipes(query) {
-        const { keyword, status, page = 1, limit = 10 } = query;
+        const { keyword, status = 'published', page = 1, limit = 10, maxCookingTime } = query;
         let filter = {};
 
+        // Search in both name and description
         if (keyword) {
-            filter.name = { $regex: keyword, $options: "i" };
+            filter.$or = [
+                { name: { $regex: keyword, $options: "i" } },
+                { description: { $regex: keyword, $options: "i" } }
+            ];
         }
+
+        // Filter by status (default: published for mobile apps)
         if (status) {
             filter.status = status;
+        }
+
+        // Filter by max cooking time (useful for quick meal searches)
+        if (maxCookingTime) {
+            filter.cookingTime = { $lte: parseInt(maxCookingTime) };
         }
 
         const skip = (parseInt(page) - 1) * parseInt(limit);

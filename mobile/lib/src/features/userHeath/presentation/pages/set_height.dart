@@ -86,8 +86,10 @@ class _SetHeightPageState extends ConsumerState<SetHeightPage> {
               controller: controller,
               keyboardType: TextInputType.number,
               autofocus: true,
+              style: const TextStyle(color: Color(0xFF000000)),
               decoration: InputDecoration(
                 hintText: 'Height in cm (120-250)',
+                hintStyle: const TextStyle(color: Color(0xFF000000)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -175,7 +177,7 @@ class _SetHeightPageState extends ConsumerState<SetHeightPage> {
                   const SizedBox(height: 8),
                   Text(
                     'How tall are you?',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 16, color: Color(0xFF000000)),
                   ),
                 ],
               ),
@@ -195,7 +197,7 @@ class _SetHeightPageState extends ConsumerState<SetHeightPage> {
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -254,7 +256,7 @@ class _SetHeightPageState extends ConsumerState<SetHeightPage> {
                                       child: Icon(
                                         Icons.edit_outlined,
                                         size: 20,
-                                        color: Colors.grey[600],
+                                        color: Color(0xFF000000),
                                       ),
                                     ),
                                   ],

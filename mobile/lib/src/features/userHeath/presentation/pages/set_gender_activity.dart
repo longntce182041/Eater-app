@@ -3,47 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/profile_setup_provider.dart';
 
-class SetWeightPage extends ConsumerStatefulWidget {
-  const SetWeightPage({super.key});
+class SetGenderActivityPage extends ConsumerStatefulWidget {
+  const SetGenderActivityPage({super.key});
 
   @override
-  ConsumerState<SetWeightPage> createState() => _SetWeightPageState();
+  ConsumerState<SetGenderActivityPage> createState() =>
+      _SetGenderActivityPageState();
 }
 
-class _SetWeightPageState extends ConsumerState<SetWeightPage> {
-  late TextEditingController _weightController;
-  String _selectedGoal = 'maintain';
-
-  @override
-  void initState() {
-    super.initState();
-    _weightController = TextEditingController(text: '70.0');
-  }
-
-  @override
-  void dispose() {
-    _weightController.dispose();
-    super.dispose();
-  }
+class _SetGenderActivityPageState extends ConsumerState<SetGenderActivityPage> {
+  String _selectedGender = 'male';
 
   void _handleContinue() {
-    final weight = double.tryParse(_weightController.text);
-    if (weight == null || weight < 30 || weight > 300) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid weight (30-300 kg)'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     final userId = ref.read(profileSetupProvider('')).data.userId ?? '';
-    ref.read(profileSetupProvider(userId).notifier).setWeight(weight);
-    ref
-        .read(profileSetupProvider(userId).notifier)
-        .setWeightGoal(_selectedGoal);
-    context.push('/set-gender');
+    ref.read(profileSetupProvider(userId).notifier).setGender(_selectedGender);
+    context.push('/profile-summary');
   }
 
   @override
@@ -57,7 +31,7 @@ class _SetWeightPageState extends ConsumerState<SetWeightPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Weight & Goal',
+                'About You',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
@@ -66,48 +40,14 @@ class _SetWeightPageState extends ConsumerState<SetWeightPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Tell us about your weight',
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                'Just a few more details',
+                style: TextStyle(fontSize: 16, color: Color(0xFF000000)),
               ),
-              const SizedBox(height: 40),
-
-              // Weight Input
-              const Text(
-                'Current Weight (kg)',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2D2D2D),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _weightController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  hintText: 'Enter your weight',
-                  suffix: const Text('kg'),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                ),
-                style: const TextStyle(fontSize: 18),
-              ),
-
               const SizedBox(height: 32),
 
-              // Weight Goal
+              // Gender Selection
               const Text(
-                'Weight Goal',
+                'Gender',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -116,17 +56,13 @@ class _SetWeightPageState extends ConsumerState<SetWeightPage> {
               ),
               const SizedBox(height: 12),
 
-              _buildGoalOption('lose', 'Lose Weight', Icons.trending_down),
+              _buildGenderOption('male', 'Male', Icons.male),
               const SizedBox(height: 12),
-              _buildGoalOption(
-                'maintain',
-                'Maintain Weight',
-                Icons.horizontal_rule,
-              ),
+              _buildGenderOption('female', 'Female', Icons.female),
               const SizedBox(height: 12),
-              _buildGoalOption('gain', 'Gain Weight', Icons.trending_up),
+              _buildGenderOption('other', 'Other', Icons.transgender),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
 
               SizedBox(
                 width: double.infinity,
@@ -154,10 +90,10 @@ class _SetWeightPageState extends ConsumerState<SetWeightPage> {
     );
   }
 
-  Widget _buildGoalOption(String value, String label, IconData icon) {
-    final isSelected = _selectedGoal == value;
+  Widget _buildGenderOption(String value, String label, IconData icon) {
+    final isSelected = _selectedGender == value;
     return GestureDetector(
-      onTap: () => setState(() => _selectedGoal = value),
+      onTap: () => setState(() => _selectedGender = value),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(

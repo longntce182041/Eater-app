@@ -180,7 +180,7 @@ class DietaryReferencesScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -192,7 +192,7 @@ class DietaryReferencesScreen extends ConsumerWidget {
                       ),
                       child: dietTypesAsync.when(
                         data: (list) => DropdownButtonFormField<String>(
-                          value: state.dietTypeId,
+                          initialValue: state.dietTypeId,
                           items: list
                               .map(
                                 (d) => DropdownMenuItem(
@@ -204,8 +204,11 @@ class DietaryReferencesScreen extends ConsumerWidget {
                           onChanged: (v) => ref
                               .read(dietaryRefProvider.notifier)
                               .setDietType(v),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Diet type',
+                            labelStyle: const TextStyle(
+                              color: Color(0xFF000000),
+                            ),
                             border: InputBorder.none,
                           ),
                         ),
@@ -414,7 +417,7 @@ class _NumberField extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -424,6 +427,7 @@ class _NumberField extends StatelessWidget {
       child: TextField(
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        style: const TextStyle(color: Color(0xFF000000)),
         decoration: InputDecoration(labelText: label, border: InputBorder.none),
         controller: TextEditingController(text: value),
         onChanged: onChanged,
@@ -450,7 +454,7 @@ class _TextAreaField extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -459,6 +463,7 @@ class _TextAreaField extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
         maxLines: 4,
+        style: const TextStyle(color: Color(0xFF000000)),
         decoration: InputDecoration(labelText: label, border: InputBorder.none),
         controller: TextEditingController(text: value),
         onChanged: onChanged,

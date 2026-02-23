@@ -5,6 +5,7 @@ const { MealPlanItem } = require("../../models/meal_plan_item");
 const { UserHealthMetrics } = require("../../models/user_heath_metrics");
 const { Recipe } = require("../../models/Recipe");
 const aiClient = require("../../integrations/ai/aiClient");
+const recipeService = require("./recipe.service");
 const mongoose = require("mongoose");
 
 /**
@@ -109,21 +110,73 @@ async function prepareUserDataForAI(userId) {
  */
 async function generateAIMealPlan(userId, days = 7, useML = false) {
   try {
-    // Prepare user data
-    const userData = await prepareUserDataForAI(userId);
+    // Prepare user data and recipes in parallel
+    const [userData, recipes] = await Promise.all([
+      prepareUserDataForAI(userId),
+      recipeService.getRecipesForAI(),
+    ]);
 
-    // Create request payload
+    // Debug: Log user data
+    console.log("User data for AI:", JSON.stringify(userData, null, 2));
+
+    // Transform data to match complete-pipeline endpoint format
     const payload = {
       user_id: userId.toString(),
       days: days,
-      use_ml: useML,
-      user_data: userData,
+
+      // Dietary preferences
+      diet_types: [], // TODO: Map dietTypeId to diet types array
+      allergies: userData.dietaryPreferences?.allergens || [],
+      disliked_ingredients: [
+        ...(userData.dietaryPreferences?.excludedIngredients || []),
+        ...(userData.dietaryPreferences?.restrictions || []),
+      ],
+
+      // Health goal (map from profile.healthGoals to HealthGoalType enum)
+      health_goal: mapHealthGoal(userData.profile?.healthGoals),
+      target_weight: userData.profile?.goalWeight || null,
+      timeline_weeks: null, // Optional
+
+      // Body profile
+      body_profile: userData.healthMetrics
+        ? {
+            age: userData.profile?.age || 30,
+            gender: userData.profile?.gender || "other",
+            bmi: userData.healthMetrics.bmi,
+            bmr: userData.healthMetrics.bmr,
+            tdee: userData.healthMetrics.tdee,
+            activity_level: "moderate", // TODO: Get from profile
+            weight_kg: userData.profile?.weight || null,
+            height_cm: userData.profile?.height || null,
+          }
+        : null,
+
+      // Fallback fields if body_profile not available - ensure required fields are set
+      bmr: userData.healthMetrics?.bmr || userData.profile?.bmr || 1500,
+      tdee: userData.healthMetrics?.tdee || userData.profile?.tdee || 2000,
+      weight_kg: userData.profile?.weight || 70,
+      height_cm: userData.profile?.height || 170,
+      age: userData.profile?.age || 30,
+      gender: userData.profile?.gender || "other",
+      activity_level: "moderate",
+
+      // Recipe database
+      recipe_database: recipes,
     };
 
     console.log("Sending meal plan generation request to AI service:", {
       userId,
       days,
       useML,
+      hasBodyProfile: !!payload.body_profile,
+      hasFallbackFields: !!(
+        payload.bmr &&
+        payload.tdee &&
+        payload.weight_kg &&
+        payload.height_cm &&
+        payload.age &&
+        payload.gender
+      ),
     });
 
     // Call AI service
@@ -142,6 +195,20 @@ async function generateAIMealPlan(userId, days = 7, useML = false) {
 }
 
 /**
+ * Map user health goals to AI service HealthGoalType enum
+ */
+function mapHealthGoal(healthGoals) {
+  if (!healthGoals) return "maintain";
+
+  const goal = healthGoals.toLowerCase();
+  if (goal.includes("lose") || goal.includes("loss")) return "weight_loss";
+  if (goal.includes("gain") || goal.includes("muscle")) return "muscle_gain";
+  if (goal.includes("maintain")) return "maintain";
+
+  return "maintain"; // default
+}
+
+/**
  * Save AI-generated meal plan to database
  * @param {string} userId - User ID
  * @param {Object} aiMealPlan - Meal plan data from AI pipeline
@@ -150,15 +217,28 @@ async function generateAIMealPlan(userId, days = 7, useML = false) {
  */
 async function saveAIMealPlanToDatabase(userId, aiMealPlan, options = {}) {
   try {
+    // Debug: Log the AI response structure
+    console.log("AI Meal Plan Response:", JSON.stringify(aiMealPlan, null, 2));
+
     // Extract meal plan data - handle both old and new response formats
     const mealPlanData = aiMealPlan.meal_plan || aiMealPlan;
     const meals = mealPlanData.meals || [];
-    const days = mealPlanData.days || [];
+    const daysData = mealPlanData.days || [];
+
+    console.log(`Found ${meals.length} meals in flat array`);
+    console.log(`Found ${Array.isArray(daysData) ? daysData.length : 0} days`);
 
     // Use the flat meals array if available, otherwise use days structure
     const allMeals =
-      meals.length > 0 ? meals : days.flatMap((day) => day.meals || []);
-    const numDays = options.days || days.length || 1;
+      meals.length > 0
+        ? meals
+        : Array.isArray(daysData)
+          ? daysData.flatMap((day) => day.meals || [])
+          : [];
+    const numDays =
+      options.days || (Array.isArray(daysData) ? daysData.length : 1);
+
+    console.log(`Total meals to save: ${allMeals.length}`);
 
     // Calculate totals
     const totalCalories = allMeals.reduce(
@@ -256,6 +336,8 @@ async function saveMealPlan(userId, mealPlanData) {
       userId,
       date: new Date(),
       ...mealPlanData,
+      status: "active", // Override any status from AI service with valid enum value
+      aiGenerated: true, // Mark as AI-generated meal plan
     });
 
     await mealPlan.save();
@@ -342,12 +424,16 @@ async function generateAndSaveMealPlan(userId, options = {}) {
     // Generate meal plan using AI service
     const aiMealPlan = await generateAIMealPlan(userId, days, useML);
 
-    // Save meal plan to database
-    const savedMealPlan = await saveMealPlan(userId, aiMealPlan);
+    // Save meal plan and items to database
+    const result = await saveAIMealPlanToDatabase(userId, aiMealPlan, {
+      days,
+    });
 
     return {
       success: true,
-      mealPlan: savedMealPlan,
+      mealPlan: result.mealPlan,
+      items: result.items,
+      summary: result.summary,
       message: "Meal plan generated and saved successfully",
     };
   } catch (error) {

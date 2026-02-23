@@ -63,7 +63,7 @@ class ProfilePage extends ConsumerWidget {
   }
 }
 
-class _ProfileContent extends StatefulWidget {
+class _ProfileContent extends ConsumerStatefulWidget {
   final ProfileCombinedData data;
   final bool isEditing;
   final ValueChanged<Map<String, dynamic>> onSave;
@@ -75,16 +75,15 @@ class _ProfileContent extends StatefulWidget {
   });
 
   @override
-  State<_ProfileContent> createState() => _ProfileContentState();
+  ConsumerState<_ProfileContent> createState() => _ProfileContentState();
 }
 
-class _ProfileContentState extends State<_ProfileContent> {
+class _ProfileContentState extends ConsumerState<_ProfileContent> {
   final _formKey = GlobalKey<FormState>();
 
   late String? firstName = widget.data.profile.firstName ?? '';
   late String? lastName = widget.data.profile.lastName ?? '';
   late String? phoneNumber = widget.data.profile.phoneNumber ?? '';
-  late String? avatar = widget.data.profile.avatar ?? '';
   late int age = widget.data.profile.age;
   late String gender = widget.data.profile.gender;
   late double height = widget.data.profile.height;
@@ -126,63 +125,62 @@ class _ProfileContentState extends State<_ProfileContent> {
               'First Name',
               firstName ?? '',
               enabled: isEditing,
-              onChanged: (v) => firstName = v,
+              onChanged: (v) => setState(() => firstName = v),
             ),
             _textField(
               'Last Name',
               lastName ?? '',
               enabled: isEditing,
-              onChanged: (v) => lastName = v,
+              onChanged: (v) => setState(() => lastName = v),
             ),
             _textField(
               'Phone Number',
               phoneNumber ?? '',
               enabled: isEditing,
-              onChanged: (v) => phoneNumber = v,
-            ),
-            _textField(
-              'Avatar URL',
-              avatar ?? '',
-              enabled: isEditing,
-              onChanged: (v) => avatar = v,
+              onChanged: (v) => setState(() => phoneNumber = v),
             ),
             _numberField(
               'Age',
               age.toString(),
               enabled: isEditing,
-              onChanged: (v) => age = int.tryParse(v) ?? age,
+              onChanged: (v) => setState(() => age = int.tryParse(v) ?? age),
             ),
             _dropdownField(
               'Gender',
               gender,
               ['male', 'female', 'other'],
               enabled: isEditing,
-              onChanged: (v) => gender = v!,
+              onChanged: (v) => setState(() => gender = v!),
             ),
             _numberField(
               'Height (cm)',
               height.toString(),
               enabled: isEditing,
-              onChanged: (v) => height = double.tryParse(v) ?? height,
+              onChanged: (v) =>
+                  setState(() => height = double.tryParse(v) ?? height),
             ),
             _numberField(
               'Weight (kg)',
               weight.toString(),
               enabled: isEditing,
-              onChanged: (v) => weight = double.tryParse(v) ?? weight,
+              onChanged: (v) =>
+                  setState(() => weight = double.tryParse(v) ?? weight),
             ),
             _numberField(
               'Goal Weight (kg)',
               (goalWeight ?? '').toString(),
               enabled: isEditing,
-              onChanged: (v) => goalWeight = double.tryParse(v),
+              onChanged: (v) => setState(() => goalWeight = double.tryParse(v)),
             ),
             _textField(
               'Health Goals',
               healthGoals ?? '',
               enabled: isEditing,
-              onChanged: (v) => healthGoals = v,
+              onChanged: (v) => setState(() => healthGoals = v),
             ),
+            const SizedBox(height: 24),
+            if (widget.data.healthMetrics != null)
+              _HealthMetricsSection(metrics: widget.data.healthMetrics!),
             const SizedBox(height: 24),
             const Text(
               'Dietary References',
@@ -193,25 +191,25 @@ class _ProfileContentState extends State<_ProfileContent> {
               ),
             ),
             const SizedBox(height: 16),
-            _textField(
-              'Diet Type Id',
-              dietTypeId ?? '',
-              enabled: isEditing,
-              onChanged: (v) => dietTypeId = v.isEmpty ? null : v,
+            _DietTypeDropdown(
+              value: dietTypeId,
+              enabled: widget.isEditing,
+              onChanged: (v) => setState(() => dietTypeId = v),
+              ref: ref,
             ),
             _dropdownField(
               'Activity Level',
               activityLevel,
               ['sedentary', 'light', 'moderate', 'active', 'very active'],
               enabled: isEditing,
-              onChanged: (v) => activityLevel = v!,
+              onChanged: (v) => setState(() => activityLevel = v!),
             ),
             _dropdownField(
               'Cooking Skill',
               cookingSkillLevel,
               ['beginner', 'intermediate', 'advanced'],
               enabled: isEditing,
-              onChanged: (v) => cookingSkillLevel = v!,
+              onChanged: (v) => setState(() => cookingSkillLevel = v!),
             ),
             _numberField(
               'Available Cooking Time (min)',
@@ -231,13 +229,13 @@ class _ProfileContentState extends State<_ProfileContent> {
               'Allergies (comma-separated)',
               allergiesText,
               enabled: isEditing,
-              onChanged: (v) => allergiesText = v,
+              onChanged: (v) => setState(() => allergiesText = v),
             ),
             _textField(
               'Dislikes (comma-separated)',
               dislikesText,
               enabled: isEditing,
-              onChanged: (v) => dislikesText = v,
+              onChanged: (v) => setState(() => dislikesText = v),
             ),
             const SizedBox(height: 24),
             if (isEditing)
@@ -284,7 +282,6 @@ class _ProfileContentState extends State<_ProfileContent> {
       'firstName': firstName?.isNotEmpty == true ? firstName : '',
       'lastName': lastName?.isNotEmpty == true ? lastName : '',
       'phoneNumber': phoneNumber?.isNotEmpty == true ? phoneNumber : '',
-      'avatar': avatar?.isNotEmpty == true ? avatar : '',
       'age': age,
       'gender': gender,
       'height': height,
@@ -385,21 +382,13 @@ class _ProfileContentState extends State<_ProfileContent> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
         child: InputDecorator(
           decoration: InputDecoration(
             labelText: label,
             labelStyle: const TextStyle(color: Color(0xFF000000)),
+            filled: true,
+            fillColor: Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.transparent),
@@ -408,14 +397,244 @@ class _ProfileContentState extends State<_ProfileContent> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.transparent),
             ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.transparent),
+            ),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: value,
               isExpanded: true,
+              style: const TextStyle(color: Color(0xFF000000)),
               items: options
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .map(
+                    (e) => DropdownMenuItem(
+                      value: e,
+                      child: Text(
+                        e,
+                        style: const TextStyle(color: Color(0xFF000000)),
+                      ),
+                    ),
+                  )
                   .toList(),
+              onChanged: enabled ? onChanged : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HealthMetricsSection extends StatelessWidget {
+  final HealthMetricsModel metrics;
+
+  const _HealthMetricsSection({required this.metrics});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Health Metrics',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2D2D2D),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF8F0),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFFE0CC), width: 1),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _MetricRow('BMI', '${metrics.bmi.toStringAsFixed(1)}', 'kg/m²'),
+              const SizedBox(height: 12),
+              _MetricRow(
+                'BMR',
+                '${metrics.bmr.toStringAsFixed(0)}',
+                'kcal/day',
+              ),
+              const SizedBox(height: 12),
+              _MetricRow(
+                'TDEE',
+                '${metrics.tdee.toStringAsFixed(0)}',
+                'kcal/day',
+              ),
+              const SizedBox(height: 12),
+              _MetricRow('Body Category', metrics.bodyCategory, ''),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MetricRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+
+  const _MetricRow(this.label, this.value, this.unit);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF666666),
+          ),
+        ),
+        Row(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D2D2D),
+              ),
+            ),
+            if (unit.isNotEmpty) ...[
+              const SizedBox(width: 4),
+              Text(
+                unit,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF999999)),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DietTypeDropdown extends ConsumerWidget {
+  final String? value;
+  final bool enabled;
+  final ValueChanged<String?> onChanged;
+  final WidgetRef ref;
+
+  const _DietTypeDropdown({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+    required this.ref,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dietTypesAsync = ref.watch(dietTypesProvider);
+
+    return dietTypesAsync.when(
+      loading: () => _buildDropdownField(
+        'Diet Type',
+        value,
+        [],
+        enabled: false,
+        onChanged: onChanged,
+      ),
+      error: (err, _) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Text(
+            'Error loading diet types: $err',
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+      ),
+      data: (dietTypes) => _buildDropdownField(
+        'Diet Type',
+        value,
+        dietTypes.map((dt) => dt.id).toList(),
+        enabled: enabled,
+        onChanged: onChanged,
+        dietTypeLabels: {for (var dt in dietTypes) dt.id: dt.name},
+      ),
+    );
+  }
+
+  Widget _buildDropdownField(
+    String label,
+    String? value,
+    List<String> options, {
+    required bool enabled,
+    required ValueChanged<String?> onChanged,
+    Map<String, String>? dietTypeLabels,
+  }) {
+    // Validate that value exists in options, otherwise use null
+    final validValue = (value?.isNotEmpty ?? false) && options.contains(value)
+        ? value
+        : null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: const TextStyle(color: Color(0xFF000000)),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.transparent),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.transparent),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.transparent),
+            ),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String?>(
+              value: validValue,
+              isExpanded: true,
+              style: const TextStyle(color: Color(0xFF000000)),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text(
+                    'Select Diet Type',
+                    style: TextStyle(color: Color(0xFF000000)),
+                  ),
+                ),
+                ...options.map((id) {
+                  final label = dietTypeLabels?[id] ?? id;
+                  return DropdownMenuItem<String?>(
+                    value: id,
+                    child: Text(
+                      label,
+                      style: const TextStyle(color: Color(0xFF000000)),
+                    ),
+                  );
+                }).toList(),
+              ],
               onChanged: enabled ? onChanged : null,
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/dietary_ref_provider.dart';
+import '../../../home/domain/profile_models.dart';
 
 class SelectDietTypePage extends ConsumerStatefulWidget {
   const SelectDietTypePage({super.key});
@@ -204,7 +205,7 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
                         const SizedBox(height: 8),
                         // Description
                         Text(
-                          dietType.description,
+                          dietType.description ?? 'No description',
                           style: TextStyle(
                             fontSize: 14,
                             color: isSelected ? Colors.black54 : Colors.black54,
@@ -214,16 +215,21 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 12),
-                        // Macro ratios
-                        Text(
-                          'Carbs ${(dietType.carbRatio * 100).toInt()}% • '
-                          'Protein ${(dietType.proteinRatio * 100).toInt()}% • '
-                          'Fat ${(dietType.fatRatio * 100).toInt()}%',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isSelected ? Colors.black45 : Colors.black45,
+                        // Macro ratios (if available)
+                        if (dietType.carbRatio != null &&
+                            dietType.proteinRatio != null &&
+                            dietType.fatRatio != null)
+                          Text(
+                            'Carbs ${(dietType.carbRatio! * 100).toInt()}% • '
+                            'Protein ${(dietType.proteinRatio! * 100).toInt()}% • '
+                            'Fat ${(dietType.fatRatio! * 100).toInt()}%',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isSelected
+                                  ? Colors.black45
+                                  : Colors.black45,
+                            ),
                           ),
-                        ),
                         const SizedBox(height: 12),
                         // View diet link
                         Row(

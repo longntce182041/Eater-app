@@ -2,136 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../shared/providers/dio_provider.dart';
-import 'package:dio/dio.dart';
-
-class DietTypeModel {
-  final String id;
-  final String name;
-  final String description;
-
-  DietTypeModel({
-    required this.id,
-    required this.name,
-    required this.description,
-  });
-
-  factory DietTypeModel.fromJson(Map<String, dynamic> json) => DietTypeModel(
-    id: (json['Diet_TypeId']?.toString() ?? json['_id']?.toString() ?? ''),
-    name: json['name']?.toString() ?? '',
-    description: json['description']?.toString() ?? '',
-  );
-}
-
-final dietTypesProvider = FutureProvider<List<DietTypeModel>>((ref) async {
-  final dio = ref.watch(dioProvider);
-  final res = await dio.get('/api/health/diet-types');
-  final List list = res.data is List ? res.data : (res.data['data'] ?? []);
-  return list
-      .map((e) => DietTypeModel.fromJson(Map<String, dynamic>.from(e)))
-      .toList();
-});
-
-class DietaryRefState {
-  final String? dietTypeId;
-  final String activityLevel;
-  final String cookingSkillLevel;
-  final int availableCookingTime;
-  final int dailyCalorieTarget;
-  final String allergiesText;
-  final String dislikesText;
-  final bool isSubmitting;
-
-  DietaryRefState({
-    this.dietTypeId,
-    this.activityLevel = 'moderate',
-    this.cookingSkillLevel = 'beginner',
-    this.availableCookingTime = 30,
-    this.dailyCalorieTarget = 2000,
-    this.allergiesText = '',
-    this.dislikesText = '',
-    this.isSubmitting = false,
-  });
-
-  DietaryRefState copyWith({
-    String? dietTypeId,
-    String? activityLevel,
-    String? cookingSkillLevel,
-    int? availableCookingTime,
-    int? dailyCalorieTarget,
-    String? allergiesText,
-    String? dislikesText,
-    bool? isSubmitting,
-  }) => DietaryRefState(
-    dietTypeId: dietTypeId ?? this.dietTypeId,
-    activityLevel: activityLevel ?? this.activityLevel,
-    cookingSkillLevel: cookingSkillLevel ?? this.cookingSkillLevel,
-    availableCookingTime: availableCookingTime ?? this.availableCookingTime,
-    dailyCalorieTarget: dailyCalorieTarget ?? this.dailyCalorieTarget,
-    allergiesText: allergiesText ?? this.allergiesText,
-    dislikesText: dislikesText ?? this.dislikesText,
-    isSubmitting: isSubmitting ?? this.isSubmitting,
-  );
-}
-
-class DietaryRefNotifier extends StateNotifier<DietaryRefState> {
-  final Dio _dio;
-  DietaryRefNotifier(this._dio) : super(DietaryRefState());
-
-  void setDietType(String? id) => state = state.copyWith(dietTypeId: id);
-  void setActivityLevel(String v) => state = state.copyWith(activityLevel: v);
-  void setSkillLevel(String v) => state = state.copyWith(cookingSkillLevel: v);
-  void setCookingTime(int v) => state = state.copyWith(availableCookingTime: v);
-  void setCalorie(int v) => state = state.copyWith(dailyCalorieTarget: v);
-  void setAllergies(String v) => state = state.copyWith(allergiesText: v);
-  void setDislikes(String v) => state = state.copyWith(dislikesText: v);
-
-  List<String> _splitLines(String input) => input
-      .split(RegExp('[,\n]'))
-      .map((e) => e.trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
-
-  Future<bool> submit() async {
-    if (state.dietTypeId == null || state.dietTypeId!.isEmpty) {
-      return false;
-    }
-    state = state.copyWith(isSubmitting: true);
-    try {
-      final payload = {
-        'diet_typeId': state.dietTypeId,
-        'allergies': _splitLines(state.allergiesText),
-        'dislikesIngredients': _splitLines(state.dislikesText),
-        'activityLevel': state.activityLevel,
-        'cookingSkillLevel': state.cookingSkillLevel,
-        'available_cooking_time': state.availableCookingTime,
-        'daily_calorie_target': state.dailyCalorieTarget,
-      };
-      final res = await _dio.post(
-        '/api/health/dietary-references',
-        data: payload,
-      );
-      debugPrint('Dietary refs saved: ${res.data}');
-      state = state.copyWith(isSubmitting: false);
-      return true;
-    } on DioException catch (e) {
-      debugPrint('Error: ${e.message}');
-      debugPrint('Response: ${e.response?.data}');
-      state = state.copyWith(isSubmitting: false);
-      return false;
-    } catch (e) {
-      debugPrint('Unexpected: $e');
-      state = state.copyWith(isSubmitting: false);
-      return false;
-    }
-  }
-}
-
-final dietaryRefProvider =
-    StateNotifierProvider<DietaryRefNotifier, DietaryRefState>((ref) {
-      final dio = ref.watch(dioProvider);
-      return DietaryRefNotifier(dio);
-    });
+import '../providers/dietary_ref_provider.dart';
 
 class DietaryReferencesScreen extends ConsumerWidget {
   const DietaryReferencesScreen({super.key});
@@ -191,27 +62,56 @@ class DietaryReferencesScreen extends ConsumerWidget {
                         vertical: 4,
                       ),
                       child: dietTypesAsync.when(
-                        data: (list) => DropdownButtonFormField<String>(
-                          initialValue: state.dietTypeId,
-                          items: list
-                              .map(
-                                (d) => DropdownMenuItem(
-                                  value: d.id,
-                                  child: Text(d.name),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (v) => ref
-                              .read(dietaryRefProvider.notifier)
-                              .setDietType(v),
-                          decoration: InputDecoration(
-                            labelText: 'Diet type',
-                            labelStyle: const TextStyle(
-                              color: Color(0xFF000000),
+                        data: (list) {
+                          if (list.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text(
+                                'No diet types available',
+                                style: TextStyle(color: Colors.black54),
+                              ),
+                            );
+                          }
+
+                          // Ensure the current value exists in the items list
+                          final currentId = state.data.dietTypeId;
+                          final validValue =
+                              currentId != null &&
+                                  list.any((d) => d.id == currentId)
+                              ? currentId
+                              : null;
+
+                          // Remove any potential duplicates by ID
+                          final uniqueItems = <String, dynamic>{};
+                          for (var item in list) {
+                            uniqueItems[item.id] = item;
+                          }
+
+                          return DropdownButtonFormField<String>(
+                            key: ValueKey(validValue ?? 'no-selection'),
+                            value: validValue,
+                            items: uniqueItems.values
+                                .map(
+                                  (d) => DropdownMenuItem<String>(
+                                    value: d.id,
+                                    child: Text(d.name),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) {
+                              if (v != null) {
+                                ref
+                                    .read(dietaryRefProvider.notifier)
+                                    .setDietType(v);
+                              }
+                            },
+                            decoration: const InputDecoration(
+                              labelText: 'Diet type',
+                              labelStyle: TextStyle(color: Color(0xFF000000)),
+                              border: InputBorder.none,
                             ),
-                            border: InputBorder.none,
-                          ),
-                        ),
+                          );
+                        },
                         loading: () => const Padding(
                           padding: EdgeInsets.all(12.0),
                           child: LinearProgressIndicator(),
@@ -234,7 +134,7 @@ class DietaryReferencesScreen extends ConsumerWidget {
                         'active',
                         'very active',
                       ],
-                      selected: state.activityLevel,
+                      selected: state.data.activityLevel ?? 'moderate',
                       onSelected: (v) => ref
                           .read(dietaryRefProvider.notifier)
                           .setActivityLevel(v),
@@ -245,39 +145,47 @@ class DietaryReferencesScreen extends ConsumerWidget {
                     _ChipSelector(
                       label: 'Cooking skill',
                       values: const ['beginner', 'intermediate', 'advanced'],
-                      selected: state.cookingSkillLevel,
+                      selected: state.data.cookingSkillLevel ?? 'beginner',
                       onSelected: (v) => ref
                           .read(dietaryRefProvider.notifier)
-                          .setSkillLevel(v),
+                          .setCookingSkillLevel(v),
                     ),
                     const SizedBox(height: 16),
 
                     // Available cooking time
                     _NumberField(
                       label: 'Available cooking time (min)',
-                      value: state.availableCookingTime.toString(),
+                      value: (state.data.availableCookingTime ?? 30).toString(),
                       onChanged: (v) => ref
                           .read(dietaryRefProvider.notifier)
-                          .setCookingTime(int.tryParse(v) ?? 30),
+                          .setAvailableCookingTime(int.tryParse(v) ?? 30),
                     ),
                     const SizedBox(height: 16),
 
                     // Daily calorie target
                     _NumberField(
                       label: 'Daily calorie target (kcal)',
-                      value: state.dailyCalorieTarget.toString(),
+                      value: (state.data.dailyCalorieTarget ?? 2000).toString(),
                       onChanged: (v) => ref
                           .read(dietaryRefProvider.notifier)
-                          .setCalorie(int.tryParse(v) ?? 2000),
+                          .setDailyCalorieTarget(int.tryParse(v) ?? 2000),
                     ),
                     const SizedBox(height: 16),
 
                     // Allergies
                     _TextAreaField(
                       label: 'Allergies (comma or new line separated)',
-                      value: state.allergiesText,
-                      onChanged: (v) =>
-                          ref.read(dietaryRefProvider.notifier).setAllergies(v),
+                      value: state.data.allergies.join(', '),
+                      onChanged: (v) {
+                        final list = v
+                            .split(RegExp('[,\n]'))
+                            .map((e) => e.trim())
+                            .where((e) => e.isNotEmpty)
+                            .toList();
+                        ref
+                            .read(dietaryRefProvider.notifier)
+                            .setAllergies(list);
+                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -285,9 +193,17 @@ class DietaryReferencesScreen extends ConsumerWidget {
                     _TextAreaField(
                       label:
                           'Dislike ingredients (comma or new line separated)',
-                      value: state.dislikesText,
-                      onChanged: (v) =>
-                          ref.read(dietaryRefProvider.notifier).setDislikes(v),
+                      value: state.data.dislikesIngredients.join(', '),
+                      onChanged: (v) {
+                        final list = v
+                            .split(RegExp('[,\n]'))
+                            .map((e) => e.trim())
+                            .where((e) => e.isNotEmpty)
+                            .toList();
+                        ref
+                            .read(dietaryRefProvider.notifier)
+                            .setDislikesIngredients(list);
+                      },
                     ),
                     const SizedBox(height: 40),
                   ],
@@ -299,12 +215,12 @@ class DietaryReferencesScreen extends ConsumerWidget {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: state.isSubmitting
+                  onPressed: state.isLoading
                       ? null
                       : () async {
                           final ok = await ref
                               .read(dietaryRefProvider.notifier)
-                              .submit();
+                              .submitDietaryReferences();
                           if (!context.mounted) return;
                           if (ok) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -329,7 +245,7 @@ class DietaryReferencesScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: state.isSubmitting
+                  child: state.isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,

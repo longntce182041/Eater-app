@@ -114,7 +114,7 @@ class _SelectActivityLevelPageState
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected
-                                ? const Color(0xFFFF9800)
+                                ? Colors.purple
                                 : Colors.transparent,
                             width: 2,
                           ),
@@ -153,7 +153,7 @@ class _SelectActivityLevelPageState
                             if (isSelected)
                               const Icon(
                                 Icons.check_circle,
-                                color: Color(0xFFFF9800),
+                                color: Colors.purple,
                                 size: 24,
                               ),
                           ],
@@ -177,7 +177,7 @@ class _SelectActivityLevelPageState
                 child: ElevatedButton(
                   onPressed: _continue,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF9800),
+                    backgroundColor: const Color(0xFF1A237E),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

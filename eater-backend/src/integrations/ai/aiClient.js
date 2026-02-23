@@ -60,7 +60,7 @@ aiClient.interceptors.response.use(
 async function generateMealPlan(payload) {
   try {
     const response = await aiClient.post(
-      "/api/meal-planning/generate",
+      "/api/pipeline/complete-pipeline",
       payload,
     );
     return response;

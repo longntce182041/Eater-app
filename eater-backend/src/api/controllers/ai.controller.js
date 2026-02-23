@@ -23,10 +23,10 @@ async function generateMealPlan(req, res) {
     }
 
     // Validate days parameter
-    if (days < 1 || days > 30) {
+    if (days < 1 || days > 7) {
       return res.status(400).json({
         success: false,
-        message: "Days must be between 1 and 30",
+        message: "Days must be between 1 and 7",
       });
     }
 
@@ -43,7 +43,11 @@ async function generateMealPlan(req, res) {
       return res.status(201).json({
         success: true,
         message: result.message,
-        data: result.mealPlan,
+        data: {
+          mealPlan: result.mealPlan,
+          items: result.items,
+          summary: result.summary,
+        },
       });
     } else {
       return res.status(500).json({
@@ -90,6 +94,37 @@ async function getUserMealPlans(req, res) {
     return res.status(500).json({
       success: false,
       message: "Failed to fetch meal plans",
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * Get user's latest meal plan with items
+ * @route GET /api/ai/meal-plans/latest
+ */
+async function getLatestMealPlan(req, res) {
+  try {
+    const userId = req.user?.id || req.query.userId;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    const latest = await aiService.getLatestMealPlanWithItems(userId);
+
+    return res.status(200).json({
+      success: true,
+      data: latest,
+    });
+  } catch (error) {
+    console.error("Error in getLatestMealPlan controller:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch latest meal plan",
       error: error.message,
     });
   }
@@ -439,6 +474,7 @@ async function generateCompleteMealPlan(req, res) {
 module.exports = {
   generateMealPlan,
   getUserMealPlans,
+  getLatestMealPlan,
   getRecommendedRecipes,
   getUserDataForAI,
   checkAIServiceHealth,

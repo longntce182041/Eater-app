@@ -38,6 +38,11 @@ const mealPlanItemSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    dayIndex: {
+      type: Number,
+      default: 0,
+      required: true,
+    },
   },
   { timestamps: true },
 );

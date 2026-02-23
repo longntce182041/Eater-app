@@ -89,10 +89,10 @@ async function prepareUserDataForAI(userId) {
       },
       healthMetrics: healthMetrics
         ? {
-            bmi: healthMetrics.bmi,
-            bmr: healthMetrics.bmr,
-            tdee: healthMetrics.tdee,
-          }
+          bmi: healthMetrics.bmi,
+          bmr: healthMetrics.bmr,
+          tdee: healthMetrics.tdee,
+        }
         : null,
     };
   } catch (error) {
@@ -140,15 +140,15 @@ async function generateAIMealPlan(userId, days = 7, useML = false) {
       // Body profile
       body_profile: userData.healthMetrics
         ? {
-            age: userData.profile?.age || 30,
-            gender: userData.profile?.gender || "other",
-            bmi: userData.healthMetrics.bmi,
-            bmr: userData.healthMetrics.bmr,
-            tdee: userData.healthMetrics.tdee,
-            activity_level: "moderate", // TODO: Get from profile
-            weight_kg: userData.profile?.weight || null,
-            height_cm: userData.profile?.height || null,
-          }
+          age: userData.profile?.age || 30,
+          gender: userData.profile?.gender || "other",
+          bmi: userData.healthMetrics.bmi,
+          bmr: userData.healthMetrics.bmr,
+          tdee: userData.healthMetrics.tdee,
+          activity_level: "moderate", // TODO: Get from profile
+          weight_kg: userData.profile?.weight || null,
+          height_cm: userData.profile?.height || null,
+        }
         : null,
 
       // Fallback fields if body_profile not available - ensure required fields are set
@@ -225,20 +225,24 @@ async function saveAIMealPlanToDatabase(userId, aiMealPlan, options = {}) {
     const meals = mealPlanData.meals || [];
     const daysData = mealPlanData.days || [];
 
-    console.log(`Found ${meals.length} meals in flat array`);
+    console.log(`Found ${meals.length} meals in response`);
     console.log(`Found ${Array.isArray(daysData) ? daysData.length : 0} days`);
 
-    // Use the flat meals array if available, otherwise use days structure
-    const allMeals =
-      meals.length > 0
-        ? meals
-        : Array.isArray(daysData)
-          ? daysData.flatMap((day) => day.meals || [])
-          : [];
-    const numDays =
-      options.days || (Array.isArray(daysData) ? daysData.length : 1);
+    // Use meals array from AI response
+    let allMeals = meals.length > 0 ? meals : [];
+    let numDays = options.days || 7;
 
-    console.log(`Total meals to save: ${allMeals.length}`);
+    // If flat array is empty, try to extract from days structure
+    if (allMeals.length === 0 && Array.isArray(daysData) && daysData.length > 0) {
+      allMeals = daysData.flatMap((day) => day.meals || []);
+      numDays = options.days || daysData.length;
+    }
+
+    // AI now generates all meals for N days with variety
+    // No need to repeat or duplicate
+    console.log(
+      `AI generated ${allMeals.length} meals for ${numDays} days (${Math.ceil(allMeals.length / 4)} meals/typical day)`,
+    );
 
     // Calculate totals
     const totalCalories = allMeals.reduce(
@@ -281,13 +285,32 @@ async function saveAIMealPlanToDatabase(userId, aiMealPlan, options = {}) {
     // Save meal plan items
     const mealPlanItems = [];
 
-    for (const meal of allMeals) {
+    // Always distribute meals across days evenly
+    // This ensures clear Day 1, Day 2, Day 3... separation
+    const mealsPerDay = Math.ceil(allMeals.length / numDays);
+
+    console.log(
+      `Distribution: ${allMeals.length} meals ÷ ${numDays} days = ${mealsPerDay} meals per day`,
+    );
+
+    for (let i = 0; i < allMeals.length; i++) {
+      const meal = allMeals[i];
+      // Calculate which day this meal belongs to
+      const dayIndex = Math.floor(i / mealsPerDay);
+
+      // Verify dayIndex is within bounds
+      if (dayIndex >= numDays) {
+        console.warn(`⚠️ Meal ${i} assigned to day ${dayIndex}, but only ${numDays} days requested`);
+      }
+
       // Convert recipe_id from string to ObjectId if needed
       let recipeObjectId;
       try {
         recipeObjectId = new mongoose.Types.ObjectId(meal.recipe_id);
       } catch (error) {
-        console.warn(`⚠️ Invalid recipe ID: ${meal.recipe_id}, skipping meal`);
+        console.warn(
+          `⚠️ Invalid recipe ID: ${meal.recipe_id}, skipping meal`,
+        );
         continue;
       }
 
@@ -300,10 +323,13 @@ async function saveAIMealPlanToDatabase(userId, aiMealPlan, options = {}) {
         protein: meal.protein_g || 0,
         carbohydrates: meal.carbs_g || 0,
         fat: meal.fat_g || 0,
+        dayIndex: dayIndex,
       });
 
       await mealItem.save();
       mealPlanItems.push(mealItem);
+
+      console.log(`  ✓ Meal ${i + 1}: ${meal.meal_type} → Day ${dayIndex + 1}`);
     }
 
     console.log(`✅ Saved ${mealPlanItems.length} meal plan items`);
@@ -366,6 +392,40 @@ async function getUserMealPlans(userId, limit = 10) {
     return plans;
   } catch (error) {
     console.error("Error fetching user meal plans:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get latest meal plan with items and recipe info
+ * @param {string} userId - User ID
+ * @returns {Promise<Object|null>} Latest meal plan payload or null
+ */
+async function getLatestMealPlanWithItems(userId) {
+  try {
+    const plan = await MealPlan.findOne({ userId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!plan) {
+      return null;
+    }
+
+    const items = await MealPlanItem.find({ mealPlanId: plan._id })
+      .populate("recipeId", "name imageUrl")
+      .lean();
+
+    return {
+      mealPlan: plan,
+      items,
+      summary: {
+        totalMeals: items.length,
+        days: plan.days || 1,
+        avgCaloriesPerDay: plan.actualCalories || 0,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching latest meal plan:", error);
     throw error;
   }
 }
@@ -524,6 +584,7 @@ module.exports = {
   saveMealPlan,
   saveAIMealPlanToDatabase,
   getUserMealPlans,
+  getLatestMealPlanWithItems,
   getRecommendedRecipes,
   generateAndSaveMealPlan,
   analyzeUserProfileAndSave,

@@ -55,6 +55,15 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          if (state.result != null)
+            IconButton(
+              onPressed: state.isLoading ? null : () => _confirmDelete(context),
+              icon: const Icon(Icons.delete_outline),
+              color: const Color(0xFFD32F2F),
+              tooltip: 'Delete meal plans',
+            ),
+        ],
       ),
       body: state.isLoading
           ? Center(
@@ -398,7 +407,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                             ),
                         ],
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),
@@ -408,7 +417,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                 const SizedBox(height: 16),
             ],
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -580,6 +589,42 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
         .generateMealPlan(days: days);
   }
 
+  Future<void> _confirmDelete(BuildContext context) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete meal plans?'),
+          content: const Text(
+            'This will remove all meal plans and their meals. This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFD32F2F),
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) return;
+
+    await ref.read(mealPlanNotifierProvider.notifier).deleteAllMealPlans();
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('All meal plans deleted')));
+  }
+
   Future<int?> _pickDays(BuildContext context, int current) async {
     int tempDays = current;
     return showModalBottomSheet<int>(
@@ -603,7 +648,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<int>(
-                    value: tempDays,
+                    initialValue: tempDays,
                     items: List.generate(7, (index) => index + 1)
                         .map(
                           (day) => DropdownMenuItem(

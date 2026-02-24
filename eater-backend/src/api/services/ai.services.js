@@ -431,6 +431,152 @@ async function getLatestMealPlanWithItems(userId) {
 }
 
 /**
+ * Delete latest meal plan and its items for a user
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Deletion result
+ */
+async function deleteLatestMealPlanWithItems(userId) {
+  try {
+    const plan = await MealPlan.findOne({ userId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!plan) {
+      return {
+        deleted: false,
+        message: "No meal plan found to delete",
+      };
+    }
+
+    const itemsResult = await MealPlanItem.deleteMany({
+      mealPlanId: plan._id,
+    });
+
+    await MealPlan.deleteOne({ _id: plan._id });
+
+    return {
+      deleted: true,
+      mealPlanId: plan._id.toString(),
+      itemsDeleted: itemsResult.deletedCount || 0,
+    };
+  } catch (error) {
+    console.error("Error deleting latest meal plan:", error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a meal plan by id and its items
+ * @param {string} userId - User ID
+ * @param {string} mealPlanId - Meal plan ID
+ * @returns {Promise<Object>} Deletion result
+ */
+async function deleteMealPlanByIdWithItems(userId, mealPlanId) {
+  try {
+    const plan = await MealPlan.findOne({ _id: mealPlanId, userId }).lean();
+
+    if (!plan) {
+      return {
+        deleted: false,
+        message: "Meal plan not found",
+      };
+    }
+
+    const itemsResult = await MealPlanItem.deleteMany({
+      mealPlanId: plan._id,
+    });
+
+    await MealPlan.deleteOne({ _id: plan._id });
+
+    return {
+      deleted: true,
+      mealPlanId: plan._id.toString(),
+      itemsDeleted: itemsResult.deletedCount || 0,
+    };
+  } catch (error) {
+    console.error("Error deleting meal plan by id:", error);
+    throw error;
+  }
+}
+
+/**
+ * Delete all meal plans and their items for a user
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Deletion result
+ */
+async function deleteAllMealPlansWithItems(userId) {
+  try {
+    const plans = await MealPlan.find({ userId }, { _id: 1 }).lean();
+    if (plans.length === 0) {
+      return {
+        deleted: false,
+        message: "No meal plans found to delete",
+      };
+    }
+
+    const planIds = plans.map((plan) => plan._id);
+
+    const itemsResult = await MealPlanItem.deleteMany({
+      mealPlanId: { $in: planIds },
+    });
+
+    const plansResult = await MealPlan.deleteMany({
+      _id: { $in: planIds },
+    });
+
+    return {
+      deleted: true,
+      plansDeleted: plansResult.deletedCount || 0,
+      itemsDeleted: itemsResult.deletedCount || 0,
+    };
+  } catch (error) {
+    console.error("Error deleting all meal plans:", error);
+    throw error;
+  }
+}
+
+/**
+ * Delete all meal plans for a user except the given plan id
+ * @param {string} userId - User ID
+ * @param {string} keepMealPlanId - Meal plan ID to keep
+ * @returns {Promise<Object>} Deletion result
+ */
+async function deleteOtherMealPlansWithItems(userId, keepMealPlanId) {
+  try {
+    const plans = await MealPlan.find(
+      { userId, _id: { $ne: keepMealPlanId } },
+      { _id: 1 },
+    ).lean();
+
+    if (plans.length === 0) {
+      return {
+        deleted: false,
+        message: "No other meal plans found to delete",
+      };
+    }
+
+    const planIds = plans.map((plan) => plan._id);
+
+    const itemsResult = await MealPlanItem.deleteMany({
+      mealPlanId: { $in: planIds },
+    });
+
+    const plansResult = await MealPlan.deleteMany({
+      _id: { $in: planIds },
+    });
+
+    return {
+      deleted: true,
+      plansDeleted: plansResult.deletedCount || 0,
+      itemsDeleted: itemsResult.deletedCount || 0,
+    };
+  } catch (error) {
+    console.error("Error deleting other meal plans:", error);
+    throw error;
+  }
+}
+
+/**
  * Get recommended recipes based on user preferences
  * @param {string} userId - User ID
  * @param {number} limit - Number of recipes to retrieve (default: 10)
@@ -488,6 +634,9 @@ async function generateAndSaveMealPlan(userId, options = {}) {
     const result = await saveAIMealPlanToDatabase(userId, aiMealPlan, {
       days,
     });
+
+    // Keep only the newest meal plan after regeneration
+    await deleteOtherMealPlansWithItems(userId, result.mealPlan._id);
 
     return {
       success: true,
@@ -585,6 +734,10 @@ module.exports = {
   saveAIMealPlanToDatabase,
   getUserMealPlans,
   getLatestMealPlanWithItems,
+  deleteLatestMealPlanWithItems,
+  deleteMealPlanByIdWithItems,
+  deleteAllMealPlansWithItems,
+  deleteOtherMealPlansWithItems,
   getRecommendedRecipes,
   generateAndSaveMealPlan,
   analyzeUserProfileAndSave,

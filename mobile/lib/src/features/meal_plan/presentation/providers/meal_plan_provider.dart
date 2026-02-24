@@ -14,11 +14,12 @@ class MealPlanState {
     bool? isLoading,
     String? error,
     MealPlanGenerationResult? result,
+    bool clearResult = false,
   }) {
     return MealPlanState(
       isLoading: isLoading ?? this.isLoading,
       error: error,
-      result: result ?? this.result,
+      result: clearResult ? null : (result ?? this.result),
     );
   }
 }
@@ -52,6 +53,17 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
       // Small delay for smooth UI transition
       await Future.delayed(const Duration(milliseconds: 300));
       state = state.copyWith(isLoading: false, result: result);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> deleteAllMealPlans() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _apiClient.deleteAllMealPlans();
+      await Future.delayed(const Duration(milliseconds: 200));
+      state = state.copyWith(isLoading: false, clearResult: true);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }

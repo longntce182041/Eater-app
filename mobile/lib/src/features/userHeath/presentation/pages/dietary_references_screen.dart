@@ -89,7 +89,7 @@ class DietaryReferencesScreen extends ConsumerWidget {
 
                           return DropdownButtonFormField<String>(
                             key: ValueKey(validValue ?? 'no-selection'),
-                            value: validValue,
+                            initialValue: validValue,
                             items: uniqueItems.values
                                 .map(
                                   (d) => DropdownMenuItem<String>(

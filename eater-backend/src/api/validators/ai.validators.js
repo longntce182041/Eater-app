@@ -7,8 +7,8 @@ const validateMealPlanGeneration = [
   body("userId").optional().isMongoId().withMessage("Invalid user ID format"),
   body("days")
     .optional()
-    .isInt({ min: 1, max: 30 })
-    .withMessage("Days must be between 1 and 30"),
+    .isInt({ min: 1, max: 7 })
+    .withMessage("Days must be between 1 and 7"),
   body("useML").optional().isBoolean().withMessage("useML must be a boolean"),
   (req, res, next) => {
     const errors = validationResult(req);

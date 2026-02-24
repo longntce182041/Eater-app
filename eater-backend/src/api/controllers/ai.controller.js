@@ -131,6 +131,134 @@ async function getLatestMealPlan(req, res) {
 }
 
 /**
+ * Delete user's latest meal plan and its items
+ * @route DELETE /api/ai/meal-plans/latest
+ */
+async function deleteLatestMealPlan(req, res) {
+  try {
+    const userId = req.user?.id || req.query.userId;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    const result = await aiService.deleteLatestMealPlanWithItems(userId);
+
+    if (!result.deleted) {
+      return res.status(404).json({
+        success: false,
+        message: result.message || "No meal plan found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Meal plan deleted",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error in deleteLatestMealPlan controller:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete meal plan",
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * Delete all meal plans and their items for a user
+ * @route DELETE /api/ai/meal-plans
+ */
+async function deleteAllMealPlans(req, res) {
+  try {
+    const userId = req.user?.id || req.query.userId;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    const result = await aiService.deleteAllMealPlansWithItems(userId);
+
+    if (!result.deleted) {
+      return res.status(404).json({
+        success: false,
+        message: result.message || "No meal plans found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "All meal plans deleted",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error in deleteAllMealPlans controller:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete meal plans",
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * Delete user's meal plan by id and its items
+ * @route DELETE /api/ai/meal-plans/:id
+ */
+async function deleteMealPlanById(req, res) {
+  try {
+    const userId = req.user?.id || req.query.userId;
+    const mealPlanId = req.params.id;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    if (!mealPlanId) {
+      return res.status(400).json({
+        success: false,
+        message: "Meal plan ID is required",
+      });
+    }
+
+    const result = await aiService.deleteMealPlanByIdWithItems(
+      userId,
+      mealPlanId,
+    );
+
+    if (!result.deleted) {
+      return res.status(404).json({
+        success: false,
+        message: result.message || "Meal plan not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Meal plan deleted",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error in deleteMealPlanById controller:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete meal plan",
+      error: error.message,
+    });
+  }
+}
+
+/**
  * Get recommended recipes for user
  * @route GET /api/ai/recipes/recommended
  */
@@ -475,6 +603,9 @@ module.exports = {
   generateMealPlan,
   getUserMealPlans,
   getLatestMealPlan,
+  deleteLatestMealPlan,
+  deleteAllMealPlans,
+  deleteMealPlanById,
   getRecommendedRecipes,
   getUserDataForAI,
   checkAIServiceHealth,

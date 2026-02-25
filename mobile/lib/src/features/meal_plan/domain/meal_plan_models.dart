@@ -43,6 +43,10 @@ class MealPlanItemModel {
   final int dayIndex;
   final String? recipeName;
   final String? recipeImageUrl;
+  // NEW FIELDS FOR OPTIMIZATION
+  final int? userRating;
+  final String userAction;
+  final bool isLocked;
 
   MealPlanItemModel({
     required this.id,
@@ -55,6 +59,9 @@ class MealPlanItemModel {
     required this.dayIndex,
     this.recipeName,
     this.recipeImageUrl,
+    this.userRating,
+    this.userAction = 'none',
+    this.isLocked = false,
   });
 
   factory MealPlanItemModel.fromJson(Map<String, dynamic> json) {
@@ -73,6 +80,9 @@ class MealPlanItemModel {
       dayIndex: (json['dayIndex'] as num?)?.toInt() ?? 0,
       recipeName: recipe?['name']?.toString(),
       recipeImageUrl: recipe?['imageUrl']?.toString(),
+      userRating: (json['userRating'] as num?)?.toInt(),
+      userAction: json['userAction']?.toString() ?? 'none',
+      isLocked: json['isLocked'] == true,
     );
   }
 }

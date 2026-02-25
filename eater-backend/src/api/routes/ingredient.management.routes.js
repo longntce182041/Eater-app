@@ -5,18 +5,18 @@ const ingredientController = require("../controllers/ingredient.management.contr
 const { protect, authorize } = require("../../middleware/authMiddleware");
 
 // GET List & Search
-router.get("/", ingredientController.getIngredients);
+router.get("/",protect, authorize('admin'), ingredientController.getIngredients);
 
 // Create
-router.post("/create", ingredientController.createIngredient);
+router.post("/create",protect, authorize('admin'), ingredientController.createIngredient);
 
 // Get Detail
-router.get("/:id", ingredientController.getIngredientDetail);
+router.get("/:id",protect, authorize('admin'), ingredientController.getIngredientDetail);
 
 // Update
-router.put("/update/:id", ingredientController.updateIngredient);
+router.put("/update/:id",protect, authorize('admin'), ingredientController.updateIngredient);
 
 // Delete
-router.delete("/delete/:id", ingredientController.deleteIngredient);
+router.delete("/delete/:id",protect, authorize('admin'), ingredientController.deleteIngredient);
 
 module.exports = router;

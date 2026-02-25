@@ -1,26 +1,20 @@
 const express = require("express");
 const router = express.Router();
 const recipeController = require("../controllers/recipe.management.controller");
+const {protect, authorize} = require("../../middleware/authMiddleware");
 
-// Middleware bảo vệ (Auth)
-// const { protect, authorize } = require("../../middleware/auth.middleware");
+
 
 // GET List & Search
-router.get("/", recipeController.getRecipes);
-
+router.get("/",protect, authorize('admin'), recipeController.getRecipes);
 // GET Detail
-router.get("/:id", recipeController.getRecipeDetail);
-
+router.get("/:id",protect, authorize('admin'), recipeController.getRecipeDetail);
 // CREATE
-router.post("/create", recipeController.createRecipe);
-// (Lưu ý: Nếu bạn vẫn muốn dùng path /create thì sửa thành router.post("/create", ...) nhé)
-
+router.post("/create",protect, authorize('admin'), recipeController.createRecipe);
 // UPDATE
-router.put("/update/:id", recipeController.updateRecipe);
-// (Nếu dùng path update cũ: router.put("/update/:id", ...))
-
+router.put("/update/:id",protect, authorize('admin'), recipeController.updateRecipe);
 // DELETE
-router.delete("/delete/:id", recipeController.deleteRecipe);
-// (Nếu dùng path delete cũ: router.delete("/delete/:id", ...))
+router.delete("/delete/:id",protect, authorize('admin'), recipeController.deleteRecipe);
+
 
 module.exports = router;

@@ -415,6 +415,37 @@ async function getLatestMealPlanWithItems(userId) {
       .populate("recipeId", "name imageUrl")
       .lean();
 
+    const macroTotals = items.reduce(
+      (acc, item) => {
+        const protein = Number(item.protein) || 0;
+        const carbs = Number(item.carbohydrates) || 0;
+        const fat = Number(item.fat) || 0;
+
+        acc.protein_g += protein;
+        acc.carbs_g += carbs;
+        acc.fat_g += fat;
+        return acc;
+      },
+      { protein_g: 0, carbs_g: 0, fat_g: 0 },
+    );
+
+    const proteinCalories = macroTotals.protein_g * 4;
+    const carbsCalories = macroTotals.carbs_g * 4;
+    const fatCalories = macroTotals.fat_g * 9;
+    const totalMacroCalories = proteinCalories + carbsCalories + fatCalories;
+
+    const macroDistribution = {
+      ...macroTotals,
+      protein_percent: totalMacroCalories
+        ? (proteinCalories / totalMacroCalories) * 100
+        : 0,
+      carbs_percent: totalMacroCalories
+        ? (carbsCalories / totalMacroCalories) * 100
+        : 0,
+      fat_percent: totalMacroCalories ? (fatCalories / totalMacroCalories) * 100 : 0,
+      total_macro_calories: totalMacroCalories,
+    };
+
     return {
       mealPlan: plan,
       items,
@@ -422,6 +453,7 @@ async function getLatestMealPlanWithItems(userId) {
         totalMeals: items.length,
         days: plan.days || 1,
         avgCaloriesPerDay: plan.actualCalories || 0,
+        macroDistribution,
       },
     };
   } catch (error) {

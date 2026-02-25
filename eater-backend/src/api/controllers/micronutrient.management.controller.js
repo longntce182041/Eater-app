@@ -2,7 +2,7 @@ const micronutrientService = require("../services/micronutrient.management.servi
 const { validateCreateMicronutrient, validateUpdateMicronutrient } = require("../validators/micronutrient.management.validator");
 
 class MicronutrientManagementController {
-    // GET /api/micronutrients (List, Search, Filter)
+    
     async getMicronutrients(req, res) {
         try {
             const result = await micronutrientService.getAllMicronutrients(req.query);
@@ -12,7 +12,7 @@ class MicronutrientManagementController {
         }
     }
 
-    // GET /api/micronutrients/:id (Detail)
+    
     async getMicronutrientDetail(req, res) {
         try {
             const micronutrient = await micronutrientService.getMicronutrientById(req.params.id);
@@ -22,7 +22,7 @@ class MicronutrientManagementController {
         }
     }
 
-    // POST /api/micronutrients/create (Create)
+    
     async createMicronutrient(req, res) {
         try {
             const { errors, isValid } = validateCreateMicronutrient(req.body);
@@ -35,7 +35,7 @@ class MicronutrientManagementController {
         }
     }
 
-    // PUT /api/micronutrients/update/:id (Update)
+    
     async updateMicronutrient(req, res) {
         try {
             const { errors, isValid } = validateUpdateMicronutrient(req.body);
@@ -48,7 +48,7 @@ class MicronutrientManagementController {
         }
     }
 
-    // DELETE /api/micronutrients/delete/:id (Delete)
+    
     async deleteMicronutrient(req, res) {
         try {
             await micronutrientService.deleteMicronutrient(req.params.id);

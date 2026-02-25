@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/meal_plan_provider.dart';
 import '../../domain/meal_plan_models.dart';
+import '../widgets/macro_distribution_donut.dart';
+import '../widgets/detailed_macro_modal.dart';
 
 class MealPlanPage extends ConsumerStatefulWidget {
   const MealPlanPage({super.key});
@@ -89,7 +91,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                     const SizedBox(height: 24),
                     if (state.error != null) _buildError(state.error!),
                     if (state.result != null) ...[
-                      _buildSummary(state.result!),
+                      _buildSummaryWithMacros(state.result!),
                       const SizedBox(height: 16),
                       Container(
                         decoration: BoxDecoration(
@@ -223,6 +225,16 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     );
   }
 
+  Widget _buildSummaryWithMacros(MealPlanGenerationResult result) {
+    return Column(
+      children: [
+        _buildSummary(result),
+        const SizedBox(height: 16),
+        _buildMacroSummaryCard(result),
+      ],
+    );
+  }
+
   Widget _buildSummary(MealPlanGenerationResult result) {
     final summary = result.summary;
     return Container(
@@ -242,23 +254,144 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
               color: Color(0xFF2D2D2D),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             'Days: ${result.mealPlan.days}',
-            style: const TextStyle(color: Color(0xFF2D2D2D)),
+            style: const TextStyle(color: Color(0xFF2D2D2D), fontSize: 13),
           ),
+          const SizedBox(height: 8),
           Text(
             'Total meals: ${summary?.totalMeals ?? result.items.length}',
-            style: const TextStyle(color: Color(0xFF2D2D2D)),
+            style: const TextStyle(color: Color(0xFF2D2D2D), fontSize: 13),
           ),
+          const SizedBox(height: 8),
           if (summary != null)
             Text(
-              'Avg calories/day: ${summary.avgCaloriesPerDay.toStringAsFixed(0)}',
-              style: const TextStyle(color: Color(0xFF2D2D2D)),
+              'Avg: ${summary.avgCaloriesPerDay.toStringAsFixed(0)} kcal/day',
+              style: const TextStyle(color: Color(0xFF2D2D2D), fontSize: 13),
             ),
         ],
       ),
     );
+  }
+
+  Widget _buildMacroSummaryCard(MealPlanGenerationResult result) {
+    final dailyMacros = _buildDailyMacros(result);
+    if (dailyMacros.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(
+          child: Text(
+            'No macro data yet',
+            style: TextStyle(color: Color(0xFF999999)),
+          ),
+        ),
+      );
+    }
+
+    // Default to first day
+    final firstDayMacro = dailyMacros[0];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Macro distribution',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2D2D2D),
+            ),
+          ),
+          const SizedBox(height: 12),
+          MacroDistributionDonut(
+            protein: firstDayMacro.protein,
+            carbohydrates: firstDayMacro.carbohydrates,
+            fat: firstDayMacro.fat,
+            onViewAll: () {
+              _showDetailedMacroModal(dailyMacros);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDetailedMacroModal(List<_DailyMacro> dailyMacros) {
+    // Convert internal _DailyMacro to public DailyMacro
+    final dailyMacroList = dailyMacros
+        .map((m) => DailyMacro(
+              dayIndex: m.dayIndex,
+              protein: m.protein,
+              carbohydrates: m.carbohydrates,
+              fat: m.fat,
+            ))
+        .toList();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: DetailedMacroBottomSheet(
+                  dailyMacros: dailyMacroList,
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  List<_DailyMacro> _buildDailyMacros(MealPlanGenerationResult result) {
+    if (result.items.isEmpty) return [];
+
+    final daysFromItems = result.items
+            .map((item) => item.dayIndex)
+            .fold<int>(0, (max, value) => value > max ? value : max) +
+        1;
+    final totalDays = result.mealPlan.days > daysFromItems
+        ? result.mealPlan.days
+        : daysFromItems;
+
+    final macros = List.generate(
+      totalDays,
+      (index) => _DailyMacro(dayIndex: index),
+    );
+
+    for (final item in result.items) {
+      if (item.dayIndex < 0 || item.dayIndex >= macros.length) continue;
+      final target = macros[item.dayIndex];
+      target.protein += item.protein;
+      target.carbohydrates += item.carbohydrates;
+      target.fat += item.fat;
+    }
+
+    return macros;
   }
 
   Widget _buildItems(MealPlanGenerationResult result) {
@@ -677,4 +810,15 @@ class _HighlightRow extends StatelessWidget {
       ],
     );
   }
+}
+
+class _DailyMacro {
+  final int dayIndex;
+  double protein = 0;
+  double carbohydrates = 0;
+  double fat = 0;
+
+  _DailyMacro({
+    required this.dayIndex,
+  });
 }

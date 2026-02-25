@@ -12,4 +12,7 @@ router.get('/backups', protect, authorize('admin'), backupController.listBackups
 // Download backup file
 router.get('/backups/:id/download', protect, authorize('admin'), backupController.downloadBackup);
 
+// Restore backup (admin only) - DESTRUCTIVE OPERATION
+router.post('/backups/:id/restore', protect, authorize('admin'), backupController.restoreBackup);
+
 module.exports = router;

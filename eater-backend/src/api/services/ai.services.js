@@ -640,7 +640,23 @@ async function getRecommendedRecipes(userId, limit = 10) {
       .limit(limit)
       .lean();
 
-    return recipes;
+    // Transform recipes to AI service format
+    const transformedRecipes = recipes.map(recipe => ({
+      id: recipe._id.toString(),
+      name: recipe.name,
+      calories_per_serving: recipe.nutritionInfo?.calories || recipe.baseServings || 400,
+      protein_g: recipe.nutritionInfo?.protein || 0,
+      carbs_g: recipe.nutritionInfo?.carbs || 0,
+      fat_g: recipe.nutritionInfo?.fat || 0,
+      ingredients: recipe.ingredients || [],
+      diet_types: recipe.dietTypes || [],
+      rating: recipe.rating || 0,
+      review_count: recipe.reviewCount || 0,
+      // Keep original fields for reference
+      ...recipe
+    }));
+
+    return transformedRecipes;
   } catch (error) {
     console.error("Error fetching recommended recipes:", error);
     throw error;

@@ -59,7 +59,9 @@ class _MacroDistributionDonutState extends State<MacroDistributionDonut> {
     if (oldWidget.protein != widget.protein ||
         oldWidget.carbohydrates != widget.carbohydrates ||
         oldWidget.fat != widget.fat) {
-      _initMacroData();
+      setState(() {
+        _initMacroData();
+      });
     }
   }
 
@@ -235,7 +237,14 @@ class _DonutChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DonutChartPainter oldDelegate) {
-    return oldDelegate.total != total ||
-        oldDelegate.macroData.length != macroData.length;
+    if (oldDelegate.total != total) return true;
+    if (oldDelegate.macroData.length != macroData.length) return true;
+    
+    for (int i = 0; i < macroData.length; i++) {
+      if (oldDelegate.macroData[i].value != macroData[i].value) {
+        return true;
+      }
+    }
+    return false;
   }
 }

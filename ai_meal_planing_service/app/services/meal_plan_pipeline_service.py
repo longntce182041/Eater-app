@@ -165,8 +165,14 @@ class MealPlanPipelineService:
         recipe_database = request.recipe_database if request.recipe_database else self.recipe_database
         if recipe_database:
             logger.info(f"Using custom recipe database with {len(recipe_database)} recipes")
+            if len(recipe_database) > 0:
+                sample = recipe_database[0]
+                logger.info(f"Sample recipe: name={sample.get('name')}, "
+                           f"protein_g={sample.get('protein_g')}, "
+                           f"carbs_g={sample.get('carbs_g')}, "
+                           f"fat_g={sample.get('fat_g')}")
         else:
-            logger.info("Using mock recipe database (no custom recipes provided)")
+            logger.warning("NO recipe database provided - will use mock recipe database!")
         
         # Body profile already prepared from upstream (no recalculation needed)
         meal_plan_result = generate_meal_plan(

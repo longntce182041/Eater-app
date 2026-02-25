@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=D:\SP26\PRM393\flutter"
-export "FLUTTER_APPLICATION_PATH=D:\SP26\WDP\code base\Eater-app\mobile"
+export "FLUTTER_ROOT=/Users/tranphantrungkien/Ky8/PRM393/flutter"
+export "FLUTTER_APPLICATION_PATH=/Users/tranphantrungkien/Ky8/WDP301/Eater-app/mobile"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_BUILD_DIR=build"
 export "FLUTTER_BUILD_NAME=1.0.0"

@@ -122,4 +122,19 @@ class RecipeApiClient {
       rethrow;
     }
   }
+
+  /// Get nutrition values for a recipe by ID
+  Future<RecipeNutrition> getRecipeNutrition(String recipeId) async {
+    try {
+      debugPrint('Fetching nutrition values - recipe id: $recipeId');
+
+      final response = await _dio.get('/api/recipes/$recipeId/nutrition');
+
+      final nutritionData = response.data['data'] as Map<String, dynamic>;
+      return RecipeNutrition.fromJson(nutritionData);
+    } on DioException catch (e) {
+      debugPrint('Error fetching nutrition: ${e.response?.data}');
+      rethrow;
+    }
+  }
 }

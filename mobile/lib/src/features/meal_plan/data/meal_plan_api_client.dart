@@ -47,4 +47,34 @@ class MealPlanApiClient {
     if (payload == null) return null;
     return MealPlanGenerationResult.fromJson(payload);
   }
+
+  Future<void> deleteLatestMealPlan() async {
+    final res = await _dio.delete('/api/ai/meal-plans/latest');
+
+    final data = res.data as Map<String, dynamic>;
+    if (data['success'] != true) {
+      debugPrint('deleteLatestMealPlan error: ${data['message']}');
+      throw Exception(data['message'] ?? 'Failed to delete meal plan');
+    }
+  }
+
+  Future<void> deleteMealPlanById(String mealPlanId) async {
+    final res = await _dio.delete('/api/ai/meal-plans/$mealPlanId');
+
+    final data = res.data as Map<String, dynamic>;
+    if (data['success'] != true) {
+      debugPrint('deleteMealPlanById error: ${data['message']}');
+      throw Exception(data['message'] ?? 'Failed to delete meal plan');
+    }
+  }
+
+  Future<void> deleteAllMealPlans() async {
+    final res = await _dio.delete('/api/ai/meal-plans');
+
+    final data = res.data as Map<String, dynamic>;
+    if (data['success'] != true) {
+      debugPrint('deleteAllMealPlans error: ${data['message']}');
+      throw Exception(data['message'] ?? 'Failed to delete meal plans');
+    }
+  }
 }

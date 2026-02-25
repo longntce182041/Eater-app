@@ -456,19 +456,11 @@ class _HealthMetricsSection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _MetricRow('BMI', '${metrics.bmi.toStringAsFixed(1)}', 'kg/m²'),
+              _MetricRow('BMI', metrics.bmi.toStringAsFixed(1), 'kg/m²'),
               const SizedBox(height: 12),
-              _MetricRow(
-                'BMR',
-                '${metrics.bmr.toStringAsFixed(0)}',
-                'kcal/day',
-              ),
+              _MetricRow('BMR', metrics.bmr.toStringAsFixed(0), 'kcal/day'),
               const SizedBox(height: 12),
-              _MetricRow(
-                'TDEE',
-                '${metrics.tdee.toStringAsFixed(0)}',
-                'kcal/day',
-              ),
+              _MetricRow('TDEE', metrics.tdee.toStringAsFixed(0), 'kcal/day'),
               const SizedBox(height: 12),
               _MetricRow('Body Category', metrics.bodyCategory, ''),
               const SizedBox(height: 12),
@@ -633,7 +625,7 @@ class _DietTypeDropdown extends ConsumerWidget {
                       style: const TextStyle(color: Color(0xFF000000)),
                     ),
                   );
-                }).toList(),
+                }),
               ],
               onChanged: enabled ? onChanged : null,
             ),

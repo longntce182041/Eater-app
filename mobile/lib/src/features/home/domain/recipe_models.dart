@@ -101,3 +101,45 @@ class RecipeListResponse {
 
   bool get hasMore => page < totalPages;
 }
+
+class RecipeNutrition {
+  final String id;
+  final String recipeId;
+  final double calories;
+  final double protein;
+  final double fat;
+  final double carbohydrates;
+
+  RecipeNutrition({
+    required this.id,
+    required this.recipeId,
+    required this.calories,
+    required this.protein,
+    required this.fat,
+    required this.carbohydrates,
+  });
+
+  factory RecipeNutrition.fromJson(Map<String, dynamic> json) {
+    return RecipeNutrition(
+      id: json['_id'] as String,
+      recipeId: json['recipeId'] is Map
+          ? (json['recipeId'] as Map<String, dynamic>)['_id'] as String
+          : json['recipeId'] as String,
+      calories: (json['calories'] as num).toDouble(),
+      protein: (json['protein'] as num).toDouble(),
+      fat: (json['fat'] as num).toDouble(),
+      carbohydrates: (json['carbohydrates'] as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'recipeId': recipeId,
+      'calories': calories,
+      'protein': protein,
+      'fat': fat,
+      'carbohydrates': carbohydrates,
+    };
+  }
+}

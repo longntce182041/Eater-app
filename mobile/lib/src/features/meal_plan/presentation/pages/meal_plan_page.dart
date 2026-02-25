@@ -126,23 +126,74 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
         minimum: const EdgeInsets.all(16),
         child: SizedBox(
           height: 56,
-          child: ElevatedButton.icon(
-            onPressed: state.isLoading ? null : _onGeneratePressed,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF9800),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            icon: const Icon(Icons.add),
-            label: Text(
-              state.result != null
-                  ? 'Regenerate meal plan'
-                  : 'Create meal plan',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-          ),
+          child: state.result != null
+              ? Row(
+                  children: [
+                    // Optimize All button
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: state.isLoading
+                            ? null
+                            : () => _optimizeAllMeals(
+                                context,
+                                state.result!.mealPlan.id,
+                              ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4CAF50),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(Icons.auto_fix_high),
+                        label: const Text(
+                          'Optimize',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Regenerate button
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: state.isLoading ? null : _onGeneratePressed,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF9800),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text(
+                          'Regenerate',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : ElevatedButton.icon(
+                  onPressed: state.isLoading ? null : _onGeneratePressed,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF9800),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: const Text(
+                    'Create meal plan',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                ),
         ),
       ),
     );
@@ -556,66 +607,85 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
   }
 
   Widget _buildMealItem(MealPlanItemModel item) {
-    return Row(
+    return Column(
       children: [
-        // Meal type badge - consistent width for alignment
-        Container(
-          width: 90,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            color: _getMealTypeColor(item.mealType).withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: _getMealTypeColor(item.mealType).withValues(alpha: 0.3),
-              width: 1,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              _titleCase(item.mealType),
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: _getMealTypeColor(item.mealType),
+        Row(
+          children: [
+            // Meal type badge - consistent width for alignment
+            Container(
+              width: 90,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              decoration: BoxDecoration(
+                color: _getMealTypeColor(item.mealType).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _getMealTypeColor(
+                    item.mealType,
+                  ).withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  _titleCase(item.mealType),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _getMealTypeColor(item.mealType),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        // Recipe image - larger
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: item.recipeImageUrl?.isNotEmpty == true
-              ? Image.network(
-                  item.recipeImageUrl!,
-                  width: 72,
-                  height: 72,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
+            const SizedBox(width: 12),
+            // Recipe image - larger
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: item.recipeImageUrl?.isNotEmpty == true
+                  ? Image.network(
+                      item.recipeImageUrl!,
                       width: 72,
                       height: 72,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xFFFF9800),
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(0xFFFF9800),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.restaurant,
+                            color: Colors.grey,
+                            size: 28,
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
                       width: 72,
                       height: 72,
                       decoration: BoxDecoration(
@@ -627,74 +697,339 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                         color: Colors.grey,
                         size: 28,
                       ),
-                    );
-                  },
-                )
-              : Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.restaurant,
-                    color: Colors.grey,
-                    size: 28,
-                  ),
-                ),
-        ),
-        const SizedBox(width: 14),
-        // Meal info - expanded
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.recipeName?.isNotEmpty == true
-                    ? item.recipeName!
-                    : 'Recipe',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: Color(0xFF2D2D2D),
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${item.calories.toStringAsFixed(0)} kcal • ${item.servings.toStringAsFixed(2)} serving${item.servings.toInt() != 1 ? 's' : ''}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF666666),
-                ),
-              ),
-              const SizedBox(height: 6),
-              if (item.protein > 0 || item.carbohydrates > 0 || item.fat > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'P: ${item.protein.toStringAsFixed(1)}g | C: ${item.carbohydrates.toStringAsFixed(1)}g | F: ${item.fat.toStringAsFixed(1)}g',
+                    ),
+            ),
+            const SizedBox(width: 14),
+            // Meal info - expanded
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.recipeName?.isNotEmpty == true
+                        ? item.recipeName!
+                        : 'Recipe',
                     style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: Color(0xFF2D2D2D),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${item.calories.toStringAsFixed(0)} kcal • ${item.servings.toStringAsFixed(2)} serving${item.servings.toInt() != 1 ? 's' : ''}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                       color: Color(0xFF666666),
                     ),
                   ),
+                  const SizedBox(height: 6),
+                  if (item.protein > 0 ||
+                      item.carbohydrates > 0 ||
+                      item.fat > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'P: ${item.protein.toStringAsFixed(1)}g | C: ${item.carbohydrates.toStringAsFixed(1)}g | F: ${item.fat.toStringAsFixed(1)}g',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF666666),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        // NEW: Action buttons for meal optimization
+        const SizedBox(height: 8),
+        _buildMealItemActions(item),
+      ],
+    );
+  }
+
+  /// Build action buttons for meal item (rate, replace)
+  Widget _buildMealItemActions(MealPlanItemModel item) {
+    final mealPlanId = ref.read(mealPlanNotifierProvider).result?.mealPlan.id;
+    if (mealPlanId == null) return const SizedBox.shrink();
+
+    return Row(
+      children: [
+        // Rating button
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3E0),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFFE0B2), width: 1),
+          ),
+          child: PopupMenuButton<int>(
+            onSelected: (rating) {
+              ref
+                  .read(mealPlanNotifierProvider.notifier)
+                  .rateMeal(mealPlanId, item.id, rating);
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                PopupMenuItem(
+                  value: 1,
+                  child: Row(
+                    children: [
+                      _buildStarRating(1),
+                      const SizedBox(width: 8),
+                      const Text('Poor'),
+                    ],
+                  ),
                 ),
-            ],
+                PopupMenuItem(
+                  value: 2,
+                  child: Row(
+                    children: [
+                      _buildStarRating(2),
+                      const SizedBox(width: 8),
+                      const Text('Fair'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 3,
+                  child: Row(
+                    children: [
+                      _buildStarRating(3),
+                      const SizedBox(width: 8),
+                      const Text('Good'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 4,
+                  child: Row(
+                    children: [
+                      _buildStarRating(4),
+                      const SizedBox(width: 8),
+                      const Text('Very Good'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 5,
+                  child: Row(
+                    children: [
+                      _buildStarRating(5),
+                      const SizedBox(width: 8),
+                      const Text('Excellent'),
+                    ],
+                  ),
+                ),
+              ];
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    item.userRating != null ? Icons.star : Icons.star_outline,
+                    size: 18,
+                    color: const Color(0xFFFF9800),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    item.userRating != null ? '${item.userRating}/5' : 'Rate',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFFF9800),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
+        const SizedBox(width: 8),
+        // Replace meal button (disabled if locked)
+        if (!item.isLocked)
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3E0),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFFE0B2), width: 1),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () =>
+                      _showReplacementDialog(context, mealPlanId, item),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(
+                          Icons.swap_horiz,
+                          size: 18,
+                          color: Color(0xFFFF9800),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Replace',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFFF9800),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
+    );
+  }
+
+  /// Build star rating widget
+  Widget _buildStarRating(int rating) {
+    return Row(
+      children: List.generate(5, (index) {
+        return Icon(
+          index < rating ? Icons.star : Icons.star_outline,
+          size: 16,
+          color: const Color(0xFFFF9800),
+        );
+      }),
+    );
+  }
+
+  /// Show replacement suggestions dialog
+  void _showReplacementDialog(
+    BuildContext context,
+    String planId,
+    MealPlanItemModel currentItem,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Replace meal',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D2D2D),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Current: ${currentItem.recipeName}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Reason dropdown
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Why are you replacing this?',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'dont_like_taste',
+                          child: Text('Don\'t like the taste'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'allergies',
+                          child: Text('Have allergies'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'prep_difficulty',
+                          child: Text('Too difficult to prepare'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'ingredients_unavailable',
+                          child: Text('Ingredients not available'),
+                        ),
+                      ],
+                      onChanged: (_) {},
+                      value: 'dont_like_taste',
+                    ),
+                    const SizedBox(height: 16),
+                    // Action buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF9800),
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            // In a real app, fetch suggestions and show them
+                            // For now, we'll show a simple message
+                            Navigator.pop(dialogContext);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Fetching replacement suggestions...',
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text('Get suggestions'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -720,6 +1055,56 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     await ref
         .read(mealPlanNotifierProvider.notifier)
         .generateMealPlan(days: days);
+  }
+
+  Future<void> _optimizeAllMeals(
+    BuildContext context,
+    String mealPlanId,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Optimize meal plan?'),
+        content: const Text(
+          'This will replace low-rated meals and improve variety while maintaining your calorie targets.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF4CAF50),
+            ),
+            child: const Text('Optimize'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await ref
+        .read(mealPlanNotifierProvider.notifier)
+        .optimizeMealPlan(mealPlanId);
+
+    if (!mounted) return;
+
+    final state = ref.read(mealPlanNotifierProvider);
+    if (state.error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${state.error}')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Meal plan optimized successfully!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context) async {

@@ -43,6 +43,31 @@ const mealPlanItemSchema = new mongoose.Schema(
       default: 0,
       required: true,
     },
+    // OPTIMIZATION FIELDS
+    userRating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      default: null,
+    },
+    userAction: {
+      type: String,
+      enum: ["none", "saved", "replaced", "disliked", "completed"],
+      default: "none",
+    },
+    replacedFrom: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Recipe",
+      default: null,
+    },
+    replacementReason: {
+      type: String,
+      default: null,
+    },
+    isLocked: {
+      type: Boolean,
+      default: false, // When true, this meal won't be changed during optimization
+    },
   },
   { timestamps: true },
 );

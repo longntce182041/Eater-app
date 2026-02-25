@@ -1,4 +1,3 @@
-// src/api/services/recipe.management.service.js
 const mongoose = require('mongoose');
 const { Recipe } = require('../../models/Recipe');
 const { RecipesIngredient } = require('../../models/recipes_ingredient');
@@ -9,7 +8,7 @@ const { RecipeNutrition } = require('../../models/recipe_nutrion');
 class RecipeService {
     // 1. Get All
     async getAllRecipes(query) {
-        const { keyword, status = 'published', page = 1, limit = 10, maxCookingTime } = query;
+        const { keyword, status, page = 1, limit = 10, maxCookingTime } = query;
         let filter = {};
 
         // Search in both name and description

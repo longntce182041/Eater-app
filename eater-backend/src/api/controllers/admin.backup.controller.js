@@ -4,6 +4,7 @@ const { spawn, spawnSync } = require('child_process');
 const { BackupRecord } = require('../../models/backupRecord');
 
 const MONGODUMP = process.env.MONGODUMP_PATH || 'mongodump';
+const MONGORESTORE = process.env.MONGORESTORE_PATH || 'mongorestore';
 const DEFAULT_BACKUP_DIR =
   process.env.BACKUP_DIR || path.resolve(process.cwd(), 'backups');
 
@@ -91,6 +92,106 @@ exports.downloadBackup = async (req, res) => {
     if (!record) return res.status(404).json({ success: false, message: 'Backup not found' });
     if (!fs.existsSync(record.path)) return res.status(404).json({ success: false, message: 'File not found' });
     return res.download(record.path, record.filename);
+  } catch (e) {
+    return res.status(500).json({ success: false, message: e.message });
+  }
+};
+
+exports.restoreBackup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'Backup ID required' });
+    }
+
+    const record = await BackupRecord.findById(id);
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Backup not found' });
+    }
+
+    if (!fs.existsSync(record.path)) {
+      return res.status(404).json({ success: false, message: 'Backup file not found' });
+    }
+
+    const mongoUri = process.env.MONGO_URI || process.env.MONGO_URL || process.env.MONGODB_URI;
+    if (!mongoUri) {
+      return res.status(500).json({ success: false, message: 'MONGO_URI not configured' });
+    }
+
+    const args = [`--uri=${mongoUri}`, `--archive=${record.path}`, '--gzip', '--drop'];
+
+    // Check mongorestore availability
+    const check = spawnSync(MONGORESTORE, ['--version'], { timeout: 5000 });
+    if (check.error || check.status !== 0) {
+      const msg = check.error ? check.error.message : 'mongorestore not available';
+      return res.status(500).json({ success: false, message: `mongorestore check failed: ${msg}` });
+    }
+
+    // Create restore record
+    const restoreRecord = new BackupRecord({
+      filename: `restore-${record.filename}`,
+      path: record.path,
+      status: 'in-progress',
+      createdBy: req.user && req.user._id,
+      note: `Restore from ${record.filename}`
+    });
+    await restoreRecord.save();
+
+    // Respond immediately - restore runs in background
+    res.json({ success: true, message: 'Restore started', id: restoreRecord._id });
+
+    // Run mongorestore in background with timeout (30 minutes)
+    const proc = spawn(MONGORESTORE, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const timeout = setTimeout(() => {
+      proc.kill();
+    }, 30 * 60 * 1000);
+
+    let stderr = '';
+    let stdout = '';
+    const restoreId = restoreRecord._id;
+    
+    proc.stderr.on('data', d => (stderr += d.toString()));
+    proc.stdout.on('data', d => (stdout += d.toString()));
+
+    proc.on('error', async err => {
+      clearTimeout(timeout);
+      try {
+        await BackupRecord.updateOne(
+          { _id: restoreId },
+          { 
+            status: 'failed',
+            note: err.message
+          }
+        );
+      } catch (e) {
+        console.error('Error updating restore record:', e.message);
+      }
+    });
+
+    proc.on('close', async code => {
+      clearTimeout(timeout);
+      try {
+        if (code === 0) {
+          await BackupRecord.updateOne(
+            { _id: restoreId },
+            { 
+              status: 'done',
+              note: stderr || stdout || 'Restore completed successfully'
+            }
+          );
+        } else {
+          await BackupRecord.updateOne(
+            { _id: restoreId },
+            { 
+              status: 'failed',
+              note: stderr || stdout || `exit code ${code}`
+            }
+          );
+        }
+      } catch (e) {
+        console.error('Error updating restore record after close:', e.message);
+      }
+    });
   } catch (e) {
     return res.status(500).json({ success: false, message: e.message });
   }

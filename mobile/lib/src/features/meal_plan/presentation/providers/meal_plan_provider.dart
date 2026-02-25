@@ -68,6 +68,80 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
+
+  /// Rate a meal in the current meal plan
+  Future<void> rateMeal(String mealPlanId, String itemId, int rating) async {
+    try {
+      final updatedItem = await _apiClient.rateMeal(mealPlanId, itemId, rating);
+      if (state.result != null) {
+        // Update the item in the current result
+        final updatedItems = state.result!.items
+            .map((item) => item.id == itemId ? updatedItem : item)
+            .toList();
+        final newResult = MealPlanGenerationResult(
+          mealPlan: state.result!.mealPlan,
+          items: updatedItems,
+          summary: state.result!.summary,
+        );
+        state = state.copyWith(result: newResult);
+      }
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to rate meal: ${e.toString()}');
+    }
+  }
+
+  /// Replace a meal in the current meal plan
+  Future<void> replaceMeal(
+    String mealPlanId,
+    String itemId,
+    String newRecipeId,
+    String? reason,
+  ) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final updatedItem = await _apiClient.replaceMeal(
+        mealPlanId,
+        itemId,
+        newRecipeId,
+        reason,
+      );
+      if (state.result != null) {
+        // Update the item in the current result
+        final updatedItems = state.result!.items
+            .map((item) => item.id == itemId ? updatedItem : item)
+            .toList();
+        final newResult = MealPlanGenerationResult(
+          mealPlan: state.result!.mealPlan,
+          items: updatedItems,
+          summary: state.result!.summary,
+        );
+        state = state.copyWith(isLoading: false, result: newResult);
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to replace meal: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Optimize the entire meal plan
+  Future<void> optimizeMealPlan(String mealPlanId) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _apiClient.optimizeMealPlan(mealPlanId);
+      // Reload the optimized meal plan
+      await Future.delayed(const Duration(milliseconds: 500));
+      final result = await _apiClient.fetchLatestMealPlan();
+      await Future.delayed(const Duration(milliseconds: 300));
+      state = state.copyWith(isLoading: false, result: result);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to optimize meal plan: ${e.toString()}',
+      );
+    }
+  }
 }
 
 final mealPlanNotifierProvider =

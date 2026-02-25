@@ -4,12 +4,12 @@ const userController = require("../controllers/user.management.controller");
 const { protect, authorize } = require("../../middleware/authMiddleware");
 
 // GET List & Create
-router.get("/", userController.getUsers); // Nên thêm protect, authorize('admin')
-router.post("/create", userController.createUser);
+router.get("/",protect, authorize('admin'), userController.getUsers);
+router.post("/create",protect, authorize('admin'), userController.createUser);
 
 // Detail, Update, Delete theo ID
-router.get("/:id", userController.getUserDetail);
-router.put("/update/:id", userController.updateUser);
-router.delete("/delete/:id", userController.deleteUser);
+router.get("/:id",protect, authorize('admin'), userController.getUserDetail);
+router.put("/update/:id",protect, authorize('admin'), userController.updateUser);
+router.delete("/delete/:id",protect, authorize('admin'), userController.deleteUser);
 
 module.exports = router;

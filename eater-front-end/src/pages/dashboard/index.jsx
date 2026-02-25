@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ShoppingCart, MessageSquare, Users, Eye } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -7,6 +7,8 @@ import {
 // Import component con vừa tạo ở Bước 1
 // Lưu ý: Kiểm tra kỹ đường dẫn import này cho đúng với folder của bạn
 import StatsWidget from '../../features/dashboard/components/StatsWidget';
+import MacroDistributionCard from '../../features/dashboard/components/MacroDistributionCard';
+import axiosClient from '../../api/axiosClient';
 
 // Dữ liệu giả lập cho biểu đồ
 const data = [
@@ -22,6 +24,39 @@ const data = [
 ];
 
 const DashboardPage = () => {
+    const [macroSummary, setMacroSummary] = useState(null);
+    const [macroLoading, setMacroLoading] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchMacroDistribution = async () => {
+            try {
+                setMacroLoading(true);
+                const res = await axiosClient.get('/ai/meal-plans/latest');
+                const summary = res?.data?.data?.summary?.macroDistribution || null;
+                if (isMounted) {
+                    setMacroSummary(summary);
+                }
+            } catch (error) {
+                console.error('Failed to load macro distribution', error);
+                if (isMounted) {
+                    setMacroSummary(null);
+                }
+            } finally {
+                if (isMounted) {
+                    setMacroLoading(false);
+                }
+            }
+        };
+
+        fetchMacroDistribution();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
     return (
         <div>
             <h2 style={{ fontSize: '24px', marginBottom: '25px', color: '#30a5ff', fontWeight: '600' }}>
@@ -91,6 +126,10 @@ const DashboardPage = () => {
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
+            </div>
+
+            <div style={{ marginTop: '30px' }}>
+                <MacroDistributionCard data={macroSummary} loading={macroLoading} />
             </div>
         </div>
     );

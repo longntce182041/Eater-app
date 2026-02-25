@@ -193,7 +193,16 @@ class RecipeService {
         return recipe;
     }
 
-    // 5. Delete Recipe
+    // 5. Get Nutrition Values
+    async getNutritionByRecipeId(recipeId) {
+        const nutrition = await RecipeNutrition.findOne({ recipeId }).populate('recipeId', 'name');
+        if (!nutrition) {
+            throw new Error("Nutrition information not found for this recipe");
+        }
+        return nutrition;
+    }
+
+    // 6. Delete Recipe
     async deleteRecipe(id) {
         const recipe = await Recipe.findById(id);
         if (!recipe) throw new Error("Recipe not found");

@@ -23,4 +23,7 @@ router.put("/update/:id", recipeController.updateRecipe);
 router.delete("/delete/:id", recipeController.deleteRecipe);
 // (Nếu dùng path delete cũ: router.delete("/delete/:id", ...))
 
+// GET Nutrition Values
+router.get("/:id/nutrition", recipeController.getRecipeNutrition);
+
 module.exports = router;

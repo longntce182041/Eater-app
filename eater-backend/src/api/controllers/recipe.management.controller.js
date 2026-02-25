@@ -63,6 +63,16 @@ class RecipeManagementController {
             res.status(400).json({ success: false, message: error.message });
         }
     }
+
+    // GET Nutrition Values
+    async getRecipeNutrition(req, res) {
+        try {
+            const nutrition = await recipeService.getNutritionByRecipeId(req.params.id);
+            res.json({ success: true, data: nutrition });
+        } catch (error) {
+            res.status(404).json({ success: false, message: error.message });
+        }
+    }
 }
 
 module.exports = new RecipeManagementController();

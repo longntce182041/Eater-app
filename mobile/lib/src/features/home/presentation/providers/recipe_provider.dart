@@ -203,3 +203,11 @@ final recipeListProvider =
       final apiClient = ref.watch(recipeApiClientProvider);
       return RecipeListNotifier(apiClient);
     });
+// Nutrition Provider
+final recipeNutritionProvider = FutureProvider.family<RecipeNutrition, String>((
+  ref,
+  recipeId,
+) async {
+  final apiClient = ref.watch(recipeApiClientProvider);
+  return apiClient.getRecipeNutrition(recipeId);
+});

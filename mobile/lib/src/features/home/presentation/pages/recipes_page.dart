@@ -450,13 +450,15 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
 }
 
 // Recipe Detail Bottom Sheet
-class _RecipeDetailSheet extends StatelessWidget {
+class _RecipeDetailSheet extends ConsumerWidget {
   final Recipe recipe;
 
   const _RecipeDetailSheet({required this.recipe});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nutritionAsync = ref.watch(recipeNutritionProvider(recipe.id));
+
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.5,
@@ -573,6 +575,81 @@ class _RecipeDetailSheet extends StatelessWidget {
                     ),
                     const SizedBox(height: 32),
 
+                    // Nutrition Values Section
+                    const Text(
+                      'Nutrition Values',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D2D2D),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    nutritionAsync.when(
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFFF9800),
+                        ),
+                      ),
+                      error: (error, stack) => Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Unable to load nutrition data',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                      data: (nutrition) => Column(
+                        children: [
+                          // Nutrition Grid
+                          GridView.count(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: [
+                              _buildNutritionCard(
+                                'Calories',
+                                '${nutrition.calories.toStringAsFixed(0)} kcal',
+                                Icons.local_fire_department,
+                                const Color(0xFFFF6B6B),
+                              ),
+                              _buildNutritionCard(
+                                'Protein',
+                                '${nutrition.protein.toStringAsFixed(1)}g',
+                                Icons.egg,
+                                const Color(0xFF51CF66),
+                              ),
+                              _buildNutritionCard(
+                                'Fat',
+                                '${nutrition.fat.toStringAsFixed(1)}g',
+                                Icons.opacity,
+                                const Color(0xFFFFD93D),
+                              ),
+                              _buildNutritionCard(
+                                'Carbs',
+                                '${nutrition.carbohydrates.toStringAsFixed(1)}g',
+                                Icons.grain,
+                                const Color(0xFFFF9800),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Macro Ratio Bar
+                          _buildMacroRatioChart(nutrition),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
                     // Action buttons
                     Row(
                       children: [
@@ -581,8 +658,14 @@ class _RecipeDetailSheet extends StatelessWidget {
                             onPressed: () {
                               // TODO: Add to favorites
                             },
-                            icon: const Icon(Icons.favorite_border),
-                            label: const Text('Save'),
+                            icon: const Icon(
+                              Icons.favorite_border,
+                              color: Colors.black,
+                            ),
+                            label: const Text(
+                              'Save',
+                              style: TextStyle(color: Colors.black),
+                            ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               side: BorderSide(color: Colors.grey[300]!),
@@ -598,8 +681,14 @@ class _RecipeDetailSheet extends StatelessWidget {
                             onPressed: () {
                               // TODO: Start cooking
                             },
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('Start Cooking'),
+                            icon: const Icon(
+                              Icons.play_arrow,
+                              color: Colors.black,
+                            ),
+                            label: const Text(
+                              'Start Cooking',
+                              style: TextStyle(color: Colors.black),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFF9800),
                               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -618,6 +707,131 @@ class _RecipeDetailSheet extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildNutritionCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey[200]!, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, size: 24, color: color),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D2D2D),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMacroRatioChart(RecipeNutrition nutrition) {
+    // Calculate macro percentages
+    final proteinCals = nutrition.protein * 4;
+    final fatCals = nutrition.fat * 9;
+    final carbsCals = nutrition.carbohydrates * 4;
+    final totalMacroCals = proteinCals + fatCals + carbsCals;
+
+    final proteinPercent = totalMacroCals > 0
+        ? (proteinCals / totalMacroCals) * 100
+        : 0;
+    final fatPercent = totalMacroCals > 0
+        ? (fatCals / totalMacroCals) * 100
+        : 0;
+    final carbsPercent = totalMacroCals > 0
+        ? (carbsCals / totalMacroCals) * 100
+        : 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Macro bar
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Row(
+            children: [
+              Expanded(
+                flex: proteinPercent.toInt(),
+                child: Container(height: 16, color: const Color(0xFF51CF66)),
+              ),
+              Expanded(
+                flex: fatPercent.toInt(),
+                child: Container(height: 16, color: const Color(0xFFFFD93D)),
+              ),
+              Expanded(
+                flex: carbsPercent.toInt(),
+                child: Container(height: 16, color: const Color(0xFFFF9800)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Legend
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildMacroLegend(
+              'Protein',
+              '${proteinPercent.toStringAsFixed(0)}%',
+              const Color(0xFF51CF66),
+            ),
+            _buildMacroLegend(
+              'Fat',
+              '${fatPercent.toStringAsFixed(0)}%',
+              const Color(0xFFFFD93D),
+            ),
+            _buildMacroLegend(
+              'Carbs',
+              '${carbsPercent.toStringAsFixed(0)}%',
+              const Color(0xFFFF9800),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMacroLegend(String label, String percentage, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        Text(
+          percentage,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2D2D2D),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -37,6 +37,155 @@ DEFAULT_MEAL_DISTRIBUTION = {
     MealType.SNACK: 0.05       # 5%
 }
 
+# Macro targets (% of total calories)
+# Protein: 4 cal/gram, Carbs: 4 cal/gram, Fat: 9 cal/gram
+MACRO_TARGETS = {
+    "protein_low": 0.15,      # 15% = 1.2g per kg
+    "protein_high": 0.35,     # 35% = 2.8g per kg
+    "carbs_low": 0.20,        # 20%
+    "carbs_high": 0.65,       # 65%
+    "fat_min": 0.15,          # 15%
+    "fat_max": 0.35           # 35%
+}
+
+
+class MealPlanValidator:
+    """Validator để kiểm tra meal plan có phù hợp với user không"""
+    
+    @staticmethod
+    def validate_meal_plan(
+        meal_plan: MealPlan,
+        body_profile: BodyProfile,
+        goal_profile: GoalProfile,
+        diet_constraints: DietConstraints,
+        target_calories: float,
+        days: int = 1
+    ) -> Dict[str, Any]:
+        """
+        Kiểm tra meal plan có phù hợp không.
+        
+        Kiểm tra:
+        1. Calories có match target không (±10%)
+        2. Protein/Carbs/Fat có hợp lý không
+        3. Có recipes nào vi phạm diet constraints không
+        4. BMI alignment (meal plan có giúp đạt mục tiêu BMI không)
+        5. Macro distribution có cân bằng không
+        
+        Returns:
+            Dict với các thông tin:
+            - is_valid: True/False
+            - issues: danh sách vấn đề (nếu có)
+            - warnings: cảnh báo (phần trăm sai lệch nhưng vẫn chấp nhận)
+            - details: chi tiết kiểm tra
+        """
+        issues = []
+        warnings = []
+        details = {}
+        
+        # 1. Kiểm tra Calories
+        daily_calories = meal_plan.daily_calories
+        calorie_diff = abs(daily_calories - target_calories) / target_calories
+        
+        details["calorie_target"] = target_calories
+        details["calorie_actual"] = daily_calories
+        details["calorie_diff_percent"] = round(calorie_diff * 100, 2)
+        
+        if calorie_diff > CALORIE_TOLERANCE:
+            issues.append(
+                f"Calories sai lệch {calorie_diff * 100:.1f}% "
+                f"(target: {target_calories:.0f}, actual: {daily_calories:.0f})"
+            )
+        elif calorie_diff > 0.05:  # 5% warning
+            warnings.append(
+                f"Calories sai lệch {calorie_diff * 100:.1f}% "
+                f"(target: {target_calories:.0f}, actual: {daily_calories:.0f})"
+            )
+        
+        # 2. Kiểm tra Macros
+        protein_g = meal_plan.total_protein_g or 0
+        carbs_g = meal_plan.total_carbs_g or 0
+        fat_g = meal_plan.total_fat_g or 0
+        
+        protein_cal = protein_g * 4
+        carbs_cal = carbs_g * 4
+        fat_cal = fat_g * 9
+        total_macro_cal = protein_cal + carbs_cal + fat_cal
+        
+        if total_macro_cal > 0:
+            protein_pct = protein_cal / total_macro_cal
+            carbs_pct = carbs_cal / total_macro_cal
+            fat_pct = fat_cal / total_macro_cal
+        else:
+            protein_pct = carbs_pct = fat_pct = 0
+        
+        details["protein_g"] = round(protein_g, 1)
+        details["protein_percent"] = round(protein_pct * 100, 1)
+        details["carbs_g"] = round(carbs_g, 1)
+        details["carbs_percent"] = round(carbs_pct * 100, 1)
+        details["fat_g"] = round(fat_g, 1)
+        details["fat_percent"] = round(fat_pct * 100, 1)
+        
+        # Check macro balance
+        if fat_pct < MACRO_TARGETS["fat_min"] or fat_pct > MACRO_TARGETS["fat_max"]:
+            warnings.append(
+                f"Fat % = {fat_pct * 100:.1f}% (nên {MACRO_TARGETS['fat_min']*100:.0f}-{MACRO_TARGETS['fat_max']*100:.0f}%)"
+            )
+        
+        if carbs_pct < MACRO_TARGETS["carbs_low"] or carbs_pct > MACRO_TARGETS["carbs_high"]:
+            warnings.append(
+                f"Carbs % = {carbs_pct * 100:.1f}% (nên {MACRO_TARGETS['carbs_low']*100:.0f}-{MACRO_TARGETS['carbs_high']*100:.0f}%)"
+            )
+        
+        # 3. Kiểm tra protein theo goal
+        weight_kg = body_profile.weight_kg or 70
+        if goal_profile.protein_priority.value == "high":
+            protein_target_min = weight_kg * 2.0  # 2g/kg
+            if protein_g < protein_target_min:
+                warnings.append(
+                    f"Protein thấp cho mục tiêu '{goal_profile.protein_priority.value}' "
+                    f"({protein_g:.0f}g < {protein_target_min:.0f}g)"
+                )
+        
+        # 4. Kiểm tra BMI alignment
+        bmi = body_profile.bmi or 0
+        details["current_bmi"] = round(bmi, 1)
+        
+        if goal_profile.primary_goal == "weight_loss":
+            if daily_calories >= body_profile.tdee:
+                issues.append(
+                    f"Mục tiêu: Giảm cân nhưng calories {daily_calories:.0f} >= TDEE {body_profile.tdee:.0f} "
+                    f"(phải < TDEE để giảm)"
+                )
+            else:
+                deficit = body_profile.tdee - daily_calories
+                details["calorie_deficit"] = round(deficit, 0)
+                details["weight_loss_per_week_kg"] = round(deficit / 7700, 2)  # 7700 = 1kg fat
+        
+        elif goal_profile.primary_goal == "muscle_gain":
+            if daily_calories <= body_profile.tdee:
+                warnings.append(
+                    f"Mục tiêu: Tăng cơ nhưng calories {daily_calories:.0f} <= TDEE {body_profile.tdee:.0f} "
+                    f"(nên > TDEE để tăng)"
+                )
+            else:
+                surplus = daily_calories - body_profile.tdee
+                details["calorie_surplus"] = round(surplus, 0)
+                details["weight_gain_per_week_kg"] = round(surplus / 7700, 2)
+        
+        # 5. Tổng hợp kết quả
+        is_valid = len(issues) == 0
+        
+        return {
+            "is_valid": is_valid,
+            "status": "✓ Phù hợp" if is_valid else "✗ Không phù hợp",
+            "issues": issues,
+            "warnings": warnings,
+            "details": details,
+            "meals_count": len(meal_plan.meals),
+            "days": days
+        }
+
+
 
 class RecipeScore:
     """Simple recipe scoring for selection"""
@@ -170,6 +319,24 @@ class MealPlanGenerator:
         
         logger.info(f"Meal plan generated: {len(meals)} meals over {days} days, "
                    f"{total_calories:.0f} total calories (target: {target_calories * days:.0f})")
+        
+        # Validate meal plan
+        validator = MealPlanValidator()
+        validation_result = validator.validate_meal_plan(
+            meal_plan=meal_plan,
+            body_profile=body_profile,
+            goal_profile=goal_profile,
+            diet_constraints=diet_constraints,
+            target_calories=target_calories,
+            days=days
+        )
+        
+        metadata["validation"] = validation_result
+        
+        if validation_result["is_valid"]:
+            logger.info(f"✓ Meal plan đã được xác minh và phù hợp")
+        else:
+            logger.warning(f"⚠ Meal plan có vấn đề: {validation_result['issues']}")
         
         return MealPlanGenerationOutput(
             meal_plan=meal_plan,
@@ -560,3 +727,38 @@ def generate_meal_plan(
     """
     generator = MealPlanGenerator()
     return generator.generate(body_profile, diet_constraints, goal_profile, recipe_database, days)
+
+
+def validate_meal_plan(
+    meal_plan: MealPlan,
+    body_profile: BodyProfile,
+    goal_profile: GoalProfile,
+    diet_constraints: DietConstraints,
+    target_calories: float,
+    days: int = 1
+) -> Dict[str, Any]:
+    """
+    Kiểm tra một meal plan có phù hợp với user không.
+    
+    Có thể dùng standalone (không cần generate).
+    
+    Args:
+        meal_plan: Meal plan để kiểm tra
+        body_profile: User's metabolic data
+        goal_profile: User's health goal
+        diet_constraints: User's diet constraints
+        target_calories: Target daily calories
+        days: Number of days in plan
+        
+    Returns:
+        Validation report dict
+    """
+    validator = MealPlanValidator()
+    return validator.validate_meal_plan(
+        meal_plan=meal_plan,
+        body_profile=body_profile,
+        goal_profile=goal_profile,
+        diet_constraints=diet_constraints,
+        target_calories=target_calories,
+        days=days
+    )

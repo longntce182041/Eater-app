@@ -15,6 +15,7 @@ const healthRoutes = require("./health.routes");
 const micronutrientRoutes = require("./micronutrient.management.routes");
 const adminBackupRoutes = require("./admin.backup.routes");
 const aiRoutes = require("./ai.routes");
+const mealPlanOptimizationRoutes = require("./meal.plan.optimization.routes");
 
 const router = express.Router();
 router.use("/auth/user", authUserRoutes);
@@ -31,5 +32,6 @@ router.use("/recipes", recipesRoutes);
 // router.use("/admin", adminRoutes);
 router.use("/micronutrients", micronutrientRoutes);
 router.use("/admin", adminBackupRoutes);
+router.use("/meal-plans", mealPlanOptimizationRoutes);
 
 module.exports = router;

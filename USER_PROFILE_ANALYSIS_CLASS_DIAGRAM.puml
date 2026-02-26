@@ -1,0 +1,100 @@
+@startuml
+title Analyze User Profile - Class Diagram
+
+abstract class BaseModel
+
+class UserProfile {
+  +user_id: str
+  +age: int
+  +gender: str
+  +height_cm: float
+  +weight_kg: float
+  +goal_weight_kg: float
+  +health_goals: str
+  +activity_level: str
+}
+
+class HealthMetrics {
+  +bmr: float
+  +tdee: float
+  +target_calories: float
+}
+
+class UserProfileRequest {
+  +user_id: str
+  +age: int
+  +gender: str
+  +height_cm: float
+  +weight_kg: float
+  +goal_weight_kg: float
+  +health_goals: str
+  +activity_level: str
+  +validate(): bool
+}
+
+class HealthMetricsResponse {
+  +bmr: float
+  +tdee: float
+  +target_calories: float
+}
+
+class AnalysisSummary {
+  +bmr_explanation: str
+  +tdee_explanation: str
+  +target_explanation: str
+}
+
+class UserProfileAnalysisResponse {
+  +user_id: str
+  +health_metrics: HealthMetricsResponse
+  +bmi: float
+  +bmi_category: str
+  +primary_health_goal: str
+  +activity_level: str
+  +analysis_summary: AnalysisSummary
+  +source: str = "AI"
+}
+
+package "BMR/TDEE Calculator Module" {
+  class BmrTdeeCalculator {
+    +calculate_bmr(user: UserProfile): float
+    +calculate_tdee(user: UserProfile, bmr: float): float
+    +calculate_target_calories(tdee: float, health_goal: str): float
+    +build_health_metrics(user: UserProfile, health_goal: str): HealthMetrics
+    +analyze_user_profile(user: UserProfile, health_goals: List[str]): UserProfileAnalysisResponse
+  }
+}
+
+class UserProfileAnalysisEndpoint {
+  +analyze_user_profile_endpoint(payload: UserProfileRequest): UserProfileAnalysisResponse
+}
+
+BaseModel <|-- UserProfile
+BaseModel <|-- HealthMetrics
+BaseModel <|-- UserProfileRequest
+BaseModel <|-- HealthMetricsResponse
+BaseModel <|-- AnalysisSummary
+BaseModel <|-- UserProfileAnalysisResponse
+
+UserProfileAnalysisResponse "1" *-- "1" HealthMetricsResponse : health_metrics
+UserProfileAnalysisResponse "1" *-- "1" AnalysisSummary : analysis_summary
+
+UserProfileAnalysisEndpoint ..> "1" UserProfileRequest : accepts
+UserProfileAnalysisEndpoint ..> "1" UserProfile : maps to
+UserProfileAnalysisEndpoint ..> "1" UserProfileAnalysisResponse : returns
+UserProfileAnalysisEndpoint ..> BmrTdeeCalculator : uses
+
+BmrTdeeCalculator ..> "1" UserProfile : input
+BmrTdeeCalculator ..> "1" HealthMetrics : builds
+
+note right of BmrTdeeCalculator
+  build_health_metrics() aggregates
+  calculate_bmr(), calculate_tdee(),
+  calculate_target_calories()
+end note
+
+note top of UserProfileRequest
+  Pipeline: Request → Domain Model → Business Logic
+  → Response Schema → JSON
+end note
+@enduml

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/recipe_models.dart';
 import '../providers/recipe_provider.dart';
+import '../providers/review_provider.dart';
+import '../widgets/rating_widgets.dart';
 import '../widgets/recipe_widgets.dart';
 
 class RecipesPage extends ConsumerStatefulWidget {
@@ -22,9 +24,32 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
 
-    // Load recipes when page opens
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(recipeListProvider.notifier).loadRecipes();
+    // Load recipes and sync with favorites when page opens
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Load recipes first
+      await ref.read(recipeListProvider.notifier).loadRecipes();
+
+      // Load favorites to sync status
+      await ref.read(favoriteRecipesProvider.notifier).loadFavorites();
+
+      // Sync favorite status in recipes list
+      if (mounted) {
+        final favoritesState = ref.read(favoriteRecipesProvider);
+        final favoriteIds = favoritesState.favorites
+            .map((fav) => fav.recipe.id)
+            .toSet();
+        ref.read(recipeListProvider.notifier).syncFavoriteStatus(favoriteIds);
+      }
+    });
+
+    // Listen to tab changes and load data
+    _tabController.addListener(() {
+      if (_tabController.index == 1 && !_tabController.indexIsChanging) {
+        ref.read(favoriteRecipesProvider.notifier).loadFavorites();
+      }
+      if (_tabController.index == 2 && !_tabController.indexIsChanging) {
+        ref.read(userReviewsProvider.notifier).loadUserReviews();
+      }
     });
   }
 
@@ -165,19 +190,11 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
           // Discover tab - show all recipes
           _buildDiscoverTab(recipeState),
 
-          // Favorites tab - placeholder
-          _buildPlaceholderTab(
-            'No favorites yet',
-            'Tap the heart icon on recipes to save them here',
-            Icons.favorite_border,
-          ),
+          // Favorites tab - show favorite recipes
+          _buildFavoritesTab(),
 
-          // Rated tab - placeholder
-          _buildPlaceholderTab(
-            'No rated recipes',
-            'Rate recipes after cooking to see them here',
-            Icons.star_border,
-          ),
+          // Rated tab - show user reviews
+          _buildRatedTab(),
         ],
       ),
     );
@@ -299,15 +316,8 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
                 return RecipeCard(
                   recipe: recipe,
                   onTap: () => _showRecipeDetail(recipe),
-                  onFavorite: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Added ${recipe.name} to favorites'),
-                        duration: const Duration(seconds: 2),
-                        backgroundColor: const Color(0xFFFF9800),
-                      ),
-                    );
-                  },
+                  isFavorite: recipe.isFavorited,
+                  onFavorite: () => _handleFavoriteToggle(recipe),
                 );
               }, childCount: state.recipes.length),
             ),
@@ -325,6 +335,215 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFavoritesTab() {
+    final favoritesState = ref.watch(favoriteRecipesProvider);
+
+    if (favoritesState.isLoading && favoritesState.favorites.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFFF9800)),
+      );
+    }
+
+    if (favoritesState.isEmpty) {
+      return _buildPlaceholderTab(
+        'No favorites yet',
+        'Tap the heart icon on recipes to save them here',
+        Icons.favorite_border,
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref
+            .read(favoriteRecipesProvider.notifier)
+            .loadFavorites(refresh: true);
+      },
+      color: const Color(0xFFFF9800),
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.85,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                if (index >= favoritesState.favorites.length) {
+                  return null;
+                }
+
+                final favorite = favoritesState.favorites[index];
+                final recipe = favorite.recipe;
+
+                // Load more when reaching near the end
+                if (index == favoritesState.favorites.length - 2 &&
+                    favoritesState.hasMore &&
+                    !favoritesState.isLoading) {
+                  Future.microtask(
+                    () => ref.read(favoriteRecipesProvider.notifier).loadMore(),
+                  );
+                }
+
+                return RecipeCard(
+                  recipe: recipe,
+                  onTap: () => _showRecipeDetail(recipe),
+                  isFavorite: true,
+                  onFavorite: () => _handleFavoriteToggle(recipe),
+                );
+              }, childCount: favoritesState.favorites.length),
+            ),
+          ),
+          if (favoritesState.isLoading && favoritesState.favorites.isNotEmpty)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFFF9800)),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatedTab() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final userReviewsState = ref.watch(userReviewsProvider);
+
+        if (userReviewsState.isLoading && userReviewsState.reviews.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFFFF9800)),
+          );
+        }
+
+        if (userReviewsState.isEmpty) {
+          return _buildPlaceholderTab(
+            'No rated recipes',
+            'Rate recipes after cooking to see them here',
+            Icons.star_border,
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            await ref
+                .read(userReviewsProvider.notifier)
+                .loadUserReviews(refresh: true);
+          },
+          color: const Color(0xFFFF9800),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount:
+                userReviewsState.reviews.length +
+                (userReviewsState.isLoading ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == userReviewsState.reviews.length) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFFFF9800)),
+                  ),
+                );
+              }
+
+              final reviewItem = userReviewsState.reviews[index];
+
+              // Load more when reaching near the end
+              if (index == userReviewsState.reviews.length - 2 &&
+                  userReviewsState.hasMore &&
+                  !userReviewsState.isLoading) {
+                Future.microtask(
+                  () => ref.read(userReviewsProvider.notifier).loadMore(),
+                );
+              }
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBF5),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFFE2B8), width: 1),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => _showRecipeDetail(reviewItem.recipe),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    reviewItem.recipe.name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF2D2D2D),
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _formatDate(reviewItem.createdAt),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF7A7A7A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          StarRating(
+                            rating: reviewItem.rating,
+                            onRatingChanged: (_) {},
+                            isEditable: false,
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (reviewItem.comment.isNotEmpty)
+                        Text(
+                          reviewItem.comment,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF4A4A4A),
+                            height: 1.5,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -355,6 +574,65 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  // Handle favorite toggle
+  Future<void> _handleFavoriteToggle(Recipe recipe) async {
+    try {
+      await ref.read(recipeListProvider.notifier).toggleFavorite(recipe.id);
+
+      // Reload favorites to sync across all views
+      await ref
+          .read(favoriteRecipesProvider.notifier)
+          .loadFavorites(refresh: true);
+
+      // Sync favorite status in main recipes list
+      if (mounted) {
+        final favoritesState = ref.read(favoriteRecipesProvider);
+        final favoriteIds = favoritesState.favorites
+            .map((fav) => fav.recipe.id)
+            .toSet();
+        ref.read(recipeListProvider.notifier).syncFavoriteStatus(favoriteIds);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              recipe.isFavorited
+                  ? 'Removed ${recipe.name} from favorites'
+                  : 'Added ${recipe.name} to favorites',
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: const Color(0xFFFF9800),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update favorite: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showRecipeDetail(Recipe recipe) {
@@ -458,6 +736,19 @@ class _RecipeDetailSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nutritionAsync = ref.watch(recipeNutritionProvider(recipe.id));
+    final recipeListState = ref.watch(recipeListProvider);
+
+    // Get updated recipe with current favorite status from state
+    final currentRecipe = recipeListState.recipes.firstWhere(
+      (r) => r.id == recipe.id,
+      orElse: () => recipe,
+    );
+
+    // Load reviews when sheet opens
+    ref.listen(recipeReviewsProvider(recipe.id), (previous, next) {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(recipeReviewsProvider(recipe.id).notifier).loadReviews();
+    });
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -650,21 +941,81 @@ class _RecipeDetailSheet extends ConsumerWidget {
                     ),
                     const SizedBox(height: 32),
 
+                    // Rating Section
+                    _buildRecipeRatingSection(currentRecipe),
+                    const SizedBox(height: 32),
+
                     // Action buttons
                     Row(
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () {
-                              // TODO: Add to favorites
+                            onPressed: () async {
+                              try {
+                                await ref
+                                    .read(recipeListProvider.notifier)
+                                    .toggleFavorite(recipe.id);
+
+                                // Reload favorites to sync across all views
+                                await ref
+                                    .read(favoriteRecipesProvider.notifier)
+                                    .loadFavorites(refresh: true);
+
+                                // Sync favorite status in main recipes list
+                                if (context.mounted) {
+                                  final favoritesState = ref.read(
+                                    favoriteRecipesProvider,
+                                  );
+                                  final favoriteIds = favoritesState.favorites
+                                      .map((fav) => fav.recipe.id)
+                                      .toSet();
+                                  ref
+                                      .read(recipeListProvider.notifier)
+                                      .syncFavoriteStatus(favoriteIds);
+
+                                  // Get updated recipe to show correct message
+                                  final updatedState = ref.read(
+                                    recipeListProvider,
+                                  );
+                                  final updatedRecipe = updatedState.recipes
+                                      .firstWhere((r) => r.id == recipe.id);
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        updatedRecipe.isFavorited
+                                            ? 'Added ${recipe.name} to favorites'
+                                            : 'Removed ${recipe.name} from favorites',
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                      backgroundColor: const Color(0xFFFF9800),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Failed to update favorite: $e',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
                             },
-                            icon: const Icon(
-                              Icons.favorite_border,
-                              color: Colors.black,
+                            icon: Icon(
+                              currentRecipe.isFavorited
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color: currentRecipe.isFavorited
+                                  ? Colors.red
+                                  : Colors.black,
                             ),
-                            label: const Text(
-                              'Save',
-                              style: TextStyle(color: Colors.black),
+                            label: Text(
+                              currentRecipe.isFavorited ? 'Saved' : 'Save',
+                              style: const TextStyle(color: Colors.black),
                             ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -741,6 +1092,169 @@ class _RecipeDetailSheet extends ConsumerWidget {
           Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
         ],
       ),
+    );
+  }
+
+  Widget _buildRecipeRatingSection(Recipe recipe) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final reviewsState = ref.watch(recipeReviewsProvider(recipe.id));
+        final userReviewAsync = ref.watch(userRecipeReviewProvider(recipe.id));
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (reviewsState.stats != null)
+              Column(
+                children: [
+                  RatingStatsWidget(stats: reviewsState.stats!),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Your Rating',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2D2D2D),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                userReviewAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: CircularProgressIndicator(color: Color(0xFFFF9800)),
+                  ),
+                  error: (error, stack) => ElevatedButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => RatingDialog(recipeId: recipe.id),
+                      );
+                    },
+                    icon: const Icon(Icons.star, color: Colors.amber),
+                    label: const Text(
+                      'Rate Recipe',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF9800),
+                      foregroundColor: Colors.black,
+                    ),
+                  ),
+                  data: (userReview) {
+                    if (userReview == null) {
+                      return ElevatedButton.icon(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) =>
+                                RatingDialog(recipeId: recipe.id),
+                          );
+                        },
+                        icon: const Icon(Icons.star, color: Colors.amber),
+                        label: const Text(
+                          'Rate Recipe',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF9800),
+                          foregroundColor: Colors.black,
+                        ),
+                      );
+                    }
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBF5),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(0xFFFFE2B8),
+                          width: 1,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x14000000),
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                StarRating(
+                                  rating: userReview.rating,
+                                  onRatingChanged: (_) {},
+                                  isEditable: false,
+                                  size: 24,
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => RatingDialog(
+                                        recipeId: recipe.id,
+                                        existingReview: userReview,
+                                      ),
+                                    );
+                                  },
+                                  child: const Icon(
+                                    Icons.edit,
+                                    color: Color(0xFFFF9800),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (userReview.comment.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              const Divider(
+                                height: 1,
+                                color: Color(0xFFFFE2B8),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                userReview.comment,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF4A4A4A),
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Reviews',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2D2D2D),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 300,
+              child: RecipeReviewsList(recipeId: recipe.id),
+            ),
+          ],
+        );
+      },
     );
   }
 

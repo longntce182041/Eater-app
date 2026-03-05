@@ -5,6 +5,7 @@ import '../providers/meal_plan_provider.dart';
 import '../../domain/meal_plan_models.dart';
 import '../widgets/macro_distribution_donut.dart';
 import '../widgets/detailed_macro_modal.dart';
+import '../../../../core/utils/notification_service.dart';
 
 class MealPlanPage extends ConsumerStatefulWidget {
   const MealPlanPage({super.key});
@@ -390,12 +391,14 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
   void _showDetailedMacroModal(List<_DailyMacro> dailyMacros) {
     // Convert internal _DailyMacro to public DailyMacro
     final dailyMacroList = dailyMacros
-        .map((m) => DailyMacro(
-              dayIndex: m.dayIndex,
-              protein: m.protein,
-              carbohydrates: m.carbohydrates,
-              fat: m.fat,
-            ))
+        .map(
+          (m) => DailyMacro(
+            dayIndex: m.dayIndex,
+            protein: m.protein,
+            carbohydrates: m.carbohydrates,
+            fat: m.fat,
+          ),
+        )
         .toList();
 
     showModalBottomSheet(
@@ -416,9 +419,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
               ),
               child: SingleChildScrollView(
                 controller: scrollController,
-                child: DetailedMacroBottomSheet(
-                  dailyMacros: dailyMacroList,
-                ),
+                child: DetailedMacroBottomSheet(dailyMacros: dailyMacroList),
               ),
             );
           },
@@ -430,7 +431,8 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
   List<_DailyMacro> _buildDailyMacros(MealPlanGenerationResult result) {
     if (result.items.isEmpty) return [];
 
-    final daysFromItems = result.items
+    final daysFromItems =
+        result.items
             .map((item) => item.dayIndex)
             .fold<int>(0, (max, value) => value > max ? value : max) +
         1;
@@ -1011,12 +1013,9 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                             // In a real app, fetch suggestions and show them
                             // For now, we'll show a simple message
                             Navigator.pop(dialogContext);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Fetching replacement suggestions...',
-                                ),
-                              ),
+                            NotificationService.showInfo(
+                              context,
+                              message: 'Fetching replacement suggestions...',
                             );
                           },
                           child: const Text('Get suggestions'),
@@ -1094,43 +1093,23 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
 
     final state = ref.read(mealPlanNotifierProvider);
     if (state.error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${state.error}')));
+      NotificationService.showError(context, message: 'Error: ${state.error}');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Meal plan optimized successfully!'),
-          duration: Duration(seconds: 2),
-        ),
+      NotificationService.showSuccess(
+        context,
+        message: 'Meal plan optimized successfully!',
       );
     }
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Delete meal plans?'),
-          content: const Text(
-            'This will remove all meal plans and their meals. This action cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFD32F2F),
-              ),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+    final shouldDelete = await NotificationService.showConfirmation(
+      context,
+      title: 'Delete meal plans?',
+      message:
+          'This will remove all meal plans and their meals. This action cannot be undone.',
+      confirmText: 'Delete',
+      isDangerous: true,
     );
 
     if (shouldDelete != true) return;
@@ -1138,9 +1117,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     await ref.read(mealPlanNotifierProvider.notifier).deleteAllMealPlans();
     if (!mounted) return;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('All meal plans deleted')));
+    NotificationService.showSuccess(context, message: 'All meal plans deleted');
   }
 
   Future<int?> _pickDays(BuildContext context, int current) async {
@@ -1248,7 +1225,5 @@ class _DailyMacro {
   double carbohydrates = 0;
   double fat = 0;
 
-  _DailyMacro({
-    required this.dayIndex,
-  });
+  _DailyMacro({required this.dayIndex});
 }

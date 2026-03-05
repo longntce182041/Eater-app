@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/profile_setup_provider.dart';
+import '../../../../core/utils/notification_service.dart';
 
 // Local state for height selection
 class HeightState {
@@ -114,13 +115,9 @@ class _SetHeightPageState extends ConsumerState<SetHeightPage> {
                     );
                     Navigator.pop(context);
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Please enter a valid height (120-250 cm)',
-                        ),
-                        backgroundColor: Colors.red,
-                      ),
+                    NotificationService.showWarning(
+                      context,
+                      message: 'Please enter a valid height (120-250 cm)',
                     );
                   }
                 },

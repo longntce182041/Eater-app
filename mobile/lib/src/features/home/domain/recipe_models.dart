@@ -472,3 +472,76 @@ class UserReviewItem {
     );
   }
 }
+
+/// Ingredient Model
+class Ingredient {
+  final String id;
+  final String name;
+  final String? imageUrl;
+  final double caloriesPerUnit;
+  final double? protein;
+  final double? carbs;
+  final double? fats;
+  final String? description;
+  final String unit;
+
+  Ingredient({
+    required this.id,
+    required this.name,
+    this.imageUrl,
+    required this.caloriesPerUnit,
+    this.protein,
+    this.carbs,
+    this.fats,
+    this.description,
+    required this.unit,
+  });
+
+  factory Ingredient.fromJson(Map<String, dynamic> json) {
+    return Ingredient(
+      id: json['_id'] as String,
+      name: json['name'] as String,
+      imageUrl: json['ImageUrl'] as String?,
+      caloriesPerUnit: (json['calories_per_unit'] as num).toDouble(),
+      protein: (json['protein'] as num?)?.toDouble(),
+      carbs: (json['carbs'] as num?)?.toDouble(),
+      fats: (json['fats'] as num?)?.toDouble(),
+      description: json['description'] as String?,
+      unit: json['unit'] as String,
+    );
+  }
+}
+
+/// Recipe Ingredient (junction model)
+class RecipeIngredient {
+  final String recipeId;
+  final Ingredient ingredient;
+  final String baseQuantity;
+  final String unit;
+
+  RecipeIngredient({
+    required this.recipeId,
+    required this.ingredient,
+    required this.baseQuantity,
+    required this.unit,
+  });
+
+  factory RecipeIngredient.fromJson(Map<String, dynamic> json) {
+    return RecipeIngredient(
+      recipeId: json['recipeId'] is String
+          ? json['recipeId'] as String
+          : (json['recipeId'] as Map<String, dynamic>)['_id'] as String,
+      ingredient: Ingredient.fromJson(
+        json['ingredientId'] as Map<String, dynamic>,
+      ),
+      baseQuantity: json['base_quantity'] as String,
+      unit: json['unit'] as String,
+    );
+  }
+
+  /// Convert to display string
+  String get displayText => '$baseQuantity $unit ${ingredient.name}';
+
+  /// Get quantity as double (if possible)
+  double? get quantityAsDouble => double.tryParse(baseQuantity);
+}

@@ -6,6 +6,13 @@ import '../providers/recipe_provider.dart';
 import '../providers/review_provider.dart';
 import '../widgets/rating_widgets.dart';
 import '../widgets/recipe_widgets.dart';
+import '../../data/recipe_ingredients_api.dart';
+import '../../../grocery/domain/grocery_models.dart';
+import '../../../grocery/presentation/providers/grocery_list_provider.dart';
+import '../../../../core/utils/notification_service.dart';
+
+/// Provider to track which recipes are currently being added to grocery list
+final addingRecipeProvider = StateProvider<Set<String>>((ref) => {});
 
 class RecipesPage extends ConsumerStatefulWidget {
   const RecipesPage({super.key});
@@ -611,25 +618,18 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              recipe.isFavorited
-                  ? 'Removed ${recipe.name} from favorites'
-                  : 'Added ${recipe.name} to favorites',
-            ),
-            duration: const Duration(seconds: 2),
-            backgroundColor: const Color(0xFFFF9800),
-          ),
+        NotificationService.showSuccess(
+          context,
+          message: recipe.isFavorited
+              ? 'Removed from favorites'
+              : 'Added to favorites',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update favorite: $e'),
-            backgroundColor: Colors.red,
-          ),
+        NotificationService.showError(
+          context,
+          message: 'Failed to update favorite',
         );
       }
     }
@@ -941,113 +941,119 @@ class _RecipeDetailSheet extends ConsumerWidget {
                     ),
                     const SizedBox(height: 32),
 
+                    // Ingredients Section
+                    _buildIngredientsSection(ref, recipe.id),
+                    const SizedBox(height: 32),
+
                     // Rating Section
                     _buildRecipeRatingSection(currentRecipe),
                     const SizedBox(height: 32),
 
                     // Action buttons
-                    Row(
+                    Column(
                       children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () async {
-                              try {
-                                await ref
-                                    .read(recipeListProvider.notifier)
-                                    .toggleFavorite(recipe.id);
+                        // Add to Grocery List button
+                        _buildAddToGroceryButton(context, ref, recipe),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () async {
+                                  try {
+                                    await ref
+                                        .read(recipeListProvider.notifier)
+                                        .toggleFavorite(recipe.id);
 
-                                // Reload favorites to sync across all views
-                                await ref
-                                    .read(favoriteRecipesProvider.notifier)
-                                    .loadFavorites(refresh: true);
+                                    // Reload favorites to sync across all views
+                                    await ref
+                                        .read(favoriteRecipesProvider.notifier)
+                                        .loadFavorites(refresh: true);
 
-                                // Sync favorite status in main recipes list
-                                if (context.mounted) {
-                                  final favoritesState = ref.read(
-                                    favoriteRecipesProvider,
-                                  );
-                                  final favoriteIds = favoritesState.favorites
-                                      .map((fav) => fav.recipe.id)
-                                      .toSet();
-                                  ref
-                                      .read(recipeListProvider.notifier)
-                                      .syncFavoriteStatus(favoriteIds);
+                                    // Sync favorite status in main recipes list
+                                    if (context.mounted) {
+                                      final favoritesState = ref.read(
+                                        favoriteRecipesProvider,
+                                      );
+                                      final favoriteIds = favoritesState
+                                          .favorites
+                                          .map((fav) => fav.recipe.id)
+                                          .toSet();
+                                      ref
+                                          .read(recipeListProvider.notifier)
+                                          .syncFavoriteStatus(favoriteIds);
+                                      // Get updated recipe to show correct message
+                                      final updatedState = ref.read(
+                                        recipeListProvider,
+                                      );
+                                      final updatedRecipe = updatedState.recipes
+                                          .firstWhere((r) => r.id == recipe.id);
 
-                                  // Get updated recipe to show correct message
-                                  final updatedState = ref.read(
-                                    recipeListProvider,
-                                  );
-                                  final updatedRecipe = updatedState.recipes
-                                      .firstWhere((r) => r.id == recipe.id);
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        updatedRecipe.isFavorited
-                                            ? 'Added ${recipe.name} to favorites'
-                                            : 'Removed ${recipe.name} from favorites',
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                      backgroundColor: const Color(0xFFFF9800),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Failed to update favorite: $e',
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            icon: Icon(
-                              currentRecipe.isFavorited
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: currentRecipe.isFavorited
-                                  ? Colors.red
-                                  : Colors.black,
-                            ),
-                            label: Text(
-                              currentRecipe.isFavorited ? 'Saved' : 'Save',
-                              style: const TextStyle(color: Colors.black),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              side: BorderSide(color: Colors.grey[300]!),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                      NotificationService.showSuccess(
+                                        context,
+                                        message: updatedRecipe.isFavorited
+                                            ? 'Added to favorites'
+                                            : 'Removed from favorites',
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      NotificationService.showError(
+                                        context,
+                                        message: 'Failed to update favorite',
+                                      );
+                                    }
+                                  }
+                                },
+                                icon: Icon(
+                                  currentRecipe.isFavorited
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: currentRecipe.isFavorited
+                                      ? Colors.red
+                                      : Colors.black,
+                                ),
+                                label: Text(
+                                  currentRecipe.isFavorited ? 'Saved' : 'Save',
+                                  style: const TextStyle(color: Colors.black),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  side: BorderSide(color: Colors.grey[300]!),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              // TODO: Start cooking
-                            },
-                            icon: const Icon(
-                              Icons.play_arrow,
-                              color: Colors.black,
-                            ),
-                            label: const Text(
-                              'Start Cooking',
-                              style: TextStyle(color: Colors.black),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF9800),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  // TODO: Start cooking
+                                },
+                                icon: const Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.black,
+                                ),
+                                label: const Text(
+                                  'Start Cooking',
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFF9800),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -1058,6 +1064,208 @@ class _RecipeDetailSheet extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildIngredientsSection(WidgetRef ref, String recipeId) {
+    final ingredientsAsync = ref.watch(recipeIngredientsProvider(recipeId));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Ingredients',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2D2D2D),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ingredientsAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: Color(0xFFFF9800)),
+          ),
+          error: (error, stack) => Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'Unable to load ingredients',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+          ),
+          data: (ingredients) {
+            if (ingredients.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'No ingredients available',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+              );
+            }
+
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.grey[200]!, width: 1.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: ingredients
+                    .map(
+                      (ingredient) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.circle,
+                              size: 8,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                ingredient.displayText,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Color(0xFF2D2D2D),
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddToGroceryButton(
+    BuildContext context,
+    WidgetRef ref,
+    Recipe recipe,
+  ) {
+    final ingredientsAsync = ref.watch(recipeIngredientsProvider(recipe.id));
+    final groceryListState = ref.watch(groceryListProvider);
+    final addingRecipes = ref.watch(addingRecipeProvider);
+    final isAdding = addingRecipes.contains(recipe.id);
+
+    final ingredients = ingredientsAsync.asData?.value ?? const [];
+    final ingredientIdsOfRecipe = ingredients
+        .map((ingredient) => ingredient.ingredient.id)
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    final hasPendingItemsForRecipe = groceryListState.items.any(
+      (item) =>
+          !item.isPurchased &&
+          ((item.recipeId != null && item.recipeId == recipe.id) ||
+              ingredientIdsOfRecipe.contains(item.ingredientId)),
+    );
+
+    final isDisabled =
+        isAdding || hasPendingItemsForRecipe || ingredients.isEmpty;
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: isDisabled
+            ? null
+            : () async {
+                if (ingredients.isEmpty) return;
+
+                // Set loading state
+                ref
+                    .read(addingRecipeProvider.notifier)
+                    .update((state) => {...state, recipe.id});
+
+                try {
+                  // Convert recipe ingredients to grocery items
+                  final groceryItems = ingredients
+                      .where((ri) => ri.ingredient.id.isNotEmpty)
+                      .map((recipeIngredient) {
+                        final quantity =
+                            recipeIngredient.quantityAsDouble ?? 1.0;
+                        return GroceryItem(
+                          id: '${recipe.id}_${recipeIngredient.ingredient.id}_${DateTime.now().millisecondsSinceEpoch}',
+                          ingredientId: recipeIngredient.ingredient.id,
+                          name: recipeIngredient.ingredient.name,
+                          quantity: quantity,
+                          unit: recipeIngredient.unit,
+                          recipeId: recipe.id,
+                          recipeName: recipe.name,
+                        );
+                      })
+                      .toList();
+
+                  // Add to grocery list
+                  await ref
+                      .read(groceryListProvider.notifier)
+                      .addItems(groceryItems);
+
+                  if (context.mounted) {
+                    // Show success notification
+                    NotificationService.showSuccess(
+                      context,
+                      message:
+                          'Added ${groceryItems.length} ingredients to grocery list',
+                    );
+                  }
+                } finally {
+                  // Reset loading state
+                  ref
+                      .read(addingRecipeProvider.notifier)
+                      .update((state) => {...state}..remove(recipe.id));
+                }
+              },
+        icon: isAdding
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDisabled ? Colors.grey[600]! : Colors.white,
+                  ),
+                ),
+              )
+            : const Icon(Icons.shopping_bag_outlined, color: Colors.white),
+        label: Text(
+          isAdding
+              ? 'Adding...'
+              : hasPendingItemsForRecipe
+              ? 'Already added (pending)'
+              : 'Add to Grocery List',
+          style: TextStyle(
+            color: isDisabled ? Colors.grey[600] : Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF51CF66),
+          disabledBackgroundColor: const Color(0xFF2F6B3C),
+          disabledForegroundColor: Colors.grey[600],
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
     );
   }
 

@@ -2,18 +2,21 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/providers/app_config_provider.dart';
 import '../../../shared/providers/dio_provider.dart';
 import '../domain/recipe_models.dart';
 
 final recipeApiClientProvider = Provider<RecipeApiClient>((ref) {
   final dio = ref.watch(dioProvider);
-  return RecipeApiClient(dio);
+  final config = ref.watch(appConfigProvider);
+  return RecipeApiClient(dio, config.apiBaseUrl);
 });
 
 class RecipeApiClient {
   final Dio _dio;
+  final String baseUrl;
 
-  RecipeApiClient(this._dio);
+  RecipeApiClient(this._dio, this.baseUrl);
 
   /// Get all recipes with pagination
   /// Default: status=published, page=1, limit=10
@@ -31,10 +34,8 @@ class RecipeApiClient {
         if (status != null) 'status': status,
       };
 
-      final response = await _dio.get(
-        '/api/recipes',
-        queryParameters: queryParams,
-      );
+      final url = '$baseUrl/api/recipes';
+      final response = await _dio.get(url, queryParameters: queryParams);
 
       debugPrint(
         'Recipes fetched successfully: ${response.data['data']['total']} total',
@@ -66,10 +67,8 @@ class RecipeApiClient {
         if (maxCookingTime != null) 'maxCookingTime': maxCookingTime,
       };
 
-      final response = await _dio.get(
-        '/api/recipes',
-        queryParameters: queryParams,
-      );
+      final url = '$baseUrl/api/recipes';
+      final response = await _dio.get(url, queryParameters: queryParams);
 
       debugPrint(
         'Search results: ${response.data['data']['total']} recipes found',
@@ -96,10 +95,8 @@ class RecipeApiClient {
         'limit': limit,
       };
 
-      final response = await _dio.get(
-        '/api/recipes',
-        queryParameters: queryParams,
-      );
+      final url = '$baseUrl/api/recipes';
+      final response = await _dio.get(url, queryParameters: queryParams);
 
       return RecipeListResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -113,7 +110,8 @@ class RecipeApiClient {
     try {
       debugPrint('Fetching recipe detail - id: $id');
 
-      final response = await _dio.get('/api/recipes/$id');
+      final url = '$baseUrl/api/recipes/$id';
+      final response = await _dio.get(url);
 
       final recipeData = response.data['data'] as Map<String, dynamic>;
       return Recipe.fromJson(recipeData);
@@ -128,7 +126,8 @@ class RecipeApiClient {
     try {
       debugPrint('Fetching nutrition values - recipe id: $recipeId');
 
-      final response = await _dio.get('/api/recipes/$recipeId/nutrition');
+      final url = '$baseUrl/api/recipes/$recipeId/nutrition';
+      final response = await _dio.get(url);
 
       final nutritionData = response.data['data'] as Map<String, dynamic>;
       return RecipeNutrition.fromJson(nutritionData);
@@ -145,9 +144,8 @@ class RecipeApiClient {
     try {
       debugPrint('Toggling favorite - recipe id: $recipeId');
 
-      final response = await _dio.post(
-        '/api/recipes/$recipeId/favorite/toggle',
-      );
+      final url = '$baseUrl/api/recipes/$recipeId/favorite/toggle';
+      final response = await _dio.post(url);
 
       final data = response.data['data'] as Map<String, dynamic>;
       final isFavorited = data['isFavorited'] == true;
@@ -164,7 +162,8 @@ class RecipeApiClient {
   Future<void> addFavorite(String recipeId) async {
     try {
       debugPrint('Adding to favorites - recipe id: $recipeId');
-      await _dio.post('/api/recipes/$recipeId/favorite');
+      final url = '$baseUrl/api/recipes/$recipeId/favorite';
+      await _dio.post(url);
       debugPrint('Added to favorites successfully');
     } on DioException catch (e) {
       debugPrint('Error adding favorite: ${e.response?.data}');
@@ -176,7 +175,8 @@ class RecipeApiClient {
   Future<void> removeFavorite(String recipeId) async {
     try {
       debugPrint('Removing from favorites - recipe id: $recipeId');
-      await _dio.delete('/api/recipes/$recipeId/favorite');
+      final url = '$baseUrl/api/recipes/$recipeId/favorite';
+      await _dio.delete(url);
       debugPrint('Removed from favorites successfully');
     } on DioException catch (e) {
       debugPrint('Error removing favorite: ${e.response?.data}');
@@ -194,10 +194,8 @@ class RecipeApiClient {
 
       final queryParams = {'page': page, 'limit': limit};
 
-      final response = await _dio.get(
-        '/api/recipes/favorites',
-        queryParameters: queryParams,
-      );
+      final url = '$baseUrl/api/recipes/favorites';
+      final response = await _dio.get(url, queryParameters: queryParams);
 
       debugPrint(
         'Favorites fetched: ${response.data['data']['pagination']['total']} total',
@@ -214,7 +212,8 @@ class RecipeApiClient {
   /// Check if recipe is favorited
   Future<bool> checkFavoriteStatus(String recipeId) async {
     try {
-      final response = await _dio.get('/api/recipes/$recipeId/favorite/status');
+      final url = '$baseUrl/api/recipes/$recipeId/favorite/status';
+      final response = await _dio.get(url);
       final data = response.data['data'] as Map<String, dynamic>;
       return data['isFavorited'] == true;
     } on DioException catch (e) {
@@ -226,7 +225,8 @@ class RecipeApiClient {
   /// Get count of user's favorite recipes
   Future<int> getFavoriteCount() async {
     try {
-      final response = await _dio.get('/api/recipes/favorites/count');
+      final url = '$baseUrl/api/recipes/favorites/count';
+      final response = await _dio.get(url);
       final data = response.data['data'] as Map<String, dynamic>;
       return (data['count'] as num).toInt();
     } on DioException catch (e) {
@@ -252,8 +252,9 @@ class RecipeApiClient {
         'Adding/updating review for recipe: $recipeId, rating: $rating',
       );
 
+      final url = '$baseUrl/api/recipes/$recipeId/reviews';
       final response = await _dio.post(
-        '/api/recipes/$recipeId/reviews',
+        url,
         data: {'rating': rating, 'comment': comment},
       );
 
@@ -278,8 +279,9 @@ class RecipeApiClient {
     try {
       debugPrint('Fetching reviews for recipe: $recipeId');
 
+      final url = '$baseUrl/api/recipes/$recipeId/reviews';
       final response = await _dio.get(
-        '/api/recipes/$recipeId/reviews',
+        url,
         queryParameters: {
           'page': page,
           'limit': limit,
@@ -303,9 +305,8 @@ class RecipeApiClient {
   /// Get user's review for a specific recipe
   Future<RecipeReview?> getUserRecipeReview(String recipeId) async {
     try {
-      final response = await _dio.get(
-        '/api/recipes/$recipeId/reviews/user/mine',
-      );
+      final url = '$baseUrl/api/recipes/$recipeId/reviews/user/mine';
+      final response = await _dio.get(url);
 
       final reviewData = response.data['data']['review'];
       if (reviewData == null) {
@@ -327,8 +328,9 @@ class RecipeApiClient {
     try {
       debugPrint('Fetching user reviews - page: $page');
 
+      final url = '$baseUrl/api/recipes/reviews/user/list';
       final response = await _dio.get(
-        '/api/recipes/reviews/user/list',
+        url,
         queryParameters: {'page': page, 'limit': limit},
       );
 
@@ -352,7 +354,8 @@ class RecipeApiClient {
     try {
       debugPrint('Deleting review: $reviewId');
 
-      await _dio.delete('/api/recipes/$recipeId/reviews/$reviewId');
+      final url = '$baseUrl/api/recipes/$recipeId/reviews/$reviewId';
+      await _dio.delete(url);
 
       debugPrint('Review deleted successfully');
     } on DioException catch (e) {

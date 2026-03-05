@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/dietary_ref_provider.dart';
+import '../../../../core/utils/notification_service.dart';
 
 class SelectCaloriesPage extends ConsumerStatefulWidget {
   const SelectCaloriesPage({super.key});
@@ -63,31 +64,24 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
           .read(dietaryRefProvider.notifier)
           .setDailyCalorieTarget(_dailyCalories!);
 
-      // Show loading
-      final scaffoldMessenger = ScaffoldMessenger.of(context);
-
       final success = await ref
           .read(dietaryRefProvider.notifier)
           .submitDietaryReferences();
 
+      if (!mounted) return;
+
       if (success) {
-        scaffoldMessenger.showSnackBar(
-          const SnackBar(
-            content: Text('Dietary preferences saved successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        NotificationService.showSuccess(
+          context,
+          message: 'Dietary preferences saved successfully!',
         );
         // Navigate to profile summary or home
-        if (mounted) {
-          context.go('/home');
-        }
+        context.go('/home');
       } else {
         final error =
             ref.read(dietaryRefProvider).errorMessage ??
             'Failed to save preferences';
-        scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Colors.red),
-        );
+        NotificationService.showError(context, message: error);
       }
     }
   }

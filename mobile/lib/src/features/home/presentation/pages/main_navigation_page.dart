@@ -4,6 +4,7 @@ import 'home_page.dart';
 import 'profile_page.dart';
 import 'recipes_page.dart';
 import '../../../meal_plan/presentation/pages/meal_plan_page.dart';
+import '../../../grocery/presentation/pages/groceries_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -19,6 +20,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     const HomePage(),
     const MealPlanPage(),
     const RecipesPage(),
+    const GroceriesPage(),
     const ProfilePage(),
   ];
 
@@ -50,6 +52,11 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             icon: Icon(Icons.restaurant_menu_outlined),
             activeIcon: Icon(Icons.restaurant_menu),
             label: 'Recipes',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_bag_outlined),
+            activeIcon: Icon(Icons.shopping_bag),
+            label: 'Groceries',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outlined),

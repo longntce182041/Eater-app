@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/recipe_models.dart';
 import '../providers/review_provider.dart';
+import '../../../../core/utils/notification_service.dart';
 
 // Star rating widget
 class StarRating extends StatelessWidget {
@@ -76,11 +77,9 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
 
   Future<void> _submitReview() async {
     if (_rating == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a rating'),
-          backgroundColor: Colors.orange,
-        ),
+      NotificationService.showWarning(
+        context,
+        message: 'Please select a rating',
       );
       return;
     }
@@ -99,20 +98,16 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Review submitted successfully'),
-            backgroundColor: Colors.green,
-          ),
+        NotificationService.showSuccess(
+          context,
+          message: 'Review submitted successfully',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to submit review: $e'),
-            backgroundColor: Colors.red,
-          ),
+        NotificationService.showError(
+          context,
+          message: 'Failed to submit review',
         );
       }
     } finally {

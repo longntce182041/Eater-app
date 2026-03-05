@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/profile_setup_provider.dart';
+import '../../../../core/utils/notification_service.dart';
 
 // State management for age selection
 class AgeState {
@@ -114,11 +115,9 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
                     );
                     Navigator.pop(context);
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter a valid age (18-80)'),
-                        backgroundColor: Colors.red,
-                      ),
+                    NotificationService.showWarning(
+                      context,
+                      message: 'Please enter a valid age (18-80)',
                     );
                   }
                 },

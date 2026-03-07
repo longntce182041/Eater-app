@@ -42,9 +42,8 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
       // Sync favorite status in recipes list
       if (mounted) {
         final favoritesState = ref.read(favoriteRecipesProvider);
-        final favoriteIds = favoritesState.favorites
-            .map((fav) => fav.recipe.id)
-            .toSet();
+        final favoriteIds =
+            favoritesState.favorites.map((fav) => fav.recipe.id).toSet();
         ref.read(recipeListProvider.notifier).syncFavoriteStatus(favoriteIds);
       }
     });
@@ -448,8 +447,7 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
           color: const Color(0xFFFF9800),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount:
-                userReviewsState.reviews.length +
+            itemCount: userReviewsState.reviews.length +
                 (userReviewsState.isLoading ? 1 : 0),
             itemBuilder: (context, index) {
               if (index == userReviewsState.reviews.length) {
@@ -611,9 +609,8 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
       // Sync favorite status in main recipes list
       if (mounted) {
         final favoritesState = ref.read(favoriteRecipesProvider);
-        final favoriteIds = favoritesState.favorites
-            .map((fav) => fav.recipe.id)
-            .toSet();
+        final favoriteIds =
+            favoritesState.favorites.map((fav) => fav.recipe.id).toSet();
         ref.read(recipeListProvider.notifier).syncFavoriteStatus(favoriteIds);
       }
 
@@ -728,27 +725,40 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
 }
 
 // Recipe Detail Bottom Sheet
-class _RecipeDetailSheet extends ConsumerWidget {
+class _RecipeDetailSheet extends ConsumerStatefulWidget {
   final Recipe recipe;
 
   const _RecipeDetailSheet({required this.recipe});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nutritionAsync = ref.watch(recipeNutritionProvider(recipe.id));
+  ConsumerState<_RecipeDetailSheet> createState() => _RecipeDetailSheetState();
+}
+
+class _RecipeDetailSheetState extends ConsumerState<_RecipeDetailSheet> {
+  late int _selectedServings;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedServings = widget.recipe.baseServings;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(recipeReviewsProvider(widget.recipe.id).notifier).loadReviews();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final nutritionAsync = ref.watch(recipeNutritionProvider(widget.recipe.id));
     final recipeListState = ref.watch(recipeListProvider);
 
     // Get updated recipe with current favorite status from state
     final currentRecipe = recipeListState.recipes.firstWhere(
-      (r) => r.id == recipe.id,
-      orElse: () => recipe,
+      (r) => r.id == widget.recipe.id,
+      orElse: () => widget.recipe,
     );
 
     // Load reviews when sheet opens
-    ref.listen(recipeReviewsProvider(recipe.id), (previous, next) {});
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(recipeReviewsProvider(recipe.id).notifier).loadReviews();
-    });
+    ref.listen(recipeReviewsProvider(widget.recipe.id), (previous, next) {});
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -782,7 +792,7 @@ class _RecipeDetailSheet extends ConsumerWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: Image.network(
-                        recipe.displayImageUrl,
+                        widget.recipe.displayImageUrl,
                         height: 200,
                         width: double.infinity,
                         fit: BoxFit.cover,
@@ -803,7 +813,7 @@ class _RecipeDetailSheet extends ConsumerWidget {
 
                     // Recipe name
                     Text(
-                      recipe.name,
+                      widget.recipe.name,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -822,7 +832,7 @@ class _RecipeDetailSheet extends ConsumerWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          recipe.cookingTimeDisplay,
+                          widget.recipe.cookingTimeDisplay,
                           style: const TextStyle(
                             fontSize: 15,
                             color: Color(0xFF666666),
@@ -835,11 +845,40 @@ class _RecipeDetailSheet extends ConsumerWidget {
                           color: Color(0xFFFF9800),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          '${recipe.baseServings} servings',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: Color(0xFF666666),
+                        GestureDetector(
+                          onTap: () => _showServingsPicker(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF3E0),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFFFF9800),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '$_selectedServings servings',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFFFF9800),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.edit_outlined,
+                                  size: 13,
+                                  color: Color(0xFFFF9800),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -857,7 +896,7 @@ class _RecipeDetailSheet extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      recipe.description,
+                      widget.recipe.description,
                       style: TextStyle(
                         fontSize: 15,
                         color: Colors.grey[700],
@@ -942,7 +981,12 @@ class _RecipeDetailSheet extends ConsumerWidget {
                     const SizedBox(height: 32),
 
                     // Ingredients Section
-                    _buildIngredientsSection(ref, recipe.id),
+                    _buildIngredientsSection(
+                      ref,
+                      widget.recipe.id,
+                      selectedServings: _selectedServings,
+                      baseServings: widget.recipe.baseServings,
+                    ),
                     const SizedBox(height: 32),
 
                     // Rating Section
@@ -953,7 +997,13 @@ class _RecipeDetailSheet extends ConsumerWidget {
                     Column(
                       children: [
                         // Add to Grocery List button
-                        _buildAddToGroceryButton(context, ref, recipe),
+                        _buildAddToGroceryButton(
+                          context,
+                          ref,
+                          widget.recipe,
+                          selectedServings: _selectedServings,
+                          baseServings: widget.recipe.baseServings,
+                        ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
@@ -963,7 +1013,7 @@ class _RecipeDetailSheet extends ConsumerWidget {
                                   try {
                                     await ref
                                         .read(recipeListProvider.notifier)
-                                        .toggleFavorite(recipe.id);
+                                        .toggleFavorite(widget.recipe.id);
 
                                     // Reload favorites to sync across all views
                                     await ref
@@ -987,7 +1037,8 @@ class _RecipeDetailSheet extends ConsumerWidget {
                                         recipeListProvider,
                                       );
                                       final updatedRecipe = updatedState.recipes
-                                          .firstWhere((r) => r.id == recipe.id);
+                                          .firstWhere(
+                                              (r) => r.id == widget.recipe.id);
 
                                       NotificationService.showSuccess(
                                         context,
@@ -1067,19 +1118,52 @@ class _RecipeDetailSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildIngredientsSection(WidgetRef ref, String recipeId) {
+  void _showServingsPicker(BuildContext context) {
+    const servingOptions = [1, 2, 3, 4, 6, 8];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _ServingsPickerSheet(
+        currentServings: _selectedServings,
+        options: servingOptions,
+        onSelected: (value) {
+          setState(() => _selectedServings = value);
+          Navigator.pop(ctx);
+        },
+      ),
+    );
+  }
+
+  Widget _buildIngredientsSection(
+    WidgetRef ref,
+    String recipeId, {
+    required int selectedServings,
+    required int baseServings,
+  }) {
     final ingredientsAsync = ref.watch(recipeIngredientsProvider(recipeId));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Ingredients',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D2D2D),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Ingredients',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D2D2D),
+              ),
+            ),
+            Text(
+              'for $selectedServings serving${selectedServings == 1 ? '' : 's'}',
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         ingredientsAsync.when(
@@ -1134,7 +1218,11 @@ class _RecipeDetailSheet extends ConsumerWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                ingredient.displayText,
+                                _scaledIngredientText(
+                                  ingredient,
+                                  selectedServings,
+                                  baseServings,
+                                ),
                                 style: const TextStyle(
                                   fontSize: 15,
                                   color: Color(0xFF2D2D2D),
@@ -1155,11 +1243,49 @@ class _RecipeDetailSheet extends ConsumerWidget {
     );
   }
 
+  String _scaledIngredientText(
+    RecipeIngredient ingredient,
+    int selected,
+    int base,
+  ) {
+    final qty = ingredient.quantityAsDouble;
+    if (qty == null || base <= 0) return ingredient.displayText;
+    final scaled = qty * (selected / base);
+    return '${_formatQuantity(scaled)} ${ingredient.unit} ${ingredient.ingredient.name}';
+  }
+
+  String _formatQuantity(double value) {
+    if (value <= 0) return '0';
+    final rounded = double.parse(value.toStringAsFixed(6));
+    if (rounded == rounded.truncateToDouble()) {
+      return rounded.toInt().toString();
+    }
+    if (value < 0.1) return value.toStringAsFixed(2);
+    final intPart = rounded.floor();
+    final frac = rounded - intPart;
+    final fractions = {
+      0.25: '1/4',
+      0.333: '1/3',
+      0.5: '1/2',
+      0.667: '2/3',
+      0.75: '3/4',
+    };
+    for (final e in fractions.entries) {
+      if ((frac - e.key).abs() < 0.02) {
+        return intPart == 0 ? e.value : '$intPart ${e.value}';
+      }
+    }
+    final s = value.toStringAsFixed(1);
+    return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
+  }
+
   Widget _buildAddToGroceryButton(
     BuildContext context,
     WidgetRef ref,
-    Recipe recipe,
-  ) {
+    Recipe recipe, {
+    required int selectedServings,
+    required int baseServings,
+  }) {
     final ingredientsAsync = ref.watch(recipeIngredientsProvider(recipe.id));
     final groceryListState = ref.watch(groceryListProvider);
     final addingRecipes = ref.watch(addingRecipeProvider);
@@ -1199,19 +1325,21 @@ class _RecipeDetailSheet extends ConsumerWidget {
                   final groceryItems = ingredients
                       .where((ri) => ri.ingredient.id.isNotEmpty)
                       .map((recipeIngredient) {
-                        final quantity =
-                            recipeIngredient.quantityAsDouble ?? 1.0;
-                        return GroceryItem(
-                          id: '${recipe.id}_${recipeIngredient.ingredient.id}_${DateTime.now().millisecondsSinceEpoch}',
-                          ingredientId: recipeIngredient.ingredient.id,
-                          name: recipeIngredient.ingredient.name,
-                          quantity: quantity,
-                          unit: recipeIngredient.unit,
-                          recipeId: recipe.id,
-                          recipeName: recipe.name,
-                        );
-                      })
-                      .toList();
+                    final quantity =
+                        (recipeIngredient.quantityAsDouble ?? 1.0) *
+                        (baseServings > 0
+                            ? selectedServings / baseServings
+                            : 1.0);
+                    return GroceryItem(
+                      id: '${recipe.id}_${recipeIngredient.ingredient.id}_${DateTime.now().millisecondsSinceEpoch}',
+                      ingredientId: recipeIngredient.ingredient.id,
+                      name: recipeIngredient.ingredient.name,
+                      quantity: quantity,
+                      unit: recipeIngredient.unit,
+                      recipeId: recipe.id,
+                      recipeName: recipe.name,
+                    );
+                  }).toList();
 
                   // Add to grocery list
                   await ref
@@ -1249,8 +1377,8 @@ class _RecipeDetailSheet extends ConsumerWidget {
           isAdding
               ? 'Adding...'
               : hasPendingItemsForRecipe
-              ? 'Already added (pending)'
-              : 'Add to Grocery List',
+                  ? 'Already added (pending)'
+                  : 'Add to Grocery List',
           style: TextStyle(
             color: isDisabled ? Colors.grey[600] : Colors.white,
             fontWeight: FontWeight.w600,
@@ -1473,15 +1601,12 @@ class _RecipeDetailSheet extends ConsumerWidget {
     final carbsCals = nutrition.carbohydrates * 4;
     final totalMacroCals = proteinCals + fatCals + carbsCals;
 
-    final proteinPercent = totalMacroCals > 0
-        ? (proteinCals / totalMacroCals) * 100
-        : 0;
-    final fatPercent = totalMacroCals > 0
-        ? (fatCals / totalMacroCals) * 100
-        : 0;
-    final carbsPercent = totalMacroCals > 0
-        ? (carbsCals / totalMacroCals) * 100
-        : 0;
+    final proteinPercent =
+        totalMacroCals > 0 ? (proteinCals / totalMacroCals) * 100 : 0;
+    final fatPercent =
+        totalMacroCals > 0 ? (fatCals / totalMacroCals) * 100 : 0;
+    final carbsPercent =
+        totalMacroCals > 0 ? (carbsCals / totalMacroCals) * 100 : 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1554,6 +1679,101 @@ class _RecipeDetailSheet extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ServingsPickerSheet extends StatelessWidget {
+  final int currentServings;
+  final List<int> options;
+  final ValueChanged<int> onSelected;
+
+  const _ServingsPickerSheet({
+    required this.currentServings,
+    required this.options,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Adjust Servings',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D2D2D),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          Text(
+            'Ingredient amounts will scale automatically',
+            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: options.map((option) {
+              final isSelected = option == currentServings;
+              return GestureDetector(
+                onTap: () => onSelected(option),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 11,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFFFF9800) : Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFFF9800)
+                          : Colors.grey[300]!,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Text(
+                    '$option',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color:
+                          isSelected ? Colors.white : const Color(0xFF2D2D2D),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 }

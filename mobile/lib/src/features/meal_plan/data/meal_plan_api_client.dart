@@ -217,4 +217,78 @@ class MealPlanApiClient {
       throw Exception('Failed to optimize meal plan: $e');
     }
   }
+
+  /// Generate meal plan preview (no database save yet)
+  Future<Map<String, dynamic>> generateMealPlanPreview({
+    required String userId,
+    required int age,
+    required String gender,
+    required double heightCm,
+    required double weightKg,
+    required double goalWeightKg,
+    required String healthGoals,
+    required String activityLevel,
+    required List<String> dietTypes,
+    required List<String> allergies,
+    required List<String> dislikedIngredients,
+    required int days,
+  }) async {
+    final url = '$baseUrl/api/ai/meal-plan/preview';
+    final res = await _dio.post(
+      url,
+      data: {
+        'userId': userId,
+        'age': age,
+        'gender': gender,
+        'height_cm': heightCm,
+        'weight_kg': weightKg,
+        'goal_weight_kg': goalWeightKg,
+        'health_goals': healthGoals,
+        'activity_level': activityLevel,
+        'dietTypes': dietTypes,
+        'allergies': allergies,
+        'disliked_ingredients': dislikedIngredients,
+        'days': days,
+      },
+    );
+
+    final data = res.data as Map<String, dynamic>;
+    if (data['success'] != true) {
+      debugPrint('generateMealPlanPreview error: ${data['message']}');
+      throw Exception(
+        data['message'] ?? 'Failed to generate meal plan preview',
+      );
+    }
+
+    return data['data'] as Map<String, dynamic>;
+  }
+
+  /// Save modified meals from preview
+  Future<MealPlanGenerationResult> saveMealPlanFromPreview({
+    required String userId,
+    required Map<String, dynamic> originalAIMealPlan,
+    required Map<String, dynamic> mealPlanOptions,
+    required Map<String, dynamic> modifiedMeals,
+  }) async {
+    final url = '$baseUrl/api/ai/meal-plan/save-preview';
+    final res = await _dio.post(
+      url,
+      data: {
+        'userId': userId,
+        'originalAIMealPlan': originalAIMealPlan,
+        'mealPlanOptions': mealPlanOptions,
+        'modifiedMeals': modifiedMeals,
+      },
+    );
+
+    final data = res.data as Map<String, dynamic>;
+    if (data['success'] != true) {
+      debugPrint('saveMealPlanFromPreview error: ${data['message']}');
+      throw Exception(data['message'] ?? 'Failed to save meal plan');
+    }
+
+    return MealPlanGenerationResult.fromJson(
+      data['data'] as Map<String, dynamic>,
+    );
+  }
 }

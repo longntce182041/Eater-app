@@ -5,7 +5,9 @@ import '../providers/meal_plan_provider.dart';
 import '../../domain/meal_plan_models.dart';
 import '../widgets/macro_distribution_donut.dart';
 import '../widgets/detailed_macro_modal.dart';
+import '../pages/meal_plan_preview_page.dart';
 import '../../../../core/utils/notification_service.dart';
+import '../../../../shared/providers/auth_token_provider.dart';
 
 class MealPlanPage extends ConsumerStatefulWidget {
   const MealPlanPage({super.key});
@@ -1051,9 +1053,129 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     final days = await _pickDays(context, _selectedDays);
     if (days == null) return;
     setState(() => _selectedDays = days);
-    await ref
-        .read(mealPlanNotifierProvider.notifier)
-        .generateMealPlan(days: days);
+
+    // Get actual user ID from auth token
+    final authToken = ref.read(authTokenProvider);
+    final userId = authToken.userId;
+
+    if (userId == null || userId.isEmpty) {
+      if (!mounted) return;
+      NotificationService.showError(
+        context,
+        message: 'Error: User authentication required. Please log in again.',
+      );
+      return;
+    }
+
+    // TODO: Get other user data from profile/auth provider
+    const userAge = 30;
+    const userGender = "male"; // AI service expects: male, female, or other
+    const userHeightCm = 175.0;
+    const userWeightKg = 75.0;
+    const userGoalWeightKg = 70.0;
+    const userHealthGoals =
+        "weight_loss"; // AI service expects: weight_loss, muscle_gain, maintenance, etc.
+    const userActivityLevel =
+        "moderate"; // AI service expects: sedentary, light, moderate, active, very_active
+    const dietTypes = <String>[];
+    const allergies = <String>[];
+    const dislikedIngredients = <String>[];
+
+    // Step 1: Generate preview
+    if (!mounted) return;
+
+    try {
+      final previewData = await ref
+          .read(mealPlanNotifierProvider.notifier)
+          .generateMealPlanPreview(
+            userId: userId,
+            age: userAge,
+            gender: userGender,
+            heightCm: userHeightCm,
+            weightKg: userWeightKg,
+            goalWeightKg: userGoalWeightKg,
+            healthGoals: userHealthGoals,
+            activityLevel: userActivityLevel,
+            dietTypes: dietTypes,
+            allergies: allergies,
+            dislikedIngredients: dislikedIngredients,
+            days: days,
+          );
+
+      if (!mounted) return;
+
+      if (previewData == null) {
+        final state = ref.read(mealPlanNotifierProvider);
+        NotificationService.showError(
+          context,
+          message: 'Error: ${state.error ?? 'Failed to generate preview'}',
+        );
+        return;
+      }
+
+      // Step 2: Show preview screen
+      if (!mounted) return;
+      final result = await Navigator.push<Map<String, dynamic>>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MealPlanPreviewPage(
+            previewData: previewData,
+            onSaveMealPlan: (modifiedMeals) {
+              Navigator.pop(context, modifiedMeals);
+            },
+          ),
+        ),
+      );
+
+      if (result == null || !mounted) return;
+
+      // Step 3: Save modified meals
+      final savedSuccessfully = await _saveAndShowPreview(
+        modifiedMeals: result,
+        originalMealPlan:
+            previewData['_originalAIMealPlan'] as Map<String, dynamic>,
+        mealPlanOptions:
+            previewData['_mealPlanOptions'] as Map<String, dynamic>,
+        userId: userId,
+      );
+
+      if (savedSuccessfully && mounted) {
+        NotificationService.showSuccess(
+          context,
+          message: 'Meal plan saved successfully!',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationService.showError(context, message: 'Error: $e');
+      }
+    }
+  }
+
+  Future<bool> _saveAndShowPreview({
+    required Map<String, dynamic> modifiedMeals,
+    required Map<String, dynamic> originalMealPlan,
+    required Map<String, dynamic> mealPlanOptions,
+    required String userId,
+  }) async {
+    try {
+      await ref
+          .read(mealPlanNotifierProvider.notifier)
+          .saveMealPlanFromPreview(
+            userId: userId,
+            originalAIMealPlan: originalMealPlan,
+            mealPlanOptions: mealPlanOptions,
+            modifiedMeals: modifiedMeals,
+          );
+
+      final state = ref.read(mealPlanNotifierProvider);
+      return state.error == null && state.result != null;
+    } catch (e) {
+      if (mounted) {
+        NotificationService.showError(context, message: 'Save failed: $e');
+      }
+      return false;
+    }
   }
 
   Future<void> _optimizeAllMeals(

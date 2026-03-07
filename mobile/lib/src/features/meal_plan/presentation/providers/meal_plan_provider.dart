@@ -142,6 +142,76 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
       );
     }
   }
+
+  /// Generate meal plan preview (step 1 of new flow)
+  Future<Map<String, dynamic>?> generateMealPlanPreview({
+    required String userId,
+    required int age,
+    required String gender,
+    required double heightCm,
+    required double weightKg,
+    required double goalWeightKg,
+    required String healthGoals,
+    required String activityLevel,
+    required List<String> dietTypes,
+    required List<String> allergies,
+    required List<String> dislikedIngredients,
+    required int days,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final previewData = await _apiClient.generateMealPlanPreview(
+        userId: userId,
+        age: age,
+        gender: gender,
+        heightCm: heightCm,
+        weightKg: weightKg,
+        goalWeightKg: goalWeightKg,
+        healthGoals: healthGoals,
+        activityLevel: activityLevel,
+        dietTypes: dietTypes,
+        allergies: allergies,
+        dislikedIngredients: dislikedIngredients,
+        days: days,
+      );
+      state = state.copyWith(isLoading: false);
+      return previewData;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to generate preview: ${e.toString()}',
+      );
+      return null;
+    }
+  }
+
+  /// Save modified meals from preview (step 2 of new flow)
+  Future<void> saveMealPlanFromPreview({
+    required String userId,
+    required Map<String, dynamic> originalAIMealPlan,
+    required Map<String, dynamic> mealPlanOptions,
+    required Map<String, dynamic> modifiedMeals,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _apiClient.saveMealPlanFromPreview(
+        userId: userId,
+        originalAIMealPlan: originalAIMealPlan,
+        mealPlanOptions: mealPlanOptions,
+        modifiedMeals: modifiedMeals,
+      );
+      // Wait for server to process, then reload full data to ensure UI is accurate
+      await Future.delayed(const Duration(milliseconds: 500));
+      final result = await _apiClient.fetchLatestMealPlan();
+      await Future.delayed(const Duration(milliseconds: 300));
+      state = state.copyWith(isLoading: false, result: result);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to save meal plan: ${e.toString()}',
+      );
+    }
+  }
 }
 
 final mealPlanNotifierProvider =

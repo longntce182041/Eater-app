@@ -130,7 +130,9 @@ class AuthController extends StateNotifier<AuthState> {
       final accessToken = res['accessToken'] as String?;
       final refreshToken = res['refreshToken'] as String?;
       if (accessToken != null && refreshToken != null) {
-        _ref.read(authTokenProvider.notifier).state = AuthTokenProvider(
+        _ref
+            .read(authTokenProvider.notifier)
+            .state = AuthTokenProvider.fromTokens(
           accessToken: accessToken,
           refreshToken: refreshToken,
         );
@@ -169,7 +171,9 @@ class AuthController extends StateNotifier<AuthState> {
       );
 
       if (accessToken != null && refreshToken != null) {
-        _ref.read(authTokenProvider.notifier).state = AuthTokenProvider(
+        _ref
+            .read(authTokenProvider.notifier)
+            .state = AuthTokenProvider.fromTokens(
           accessToken: accessToken,
           refreshToken: refreshToken,
         );
@@ -211,6 +215,7 @@ class AuthController extends StateNotifier<AuthState> {
     _ref.read(authTokenProvider.notifier).state = const AuthTokenProvider(
       accessToken: null,
       refreshToken: null,
+      userId: null,
     );
 
     // IMPORTANT: Invalidate grocery list provider to reset it

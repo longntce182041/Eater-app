@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../data/grocery_local_storage.dart';
 import '../../data/grocery_api.dart';
 import '../../domain/grocery_models.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../../shared/providers/app_config_provider.dart' as shared_dio;
-import '../../../../shared/providers/dio_provider.dart' as shared_dio;
+import '../../../../shared/providers/app_config_provider.dart'
+    as config_provider;
+import '../../../../shared/providers/dio_provider.dart' as dio_provider;
 
 /// State for grocery list
 class GroceryListState {
@@ -57,7 +57,7 @@ class GroceryListNotifier extends StateNotifier<GroceryListState> {
   final String _userId;
 
   GroceryListNotifier(this._storage, this._api, this._userId)
-    : super(GroceryListState()) {
+      : super(GroceryListState()) {
     _loadItems();
   }
 
@@ -241,9 +241,8 @@ class GroceryListNotifier extends StateNotifier<GroceryListState> {
   /// Remove an item
   Future<void> removeItem(String itemId) async {
     try {
-      final updatedItems = state.items
-          .where((item) => item.id != itemId)
-          .toList();
+      final updatedItems =
+          state.items.where((item) => item.id != itemId).toList();
 
       // Update UI immediately
       state = state.copyWith(items: updatedItems);
@@ -266,9 +265,8 @@ class GroceryListNotifier extends StateNotifier<GroceryListState> {
   /// Clear all purchased items
   Future<void> clearPurchased() async {
     try {
-      final updatedItems = state.items
-          .where((item) => !item.isPurchased)
-          .toList();
+      final updatedItems =
+          state.items.where((item) => !item.isPurchased).toList();
 
       // Update UI immediately
       state = state.copyWith(items: updatedItems);
@@ -290,18 +288,22 @@ class GroceryListNotifier extends StateNotifier<GroceryListState> {
 
   /// Clear all items
   Future<void> clearAll() async {
+    final itemsToDelete = List<GroceryItem>.from(state.items);
     try {
       // Update UI immediately
       state = GroceryListState();
 
-      // Sync with API
+      // Delete every item on the server individually (no delete-all endpoint)
       try {
-        await _api.clearPurchasedItems(); // Clear all (API endpoint clears all)
+        await Future.wait(
+          itemsToDelete.map((item) => _api.removeGroceryItem(item.id)),
+        );
         await _storage.clearAll(_userId);
       } catch (apiError) {
-        // If API fails, just clear local
-        state = GroceryListState(
-          errorMessage: 'Local data cleared, server sync failed',
+        // If API fails, reload to restore correct server state
+        await _loadItems();
+        state = state.copyWith(
+          errorMessage: 'Failed to clear items on server',
         );
       }
     } catch (e) {
@@ -320,16 +322,10 @@ final groceryLocalStorageProvider = Provider<GroceryLocalStorage>((ref) {
   return GroceryLocalStorage();
 });
 
-/// Provider for Dio instance (from shared providers)
-final dioInstanceProvider = Provider<Dio>((ref) {
-  // Use the shared dioProvider which has baseUrl and auth configured
-  return ref.watch(shared_dio.dioProvider);
-});
-
 /// Provider for grocery API
 final groceryApiProvider = Provider<GroceryApi>((ref) {
-  final dio = ref.watch(dioInstanceProvider);
-  final config = ref.watch(shared_dio.appConfigProvider);
+  final dio = ref.watch(dio_provider.dioProvider);
+  final config = ref.watch(config_provider.appConfigProvider);
   return GroceryApi(dio, config.apiBaseUrl);
 });
 
@@ -338,35 +334,34 @@ final groceryApiProvider = Provider<GroceryApi>((ref) {
 /// This provider will automatically recreate when auth state changes
 final groceryListProvider =
     StateNotifierProvider.autoDispose<GroceryListNotifier, GroceryListState>((
-      ref,
-    ) {
-      final storage = ref.watch(groceryLocalStorageProvider);
-      final api = ref.watch(groceryApiProvider);
+  ref,
+) {
+  final storage = ref.watch(groceryLocalStorageProvider);
+  final api = ref.watch(groceryApiProvider);
 
-      // Get userId from auth controller state
-      // This will trigger provider recreation when auth state changes
-      final auth = ref.watch(authControllerProvider);
+  // Get userId from auth controller state
+  // This will trigger provider recreation when auth state changes
+  final auth = ref.watch(authControllerProvider);
 
-      // Debug: Print auth state
-      debugPrint('🛒 GroceryListProvider: Auth state - user: ${auth.user}');
-      debugPrint(
-        '🛒 GroceryListProvider: User keys: ${auth.user?.keys.toList()}',
-      );
+  // Debug: Print auth state
+  debugPrint('🛒 GroceryListProvider: Auth state - user: ${auth.user}');
+  debugPrint(
+    '🛒 GroceryListProvider: User keys: ${auth.user?.keys.toList()}',
+  );
 
-      final userId =
-          (auth.user?['id'] ?? auth.user?['_id'] ?? 'unknown') as String;
+  final userId = (auth.user?['id'] ?? auth.user?['_id'] ?? 'unknown') as String;
 
-      debugPrint('🛒 GroceryListProvider: Extracted userId: $userId');
+  debugPrint('🛒 GroceryListProvider: Extracted userId: $userId');
 
-      // If no valid user, return empty notifier without API calls
-      if (userId == 'unknown' || auth.user == null) {
-        debugPrint('🛒 GroceryListProvider: No valid user, using guest mode');
-        // Pass 'guest' as userId to prevent API calls
-        return GroceryListNotifier(storage, api, 'guest');
-      }
+  // If no valid user, return empty notifier without API calls
+  if (userId == 'unknown' || auth.user == null) {
+    debugPrint('🛒 GroceryListProvider: No valid user, using guest mode');
+    // Pass 'guest' as userId to prevent API calls
+    return GroceryListNotifier(storage, api, 'guest');
+  }
 
-      debugPrint(
-        '🛒 GroceryListProvider: Creating notifier for userId: $userId',
-      );
-      return GroceryListNotifier(storage, api, userId);
-    });
+  debugPrint(
+    '🛒 GroceryListProvider: Creating notifier for userId: $userId',
+  );
+  return GroceryListNotifier(storage, api, userId);
+});

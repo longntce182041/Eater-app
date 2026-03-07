@@ -14,7 +14,7 @@ class GroceriesPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF5F1E8),
         elevation: 0,
         title: const Text(
           'Grocery List',
@@ -89,51 +89,51 @@ class GroceriesPage extends ConsumerWidget {
               child: CircularProgressIndicator(color: Color(0xFFFF9800)),
             )
           : groceryState.items.isEmpty
-          ? _buildEmptyState()
-          : RefreshIndicator(
-              color: const Color(0xFFFF9800),
-              onRefresh: () async {
-                await ref.read(groceryListProvider.notifier).refresh();
-              },
-              child: Column(
-                children: [
-                  // Stats card
-                  _buildStatsCard(groceryState.stats),
-                  // List
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        // Pending items
-                        if (groceryState.pendingItems.isNotEmpty) ...[
-                          _buildSectionHeader(
-                            'To Buy',
-                            groceryState.pendingItems.length,
-                          ),
-                          const SizedBox(height: 12),
-                          ...groceryState.pendingItems.map(
-                            (item) => _buildGroceryItem(context, ref, item),
-                          ),
-                        ],
+              ? _buildEmptyState()
+              : RefreshIndicator(
+                  color: const Color(0xFFFF9800),
+                  onRefresh: () async {
+                    await ref.read(groceryListProvider.notifier).refresh();
+                  },
+                  child: Column(
+                    children: [
+                      // Stats card
+                      _buildStatsCard(groceryState.stats),
+                      // List
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            // Pending items
+                            if (groceryState.pendingItems.isNotEmpty) ...[
+                              _buildSectionHeader(
+                                'To Buy',
+                                groceryState.pendingItems.length,
+                              ),
+                              const SizedBox(height: 12),
+                              ...groceryState.pendingItems.map(
+                                (item) => _buildGroceryItem(context, ref, item),
+                              ),
+                            ],
 
-                        // Purchased items
-                        if (groceryState.purchasedItems.isNotEmpty) ...[
-                          const SizedBox(height: 24),
-                          _buildSectionHeader(
-                            'Purchased',
-                            groceryState.purchasedItems.length,
-                          ),
-                          const SizedBox(height: 12),
-                          ...groceryState.purchasedItems.map(
-                            (item) => _buildGroceryItem(context, ref, item),
-                          ),
-                        ],
-                      ],
-                    ),
+                            // Purchased items
+                            if (groceryState.purchasedItems.isNotEmpty) ...[
+                              const SizedBox(height: 24),
+                              _buildSectionHeader(
+                                'Purchased',
+                                groceryState.purchasedItems.length,
+                              ),
+                              const SizedBox(height: 12),
+                              ...groceryState.purchasedItems.map(
+                                (item) => _buildGroceryItem(context, ref, item),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
     );
   }
 
@@ -172,7 +172,7 @@ class GroceriesPage extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -270,7 +270,7 @@ class GroceriesPage extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: const Color(0xFFFF9800).withOpacity(0.1),
+            color: const Color(0xFFFF9800).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -319,13 +319,13 @@ class GroceriesPage extends ConsumerWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: item.isPurchased
-                ? const Color(0xFF51CF66).withOpacity(0.3)
+                ? const Color(0xFF51CF66).withValues(alpha: 0.3)
                 : Colors.grey[200]!,
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 5,
               offset: const Offset(0, 2),
             ),

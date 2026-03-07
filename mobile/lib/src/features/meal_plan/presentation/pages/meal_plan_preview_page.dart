@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -53,6 +55,7 @@ class _MealPlanPreviewPageState extends ConsumerState<MealPlanPreviewPage> {
     );
 
     if (selectedRecipe != null) {
+      if (!mounted) return;
       setState(() {
         // Update meal with new recipe data
         final currentMeal = modifiedMeals[mealId]!;
@@ -80,7 +83,8 @@ class _MealPlanPreviewPageState extends ConsumerState<MealPlanPreviewPage> {
   }
 
   void _saveMealPlan() {
-    // Return modified meals data
+    if (isSaving) return;
+    setState(() => isSaving = true);
     widget.onSaveMealPlan(modifiedMeals);
   }
 
@@ -213,8 +217,7 @@ class _MealPlanPreviewPageState extends ConsumerState<MealPlanPreviewPage> {
               for (var meal in meals) {
                 final mealId = (meal as Map<String, dynamic>)['id'] as String?;
                 if (mealId != null && modifiedMeals.containsKey(mealId)) {
-                  dayCalories +=
-                      (modifiedMeals[mealId]!['calories'] as num?)
+                  dayCalories += (modifiedMeals[mealId]!['calories'] as num?)
                           ?.toDouble() ??
                       0;
                 }
@@ -226,7 +229,7 @@ class _MealPlanPreviewPageState extends ConsumerState<MealPlanPreviewPage> {
                 meals: meals,
                 dayCalories: dayCalories,
               );
-            }).toList(),
+            }),
 
             const SizedBox(height: 80),
           ],
@@ -404,7 +407,7 @@ class _MealPlanPreviewPageState extends ConsumerState<MealPlanPreviewPage> {
               isReplaced: isReplaced,
               onReplace: () => _replaceMeal(mealId, mealType),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -552,6 +555,7 @@ class _RecipeSelectionDialogState extends State<_RecipeSelectionDialog> {
   bool isLoading = true;
   String? error;
   String searchQuery = '';
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -559,8 +563,15 @@ class _RecipeSelectionDialogState extends State<_RecipeSelectionDialog> {
     _loadRecipes();
   }
 
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   Future<void> _loadRecipes() async {
     try {
+      if (!mounted) return;
       setState(() {
         isLoading = true;
         error = null;
@@ -572,11 +583,13 @@ class _RecipeSelectionDialogState extends State<_RecipeSelectionDialog> {
         status: 'published',
       );
 
+      if (!mounted) return;
       setState(() {
         recipes = response.recipes;
         isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         error = 'Failed to load recipes: $e';
         isLoading = false;
@@ -591,6 +604,7 @@ class _RecipeSelectionDialogState extends State<_RecipeSelectionDialog> {
     }
 
     try {
+      if (!mounted) return;
       setState(() {
         isLoading = true;
         error = null;
@@ -603,11 +617,13 @@ class _RecipeSelectionDialogState extends State<_RecipeSelectionDialog> {
         status: 'published',
       );
 
+      if (!mounted) return;
       setState(() {
         recipes = response.recipes;
         isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         error = 'Failed to search recipes: $e';
         isLoading = false;
@@ -660,7 +676,10 @@ class _RecipeSelectionDialogState extends State<_RecipeSelectionDialog> {
               ),
               onChanged: (value) {
                 searchQuery = value;
-                _searchRecipes(value);
+                _debounce?.cancel();
+                _debounce = Timer(const Duration(milliseconds: 400), () {
+                  _searchRecipes(value);
+                });
               },
             ),
             const SizedBox(height: 16),
@@ -670,38 +689,38 @@ class _RecipeSelectionDialogState extends State<_RecipeSelectionDialog> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Colors.red,
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                size: 48,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                error!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _loadRecipes,
+                                child: const Text('Retry'),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            error!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _loadRecipes,
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : recipes.isEmpty
-                  ? const Center(child: Text('No recipes found'))
-                  : ListView.builder(
-                      itemCount: recipes.length,
-                      itemBuilder: (context, index) {
-                        final recipe = recipes[index];
-                        return _buildRecipeItem(recipe);
-                      },
-                    ),
+                        )
+                      : recipes.isEmpty
+                          ? const Center(child: Text('No recipes found'))
+                          : ListView.builder(
+                              itemCount: recipes.length,
+                              itemBuilder: (context, index) {
+                                final recipe = recipes[index];
+                                return _buildRecipeItem(recipe);
+                              },
+                            ),
             ),
           ],
         ),

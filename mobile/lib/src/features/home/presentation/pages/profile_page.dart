@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/router/auth_notifier.dart';
-import '../../../auth/data/token_storage.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/profile_provider.dart';
 import '../../domain/profile_models.dart';
 
@@ -54,9 +53,7 @@ class ProfilePage extends ConsumerWidget {
   }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
-    final tokenStorage = TokenStorage();
-    await tokenStorage.clear();
-    ref.read(authNotifierProvider).setAuthenticated(false);
+    await ref.read(authControllerProvider.notifier).logout();
     if (context.mounted) {
       context.go('/sign-in');
     }
@@ -99,8 +96,8 @@ class _ProfileContentState extends ConsumerState<_ProfileContent> {
       widget.data.dietary?.availableCookingTime ?? 30;
   late int dailyCalorieTarget = widget.data.dietary?.dailyCalorieTarget ?? 2000;
   late String allergiesText = (widget.data.dietary?.allergies ?? []).join(', ');
-  late String dislikesText = (widget.data.dietary?.dislikesIngredients ?? [])
-      .join(', ');
+  late String dislikesText =
+      (widget.data.dietary?.dislikesIngredients ?? []).join(', ');
 
   @override
   Widget build(BuildContext context) {
@@ -576,9 +573,8 @@ class _DietTypeDropdown extends ConsumerWidget {
     Map<String, String>? dietTypeLabels,
   }) {
     // Validate that value exists in options, otherwise use null
-    final validValue = (value?.isNotEmpty ?? false) && options.contains(value)
-        ? value
-        : null;
+    final validValue =
+        (value?.isNotEmpty ?? false) && options.contains(value) ? value : null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),

@@ -57,13 +57,13 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
                   // Multi-step progress bar
                   Row(
                     children: [
-                      _buildProgressSegment(Colors.green, isActive: true),
+                      _buildProgressSegment(const Color(0xFFFF9800), isActive: true),
                       const SizedBox(width: 4),
-                      _buildProgressSegment(Colors.yellow, isActive: false),
+                      _buildProgressSegment(const Color(0xFFFF9800), isActive: false),
                       const SizedBox(width: 4),
-                      _buildProgressSegment(Colors.orange, isActive: false),
+                      _buildProgressSegment(const Color(0xFFFF9800), isActive: false),
                       const SizedBox(width: 4),
-                      _buildProgressSegment(Colors.purple, isActive: false),
+                      _buildProgressSegment(const Color(0xFFFF9800), isActive: false),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -116,7 +116,7 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
                 },
                 loading: () => const Center(
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.purple),
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF9800)),
                   ),
                 ),
                 error: (error, stack) => Center(
@@ -171,7 +171,7 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFD4C4ED) : Colors.white,
+          color: isSelected ? const Color(0xFFFFF3E0) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
@@ -239,7 +239,7 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
                               style: TextStyle(
                                 fontSize: 14,
                                 color: isSelected
-                                    ? Colors.purple[700]
+                                    ? const Color(0xFFE65100)
                                     : Colors.grey[600],
                                 fontWeight: FontWeight.w500,
                               ),
@@ -249,7 +249,7 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
                               Icons.chevron_right,
                               size: 18,
                               color: isSelected
-                                  ? Colors.purple[700]
+                                  ? const Color(0xFFE65100)
                                   : Colors.grey[600],
                             ),
                           ],
@@ -298,11 +298,11 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.purple, width: 2),
+                    border: Border.all(color: const Color(0xFFFF9800), width: 2),
                   ),
                   child: const Icon(
                     Icons.check,
-                    color: Colors.purple,
+                    color: Color(0xFFFF9800),
                     size: 20,
                   ),
                 ),
@@ -317,7 +317,7 @@ class _SelectDietTypePageState extends ConsumerState<SelectDietTypePage> {
                   ),
                   child: const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.purple),
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF9800)),
                     ),
                   ),
                 ),

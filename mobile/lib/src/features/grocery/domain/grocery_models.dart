@@ -1,5 +1,5 @@
-/// Grocery List Domain Models
-/// Represents items in the user's grocery shopping list
+// Grocery List Domain Models
+// Represents items in the user's grocery shopping list
 
 class GroceryItem {
   final String id; // Unique identifier for the grocery item
@@ -27,14 +27,14 @@ class GroceryItem {
   /// Create from JSON (for local storage)
   factory GroceryItem.fromJson(Map<String, dynamic> json) {
     return GroceryItem(
-      id: json['id'] as String,
-      ingredientId: json['ingredientId'] as String,
-      name: json['name'] as String,
-      quantity: (json['quantity'] as num).toDouble(),
-      unit: json['unit'] as String,
+      id: json['id']?.toString() ?? '',
+      ingredientId: json['ingredientId']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      quantity: (json['quantity'] as num?)?.toDouble() ?? 0.0,
+      unit: json['unit']?.toString() ?? '',
       isPurchased: json['isPurchased'] as bool? ?? false,
-      recipeId: json['recipeId'] as String?,
-      recipeName: json['recipeName'] as String?,
+      recipeId: json['recipeId']?.toString(),
+      recipeName: json['recipeName']?.toString(),
       addedAt: json['addedAt'] != null
           ? DateTime.parse(json['addedAt'] as String)
           : DateTime.now(),

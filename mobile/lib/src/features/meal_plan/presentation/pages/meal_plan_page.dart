@@ -138,9 +138,9 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                         onPressed: state.isLoading
                             ? null
                             : () => _optimizeAllMeals(
-                                context,
-                                state.result!.mealPlan.id,
-                              ),
+                                  context,
+                                  state.result!.mealPlan.id,
+                                ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF4CAF50),
                           foregroundColor: Colors.white,
@@ -433,8 +433,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
   List<_DailyMacro> _buildDailyMacros(MealPlanGenerationResult result) {
     if (result.items.isEmpty) return [];
 
-    final daysFromItems =
-        result.items
+    final daysFromItems = result.items
             .map((item) => item.dayIndex)
             .fold<int>(0, (max, value) => value > max ? value : max) +
         1;
@@ -994,7 +993,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                         ),
                       ],
                       onChanged: (_) {},
-                      value: 'dont_like_taste',
+                      initialValue: 'dont_like_taste',
                     ),
                     const SizedBox(height: 16),
                     // Action buttons
@@ -1067,7 +1066,6 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
       return;
     }
 
-    // TODO: Get other user data from profile/auth provider
     const userAge = 30;
     const userGender = "male"; // AI service expects: male, female, or other
     const userHeightCm = 175.0;
@@ -1159,9 +1157,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     required String userId,
   }) async {
     try {
-      await ref
-          .read(mealPlanNotifierProvider.notifier)
-          .saveMealPlanFromPreview(
+      await ref.read(mealPlanNotifierProvider.notifier).saveMealPlanFromPreview(
             userId: userId,
             originalAIMealPlan: originalMealPlan,
             mealPlanOptions: mealPlanOptions,
@@ -1211,14 +1207,15 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
         .read(mealPlanNotifierProvider.notifier)
         .optimizeMealPlan(mealPlanId);
 
+    final state = ref.read(mealPlanNotifierProvider);
     if (!mounted) return;
 
-    final state = ref.read(mealPlanNotifierProvider);
     if (state.error != null) {
-      NotificationService.showError(context, message: 'Error: ${state.error}');
+      NotificationService.showError(this.context,
+          message: 'Error: ${state.error}');
     } else {
       NotificationService.showSuccess(
-        context,
+        this.context,
         message: 'Meal plan optimized successfully!',
       );
     }
@@ -1239,7 +1236,8 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     await ref.read(mealPlanNotifierProvider.notifier).deleteAllMealPlans();
     if (!mounted) return;
 
-    NotificationService.showSuccess(context, message: 'All meal plans deleted');
+    NotificationService.showSuccess(this.context,
+        message: 'All meal plans deleted');
   }
 
   Future<int?> _pickDays(BuildContext context, int current) async {

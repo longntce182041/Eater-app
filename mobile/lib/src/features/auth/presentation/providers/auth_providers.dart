@@ -1,13 +1,13 @@
-import 'dart:math' as math;
-
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/env/app_config.dart';
 import '../../../../config/env/env_loader.dart';
 import '../../../../shared/providers/auth_token_provider.dart';
 import '../../../grocery/presentation/providers/grocery_list_provider.dart';
+import '../../../home/presentation/providers/profile_provider.dart';
+import '../../../home/presentation/providers/recipe_provider.dart';
+import '../../../meal_plan/presentation/providers/meal_plan_provider.dart';
 import '../../data/auth_api_client.dart';
 import '../../data/auth_repository.dart';
 import '../../data/token_storage.dart';
@@ -18,7 +18,6 @@ final appConfigProvider = Provider<AppConfig>((ref) {
 
 final dioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
-  debugPrint('🌐 Creating Dio with baseUrl: ${config.apiBaseUrl}');
 
   final dio = Dio(
     BaseOptions(
@@ -29,27 +28,10 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
-  // Add logging interceptor for debugging
-  if (kDebugMode) {
-    dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        error: true,
-        requestHeader: true,
-        responseHeader: false,
-        logPrint: (obj) {
-          debugPrint('🌐 Dio: $obj');
-        },
-      ),
-    );
-  }
-
   // Add auth token interceptor
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // Get auth token from provider
         final authToken = ref.read(authTokenProvider);
         if (authToken.accessToken != null) {
           options.headers['Authorization'] = 'Bearer ${authToken.accessToken}';
@@ -57,19 +39,6 @@ final dioProvider = Provider<Dio>((ref) {
         return handler.next(options);
       },
       onError: (error, handler) async {
-        // Handle 401 errors (token expired)
-        if (error.response?.statusCode == 401) {
-          // Token expired, try to refresh
-          final authToken = ref.read(authTokenProvider);
-          if (authToken.refreshToken != null) {
-            try {
-              // TODO: Implement token refresh logic
-              debugPrint('Token expired, need to refresh');
-            } catch (e) {
-              debugPrint('Token refresh failed: $e');
-            }
-          }
-        }
         return handler.next(error);
       },
     ),
@@ -103,12 +72,14 @@ class AuthState {
   AuthState copyWith({
     bool? isLoading,
     String? error,
+    bool clearError = false,
     Map<String, dynamic>? user,
-  }) => AuthState(
-    isLoading: isLoading ?? this.isLoading,
-    error: error,
-    user: user ?? this.user,
-  );
+  }) =>
+      AuthState(
+        isLoading: isLoading ?? this.isLoading,
+        error: clearError ? null : (error ?? this.error),
+        user: user ?? this.user,
+      );
 }
 
 class AuthController extends StateNotifier<AuthState> {
@@ -118,41 +89,31 @@ class AuthController extends StateNotifier<AuthState> {
   AuthController(this._repo, this._ref) : super(const AuthState());
 
   Future<void> login(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
-      debugPrint('🔐 Starting login for: $email');
       final res = await _repo.login(email: email, password: password);
-
-      debugPrint('🔐 Login response: $res');
-      debugPrint('🔐 User data: ${res['user']}');
 
       // Update auth token provider with the tokens
       final accessToken = res['accessToken'] as String?;
       final refreshToken = res['refreshToken'] as String?;
       if (accessToken != null && refreshToken != null) {
-        _ref
-            .read(authTokenProvider.notifier)
-            .state = AuthTokenProvider.fromTokens(
+        _ref.read(authTokenProvider.notifier).state =
+            AuthTokenProvider.fromTokens(
           accessToken: accessToken,
           refreshToken: refreshToken,
         );
-        debugPrint('🔐 Tokens saved to authTokenProvider');
       }
 
       final userData = res['user'] as Map<String, dynamic>?;
-      debugPrint('🔐 Setting state user to: $userData');
 
       state = state.copyWith(isLoading: false, user: userData);
-
-      debugPrint('🔐 Auth state updated: ${state.user}');
     } catch (e) {
-      debugPrint('🔐 Login error: $e');
       state = state.copyWith(isLoading: false, error: _errorMessage(e));
     }
   }
 
   Future<void> register(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final res = await _repo.register(email: email, password: password);
 
@@ -160,26 +121,12 @@ class AuthController extends StateNotifier<AuthState> {
       final accessToken = res['accessToken'] as String?;
       final refreshToken = res['refreshToken'] as String?;
 
-      final accessPreview = accessToken != null
-          ? accessToken.substring(0, math.min(accessToken.length, 20))
-          : 'null';
-      final refreshPreview = refreshToken != null
-          ? refreshToken.substring(0, math.min(refreshToken.length, 20))
-          : 'null';
-      debugPrint(
-        'Register response - accessToken: $accessPreview..., refreshToken: $refreshPreview...',
-      );
-
       if (accessToken != null && refreshToken != null) {
-        _ref
-            .read(authTokenProvider.notifier)
-            .state = AuthTokenProvider.fromTokens(
+        _ref.read(authTokenProvider.notifier).state =
+            AuthTokenProvider.fromTokens(
           accessToken: accessToken,
           refreshToken: refreshToken,
         );
-        debugPrint('Auth tokens updated in authTokenProvider');
-      } else {
-        debugPrint('No tokens in register response');
       }
 
       state = state.copyWith(
@@ -218,14 +165,22 @@ class AuthController extends StateNotifier<AuthState> {
       userId: null,
     );
 
-    // IMPORTANT: Invalidate grocery list provider to reset it
-    // This ensures the next user gets a clean slate
+    // Invalidate all user-specific providers to prevent data leaks between users
     try {
       _ref.invalidate(groceryListProvider);
-    } catch (e) {
-      // Grocery feature might not be available, ignore
-      debugPrint('Failed to invalidate grocery provider: $e');
-    }
+    } catch (_) {}
+    try {
+      _ref.invalidate(profileNotifierProvider);
+    } catch (_) {}
+    try {
+      _ref.invalidate(recipeListProvider);
+    } catch (_) {}
+    try {
+      _ref.invalidate(favoriteRecipesProvider);
+    } catch (_) {}
+    try {
+      _ref.invalidate(mealPlanNotifierProvider);
+    } catch (_) {}
 
     state = const AuthState();
   }

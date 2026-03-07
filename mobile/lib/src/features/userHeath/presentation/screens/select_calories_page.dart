@@ -199,7 +199,7 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
                                 width: 60,
                                 height: 60,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1A237E),
+                                  color: const Color(0xFFFF9800),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: const Icon(
@@ -220,8 +220,8 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
                             min: _minCalories.toDouble(),
                             max: _maxCalories.toDouble(),
                             divisions: (_maxCalories - _minCalories) ~/ 50,
-                            activeColor: const Color(0xFF1A237E),
-                            inactiveColor: Colors.deepOrange.shade100,
+                            activeColor: const Color(0xFFFF9800),
+                            inactiveColor: const Color(0xFFFFE0B2),
                             label: '${sliderValue.toInt()} kcal',
                             onChanged: (value) {
                               final int rounded = (value / 50).round() * 50;
@@ -241,10 +241,10 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
                               return ChoiceChip(
                                 label: Text('$calories kcal'),
                                 selected: selected,
-                                selectedColor: const Color(0xFFFCE8D8),
+                                selectedColor: const Color(0xFFFFF3E0),
                                 labelStyle: TextStyle(
                                   color: selected
-                                      ? Colors.deepOrange
+                                      ? const Color(0xFFFF9800)
                                       : Colors.black87,
                                   fontWeight: selected
                                       ? FontWeight.w700
@@ -318,7 +318,7 @@ class _SelectCaloriesPageState extends ConsumerState<SelectCaloriesPage> {
                     child: ElevatedButton(
                       onPressed: isSubmitting ? null : _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A237E),
+                        backgroundColor: const Color(0xFFFF9800),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -364,15 +364,15 @@ class _OnboardingProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: const [
-        _ProgressSegment(color: Colors.green, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.yellow, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.orange, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.deepOrange, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.deepOrange, isActive: false),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: false),
       ],
     );
   }
@@ -406,7 +406,7 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4C99E),
+        color: const Color(0xFFFFF3E0),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -428,7 +428,7 @@ class _InfoCard extends StatelessWidget {
             child: const Icon(
               Icons.balance,
               size: 32,
-              color: Colors.deepOrange,
+              color: Color(0xFFFF9800),
             ),
           ),
           const SizedBox(width: 12),
@@ -482,7 +482,7 @@ class _RecommendationsCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Colors.deepOrange,
+              color: Color(0xFFFF9800),
             ),
           ),
           SizedBox(height: 12),

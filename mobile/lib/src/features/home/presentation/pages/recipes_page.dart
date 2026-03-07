@@ -157,7 +157,7 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
                     // Filter button
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2D3748),
+                        color: const Color(0xFFFF9800),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: IconButton(
@@ -685,19 +685,23 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
             ],
           ),
           const SizedBox(height: 16),
-          ...(_timeOptions.map((option) {
-            return RadioListTile<int?>(
-              title: Text(option['label'] as String),
-              value: option['value'] as int?,
-              groupValue: _selectedMaxTime,
-              activeColor: const Color(0xFFFF9800),
-              onChanged: (value) {
-                setState(() {
-                  _selectedMaxTime = value;
-                });
-              },
-            );
-          })),
+          RadioGroup<int?>(
+            groupValue: _selectedMaxTime,
+            onChanged: (value) {
+              setState(() {
+                _selectedMaxTime = value;
+              });
+            },
+            child: Column(
+              children: _timeOptions.map((option) {
+                return RadioListTile<int?>(
+                  title: Text(option['label'] as String),
+                  value: option['value'] as int?,
+                  activeColor: const Color(0xFFFF9800),
+                );
+              }).toList(),
+            ),
+          ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -1083,7 +1087,7 @@ class _RecipeDetailSheetState extends ConsumerState<_RecipeDetailSheet> {
                             Expanded(
                               child: ElevatedButton.icon(
                                 onPressed: () {
-                                  // TODO: Start cooking
+                                  
                                 },
                                 icon: const Icon(
                                   Icons.play_arrow,

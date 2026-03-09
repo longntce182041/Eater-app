@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Utensils, Pill, LogOut, CloudUpload, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Users, Utensils, Pill, LogOut, CloudUpload, BookOpen, MessageSquare } from 'lucide-react';
 import './AdminLayout.css';
 
 const AdminLayout = () => {
@@ -17,6 +17,7 @@ const AdminLayout = () => {
         { name: 'Manage Ingredients', path: '/ingredients', icon: <Utensils size={20}/> },
         { name: 'Manage Micronutrients', path: '/micronutrients', icon: <Pill size={20}/> },
         { name: 'Manage Recipes', path: '/recipes', icon: <BookOpen size={20}/> },
+        { name: 'Manage Reviews', path: '/reviews', icon: <MessageSquare size={20}/> },
         { name: 'System Backups', path: '/backups', icon: <CloudUpload size={20}/> },
     ];
 

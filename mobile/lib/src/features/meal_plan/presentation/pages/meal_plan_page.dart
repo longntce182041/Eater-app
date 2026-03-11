@@ -771,76 +771,76 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     return Row(
       children: [
         // Rating button
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF3E0),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFFFE0B2), width: 1),
-          ),
-          child: PopupMenuButton<int>(
-            onSelected: (rating) {
-              ref
-                  .read(mealPlanNotifierProvider.notifier)
-                  .rateMeal(mealPlanId, item.id, rating);
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(
-                  value: 1,
-                  child: Row(
-                    children: [
-                      _buildStarRating(1),
-                      const SizedBox(width: 8),
-                      const Text('Poor'),
-                    ],
+        Expanded(
+          child: Container(
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E0),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFFFE0B2), width: 1),
+            ),
+            child: PopupMenuButton<int>(
+              onSelected: (rating) {
+                ref
+                    .read(mealPlanNotifierProvider.notifier)
+                    .rateMeal(mealPlanId, item.id, rating);
+              },
+              itemBuilder: (BuildContext context) {
+                return [
+                  PopupMenuItem(
+                    value: 1,
+                    child: Row(
+                      children: [
+                        _buildStarRating(1),
+                        const SizedBox(width: 8),
+                        const Text('Poor'),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 2,
-                  child: Row(
-                    children: [
-                      _buildStarRating(2),
-                      const SizedBox(width: 8),
-                      const Text('Fair'),
-                    ],
+                  PopupMenuItem(
+                    value: 2,
+                    child: Row(
+                      children: [
+                        _buildStarRating(2),
+                        const SizedBox(width: 8),
+                        const Text('Fair'),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 3,
-                  child: Row(
-                    children: [
-                      _buildStarRating(3),
-                      const SizedBox(width: 8),
-                      const Text('Good'),
-                    ],
+                  PopupMenuItem(
+                    value: 3,
+                    child: Row(
+                      children: [
+                        _buildStarRating(3),
+                        const SizedBox(width: 8),
+                        const Text('Good'),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 4,
-                  child: Row(
-                    children: [
-                      _buildStarRating(4),
-                      const SizedBox(width: 8),
-                      const Text('Very Good'),
-                    ],
+                  PopupMenuItem(
+                    value: 4,
+                    child: Row(
+                      children: [
+                        _buildStarRating(4),
+                        const SizedBox(width: 8),
+                        const Text('Very Good'),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 5,
-                  child: Row(
-                    children: [
-                      _buildStarRating(5),
-                      const SizedBox(width: 8),
-                      const Text('Excellent'),
-                    ],
+                  PopupMenuItem(
+                    value: 5,
+                    child: Row(
+                      children: [
+                        _buildStarRating(5),
+                        const SizedBox(width: 8),
+                        const Text('Excellent'),
+                      ],
+                    ),
                   ),
-                ),
-              ];
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ];
+              },
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     item.userRating != null ? Icons.star : Icons.star_outline,
@@ -861,11 +861,12 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
             ),
           ),
         ),
-        const SizedBox(width: 8),
         // Replace meal button (disabled if locked)
-        if (!item.isLocked)
+        if (!item.isLocked) ...[
+          const SizedBox(width: 8),
           Expanded(
             child: Container(
+              height: 36,
               decoration: BoxDecoration(
                 color: const Color(0xFFFFF3E0),
                 borderRadius: BorderRadius.circular(8),
@@ -873,40 +874,35 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
               ),
               child: Material(
                 color: Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
                 child: InkWell(
                   onTap: () =>
                       _showReplacementDialog(context, mealPlanId, item),
                   borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          Icons.swap_horiz,
-                          size: 18,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.swap_horiz,
+                        size: 18,
+                        color: Color(0xFFFF9800),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Replace',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                           color: Color(0xFFFF9800),
                         ),
-                        SizedBox(width: 6),
-                        Text(
-                          'Replace',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFFFF9800),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
           ),
+        ],
       ],
     );
   }
@@ -933,99 +929,89 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     showDialog(
       context: context,
       builder: (dialogContext) {
+        String selectedReason = 'dont_like_taste';
         return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return Dialog(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Replace meal',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D2D2D),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Current: ${currentItem.recipeName}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF666666),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Reason dropdown
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'Why are you replacing this?',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'dont_like_taste',
-                          child: Text('Don\'t like the taste'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'allergies',
-                          child: Text('Have allergies'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'prep_difficulty',
-                          child: Text('Too difficult to prepare'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'ingredients_unavailable',
-                          child: Text('Ingredients not available'),
-                        ),
-                      ],
-                      onChanged: (_) {},
-                      initialValue: 'dont_like_taste',
-                    ),
-                    const SizedBox(height: 16),
-                    // Action buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF9800),
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: () {
-                            // In a real app, fetch suggestions and show them
-                            // For now, we'll show a simple message
-                            Navigator.pop(dialogContext);
-                            NotificationService.showInfo(
-                              context,
-                              message: 'Fetching replacement suggestions...',
-                            );
-                          },
-                          child: const Text('Get suggestions'),
-                        ),
-                      ],
-                    ),
-                  ],
+              title: const Text(
+                'Replace meal',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D2D2D),
                 ),
               ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Current: ${currentItem.recipeName}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF666666),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedReason,
+                    decoration: InputDecoration(
+                      labelText: 'Why are you replacing this?',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'dont_like_taste',
+                        child: Text("Don't like the taste"),
+                      ),
+                      DropdownMenuItem(
+                        value: 'allergies',
+                        child: Text('Have allergies'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'prep_difficulty',
+                        child: Text('Too difficult to prepare'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'ingredients_unavailable',
+                        child: Text('Ingredients not available'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) selectedReason = value;
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF9800),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    NotificationService.showInfo(
+                      context,
+                      message: 'Fetching replacement suggestions...',
+                    );
+                  },
+                  child: const Text('Get suggestions'),
+                ),
+              ],
             );
           },
         );

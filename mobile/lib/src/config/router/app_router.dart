@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/routes/auth_routes.dart';
 import '../../features/home/presentation/pages/main_navigation_page.dart';
+import '../../features/reminders/presentation/pages/reminders_page.dart';
 import '../../features/userHeath/presentation/pages/set_age.dart';
 import '../../features/userHeath/presentation/pages/set_height.dart';
 import '../../features/userHeath/presentation/pages/set_weight.dart';
@@ -33,8 +34,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final isAuthenticated = authNotifier.isAuthenticated;
 
-      final isAuthRoute =
-          state.matchedLocation.startsWith('/sign-in') ||
+      final isAuthRoute = state.matchedLocation.startsWith('/sign-in') ||
           state.matchedLocation.startsWith('/sign-up') ||
           state.matchedLocation.startsWith('/forgot-password') ||
           state.matchedLocation.startsWith('/reset-password') ||
@@ -137,6 +137,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/select-calories',
         builder: (context, state) => const SelectCaloriesPage(),
+      ),
+      GoRoute(
+        path: '/reminders',
+        builder: (context, state) => const RemindersPage(),
       ),
       ...authRoutes,
     ],

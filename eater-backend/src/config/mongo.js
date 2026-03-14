@@ -1,9 +1,7 @@
 const mongoose = require("mongoose");
 
 const mongoConfig = {
-  uri:
-    process.env.MONGODB_URI ||
-    "mongodb://127.0.0.1:27017/ai_healthy_meal_planner",
+  uri: process.env.MONGODB_URI,
   // mongoose 9+ uses sane defaults; explicit options removed
 };
 

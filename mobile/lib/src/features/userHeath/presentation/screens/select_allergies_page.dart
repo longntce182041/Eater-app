@@ -167,7 +167,7 @@ class _SelectAllergiesPageState extends ConsumerState<SelectAllergiesPage> {
                 child: ElevatedButton(
                   onPressed: _hasSelection ? _handleNext : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A237E),
+                    backgroundColor: const Color(0xFFFF9800),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -197,15 +197,15 @@ class _OnboardingProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: const [
-        _ProgressSegment(color: Colors.green, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.yellow, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.orange, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.purple, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.purple, isActive: false),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: false),
       ],
     );
   }
@@ -238,7 +238,7 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFD4C4ED),
+        color: const Color(0xFFFFF3E0),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -260,7 +260,7 @@ class _InfoCard extends StatelessWidget {
             child: const Icon(
               Icons.emoji_food_beverage,
               size: 32,
-              color: Colors.purple,
+              color: Color(0xFFFF9800),
             ),
           ),
           const SizedBox(width: 12),
@@ -322,7 +322,7 @@ class _ExclusionTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFD4C4ED) : Colors.white,
+          color: isSelected ? const Color(0xFFFFF3E0) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -366,7 +366,7 @@ class _ExclusionTile extends StatelessWidget {
                       ),
                       child: Icon(
                         option.icon,
-                        color: Colors.deepPurple,
+                        color: const Color(0xFFFF9800),
                         size: 28,
                       ),
                     ),
@@ -384,12 +384,12 @@ class _ExclusionTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.purple, width: 2),
+                    border: Border.all(color: const Color(0xFFFF9800), width: 2),
                   ),
                   child: const Icon(
                     Icons.check,
                     size: 18,
-                    color: Colors.purple,
+                    color: Color(0xFFFF9800),
                   ),
                 ),
               ),

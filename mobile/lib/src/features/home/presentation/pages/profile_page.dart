@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/router/auth_notifier.dart';
-import '../../../auth/data/token_storage.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/profile_provider.dart';
 import '../../domain/profile_models.dart';
 
@@ -54,9 +53,7 @@ class ProfilePage extends ConsumerWidget {
   }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
-    final tokenStorage = TokenStorage();
-    await tokenStorage.clear();
-    ref.read(authNotifierProvider).setAuthenticated(false);
+    await ref.read(authControllerProvider.notifier).logout();
     if (context.mounted) {
       context.go('/sign-in');
     }
@@ -99,8 +96,8 @@ class _ProfileContentState extends ConsumerState<_ProfileContent> {
       widget.data.dietary?.availableCookingTime ?? 30;
   late int dailyCalorieTarget = widget.data.dietary?.dailyCalorieTarget ?? 2000;
   late String allergiesText = (widget.data.dietary?.allergies ?? []).join(', ');
-  late String dislikesText = (widget.data.dietary?.dislikesIngredients ?? [])
-      .join(', ');
+  late String dislikesText =
+      (widget.data.dietary?.dislikesIngredients ?? []).join(', ');
 
   @override
   Widget build(BuildContext context) {
@@ -238,6 +235,66 @@ class _ProfileContentState extends ConsumerState<_ProfileContent> {
               onChanged: (v) => setState(() => dislikesText = v),
             ),
             const SizedBox(height: 24),
+
+            // Settings section
+            const Text(
+              'Settings',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D2D2D),
+              ),
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => context.push('/reminders'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3E0),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.alarm_outlined,
+                          color: Color(0xFFFF9800), size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Meal Reminders',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF2D2D2D),
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Set daily meal time notifications',
+                            style: TextStyle(
+                                fontSize: 12, color: Color(0xFF666666)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: Color(0xFF666666)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
             if (isEditing)
               SizedBox(
                 width: double.infinity,
@@ -576,9 +633,8 @@ class _DietTypeDropdown extends ConsumerWidget {
     Map<String, String>? dietTypeLabels,
   }) {
     // Validate that value exists in options, otherwise use null
-    final validValue = (value?.isNotEmpty ?? false) && options.contains(value)
-        ? value
-        : null;
+    final validValue =
+        (value?.isNotEmpty ?? false) && options.contains(value) ? value : null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),

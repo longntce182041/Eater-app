@@ -1,9 +1,11 @@
 # AI Service API Documentation
 
 ## Overview
+
 The AI Service provides endpoints for generating personalized meal plans, getting recommendations, and integrating with the AI meal planning service.
 
 ## Base URL
+
 ```
 http://localhost:3000/api/ai
 ```
@@ -11,11 +13,13 @@ http://localhost:3000/api/ai
 ## Endpoints
 
 ### 1. Generate Meal Plan
+
 Generate an AI-powered meal plan for a user based on their profile, dietary preferences, and health metrics.
 
 **Endpoint:** `POST /api/ai/meal-plan/generate`
 
 **Request Body:**
+
 ```json
 {
   "userId": "507f1f77bcf86cd799439011",
@@ -25,11 +29,13 @@ Generate an AI-powered meal plan for a user based on their profile, dietary pref
 ```
 
 **Parameters:**
+
 - `userId` (string, optional): MongoDB ObjectId of the user. If not provided, uses authenticated user's ID
 - `days` (number, optional): Number of days for the meal plan (1-30). Default: 7
 - `useML` (boolean, optional): Whether to use ML/LLM features. Default: false
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -46,6 +52,7 @@ Generate an AI-powered meal plan for a user based on their profile, dietary pref
 ```
 
 **Example cURL:**
+
 ```bash
 curl -X POST http://localhost:3000/api/ai/meal-plan/generate \
   -H "Content-Type: application/json" \
@@ -59,15 +66,18 @@ curl -X POST http://localhost:3000/api/ai/meal-plan/generate \
 ---
 
 ### 2. Get User Meal Plans
+
 Retrieve all meal plans for a specific user.
 
 **Endpoint:** `GET /api/ai/meal-plans`
 
 **Query Parameters:**
+
 - `userId` (string, optional): User ID. If not provided, uses authenticated user's ID
 - `limit` (number, optional): Number of plans to retrieve (1-100). Default: 10
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -85,6 +95,7 @@ Retrieve all meal plans for a specific user.
 ```
 
 **Example cURL:**
+
 ```bash
 curl -X GET "http://localhost:3000/api/ai/meal-plans?userId=507f1f77bcf86cd799439011&limit=10"
 ```
@@ -92,15 +103,18 @@ curl -X GET "http://localhost:3000/api/ai/meal-plans?userId=507f1f77bcf86cd79943
 ---
 
 ### 3. Get Recommended Recipes
+
 Get personalized recipe recommendations based on user preferences.
 
 **Endpoint:** `GET /api/ai/recipes/recommended`
 
 **Query Parameters:**
+
 - `userId` (string, optional): User ID
 - `limit` (number, optional): Number of recipes (1-100). Default: 10
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -118,6 +132,7 @@ Get personalized recipe recommendations based on user preferences.
 ```
 
 **Example cURL:**
+
 ```bash
 curl -X GET "http://localhost:3000/api/ai/recipes/recommended?userId=507f1f77bcf86cd799439011&limit=10"
 ```
@@ -125,14 +140,17 @@ curl -X GET "http://localhost:3000/api/ai/recipes/recommended?userId=507f1f77bcf
 ---
 
 ### 4. Get User Data for AI
+
 Retrieve formatted user data prepared for AI service processing.
 
 **Endpoint:** `GET /api/ai/user-data`
 
 **Query Parameters:**
+
 - `userId` (string, optional): User ID
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -162,6 +180,7 @@ Retrieve formatted user data prepared for AI service processing.
 ```
 
 **Example cURL:**
+
 ```bash
 curl -X GET "http://localhost:3000/api/ai/user-data?userId=507f1f77bcf86cd799439011"
 ```
@@ -169,11 +188,13 @@ curl -X GET "http://localhost:3000/api/ai/user-data?userId=507f1f77bcf86cd799439
 ---
 
 ### 5. Check AI Service Health
+
 Check if the AI service is available and responding.
 
 **Endpoint:** `GET /api/ai/health`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -185,6 +206,7 @@ Check if the AI service is available and responding.
 ```
 
 **Example cURL:**
+
 ```bash
 curl -X GET http://localhost:3000/api/ai/health
 ```
@@ -192,11 +214,13 @@ curl -X GET http://localhost:3000/api/ai/health
 ---
 
 ### 6. Get AI Service Status
+
 Get detailed status information about the AI service.
 
 **Endpoint:** `GET /api/ai/status`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -209,6 +233,7 @@ Get detailed status information about the AI service.
 ```
 
 **Example cURL:**
+
 ```bash
 curl -X GET http://localhost:3000/api/ai/status
 ```
@@ -228,6 +253,7 @@ All endpoints return errors in the following format:
 ```
 
 ### Common Error Codes:
+
 - `400` - Bad Request (invalid parameters)
 - `401` - Unauthorized (authentication required)
 - `404` - Not Found (resource doesn't exist)
@@ -239,41 +265,49 @@ All endpoints return errors in the following format:
 ## Usage Examples
 
 ### JavaScript/Node.js
+
 ```javascript
-const axios = require('axios');
+const axios = require("axios");
 
 // Generate meal plan
 async function generateMealPlan(userId, days = 7) {
   try {
-    const response = await axios.post('http://localhost:3000/api/ai/meal-plan/generate', {
-      userId,
-      days,
-      useML: false
-    });
-    
-    console.log('Meal plan generated:', response.data);
+    const response = await axios.post(
+      "http://localhost:3000/api/ai/meal-plan/generate",
+      {
+        userId,
+        days,
+        useML: false,
+      },
+    );
+
+    console.log("Meal plan generated:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error:', error.response?.data || error.message);
+    console.error("Error:", error.response?.data || error.message);
   }
 }
 
 // Get recommended recipes
 async function getRecommendedRecipes(userId, limit = 10) {
   try {
-    const response = await axios.get('http://localhost:3000/api/ai/recipes/recommended', {
-      params: { userId, limit }
-    });
-    
-    console.log('Recommended recipes:', response.data);
+    const response = await axios.get(
+      "http://localhost:3000/api/ai/recipes/recommended",
+      {
+        params: { userId, limit },
+      },
+    );
+
+    console.log("Recommended recipes:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error:', error.response?.data || error.message);
+    console.error("Error:", error.response?.data || error.message);
   }
 }
 ```
 
 ### Python
+
 ```python
 import requests
 
@@ -285,9 +319,9 @@ def generate_meal_plan(user_id, days=7):
         'days': days,
         'useML': False
     }
-    
+
     response = requests.post(url, json=payload)
-    
+
     if response.status_code == 201:
         print('Meal plan generated:', response.json())
         return response.json()
@@ -302,9 +336,9 @@ def get_recommended_recipes(user_id, limit=10):
         'userId': user_id,
         'limit': limit
     }
-    
+
     response = requests.get(url, params=params)
-    
+
     if response.status_code == 200:
         print('Recommended recipes:', response.json())
         return response.json()

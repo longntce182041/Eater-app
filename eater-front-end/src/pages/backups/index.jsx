@@ -150,13 +150,13 @@ const BackupsPage = () => {
                                 {backups.map(b => (
                                     <tr key={b._id} style={{ borderBottom: '1px solid #fafafa' }}>
                                         <td style={{ padding: 8 }}>{b.filename}</td>
-                                        <td style={{ padding: 8 }}>{b.size ? `${(b.size/1024).toFixed(1)} KB` : '-'}</td>
+                                        <td style={{ padding: 8 }}>{b.size ? `${(b.size / 1024).toFixed(1)} KB` : '-'}</td>
                                         <td style={{ padding: 8 }}>{new Date(b.createdAt).toLocaleString()}</td>
                                         <td style={{ padding: 8 }}>{b.status}</td>
                                         <td style={{ padding: 8 }}>
                                             {b.status === 'done' && (
                                                 <div style={{ display: 'flex', gap: 8 }}>
-                                                    <button onClick={() => handleDownload(b._id, b.filename)} style={{ marginRight: 0, cursor: 'pointer', background: '#f0f0f0', border: 'none', padding: '6px 10px', borderRadius: 4 }}><Download size={16}/> Download</button>
+                                                    <button onClick={() => handleDownload(b._id, b.filename)} style={{ marginRight: 0, cursor: 'pointer', background: '#f0f0f0', border: 'none', padding: '6px 10px', borderRadius: 4 }}><Download size={16} /> Download</button>
                                                     <button onClick={() => handleRestoreClick(b._id, b.filename)} style={{ cursor: 'pointer', background: '#fff3cd', border: '1px solid #ffc107', padding: '6px 10px', borderRadius: 4, color: '#856404' }} disabled={restoring}><RotateCcw size={16} style={{ marginRight: 4 }} /> Restore</button>
                                                 </div>
                                             )}
@@ -231,7 +231,7 @@ const BackupsPage = () => {
                                     cursor: 'pointer',
                                     fontWeight: 500,
                                     color: '#374151',
-                                    disabled: restoring ? 0.6 : 1
+                                    opacity: restoring ? 0.6 : 1
                                 }}
                             >
                                 Cancel

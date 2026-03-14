@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axiosClient from '../../../../src/api/axiosClient.js'; // Import axios client đã cấu hình
+import axiosClient from '../../../api/axiosClient.js'; // Import axios client đã cấu hình
 import { toast } from 'react-toastify'; // Import thư viện thông báo
 
 const LoginForm = () => {
@@ -33,7 +33,7 @@ const LoginForm = () => {
                 const token = res.data.data?.token || res.data.token;
                 const role = res.data.data?.user?.role || res.data.user?.role;
 
-                if(token) {
+                if (token) {
                     localStorage.setItem('token', token);
                     localStorage.setItem('userRole', role);
 
@@ -41,7 +41,7 @@ const LoginForm = () => {
 
                     // Chờ 1 chút để lưu xong token rồi mới chuyển trang
                     setTimeout(() => {
-                        navigate('/dashboard');
+                        navigate(role === 'nutritionist' ? '/chat' : '/dashboard');
                     }, 500);
                 } else {
                     toast.error("Login success but no Token found!");

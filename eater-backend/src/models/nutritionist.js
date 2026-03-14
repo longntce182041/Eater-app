@@ -1,10 +1,9 @@
-const { verify } = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const NutritionistSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Users",
       required: true,
     },
     fullName: { type: String, required: true },

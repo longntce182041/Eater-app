@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/profile_setup_provider.dart';
+import '../../../../core/utils/notification_service.dart';
 
 class SetWeightPage extends ConsumerStatefulWidget {
   const SetWeightPage({super.key});
@@ -29,11 +30,9 @@ class _SetWeightPageState extends ConsumerState<SetWeightPage> {
   void _handleContinue() {
     final weight = double.tryParse(_weightController.text);
     if (weight == null || weight < 30 || weight > 300) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid weight (30-300 kg)'),
-          backgroundColor: Colors.red,
-        ),
+      NotificationService.showWarning(
+        context,
+        message: 'Please enter a valid weight (30-300 kg)',
       );
       return;
     }

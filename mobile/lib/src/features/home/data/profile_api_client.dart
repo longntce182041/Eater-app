@@ -2,20 +2,25 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/providers/app_config_provider.dart';
 import '../../../shared/providers/dio_provider.dart';
 import '../domain/profile_models.dart';
 
 final profileApiClientProvider = Provider<ProfileApiClient>((ref) {
   final dio = ref.watch(dioProvider);
-  return ProfileApiClient(dio);
+  final config = ref.watch(appConfigProvider);
+  return ProfileApiClient(dio, config.apiBaseUrl);
 });
 
 class ProfileApiClient {
   final Dio _dio;
-  ProfileApiClient(this._dio);
+  final String baseUrl;
+
+  ProfileApiClient(this._dio, this.baseUrl);
 
   Future<ProfileCombinedData> getProfile() async {
-    final res = await _dio.get('/api/profile/view');
+    final url = '$baseUrl/api/profile/view';
+    final res = await _dio.get(url);
     return ProfileCombinedData.fromJson(res.data as Map<String, dynamic>);
   }
 
@@ -25,7 +30,8 @@ class ProfileApiClient {
       'updateProfile body types: ${body.entries.map((e) => '${e.key}: ${e.value.runtimeType}').join(", ")}',
     );
     try {
-      final res = await _dio.put('/api/profile/update', data: body);
+      final url = '$baseUrl/api/profile/update';
+      final res = await _dio.put(url, data: body);
       debugPrint('updateProfile response: ${res.data}');
       return ProfileCombinedData.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -35,7 +41,8 @@ class ProfileApiClient {
   }
 
   Future<List<DietTypeModel>> getDietTypes() async {
-    final res = await _dio.get('/api/health/diet-types');
+    final url = '$baseUrl/api/health/diet-types';
+    final res = await _dio.get(url);
     final list = res.data as List<dynamic>;
     return list
         .map((item) => DietTypeModel.fromJson(item as Map<String, dynamic>))

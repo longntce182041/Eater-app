@@ -129,13 +129,13 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
                   // Multi-step progress bar
                   Row(
                     children: [
-                      _buildProgressSegment(Colors.green, isActive: true),
+                      _buildProgressSegment(const Color(0xFFFF9800), isActive: true),
                       const SizedBox(width: 4),
-                      _buildProgressSegment(Colors.yellow, isActive: true),
+                      _buildProgressSegment(const Color(0xFFFF9800), isActive: true),
                       const SizedBox(width: 4),
-                      _buildProgressSegment(Colors.orange, isActive: true),
+                      _buildProgressSegment(const Color(0xFFFF9800), isActive: true),
                       const SizedBox(width: 4),
-                      _buildProgressSegment(Colors.purple, isActive: false),
+                      _buildProgressSegment(const Color(0xFFFF9800), isActive: false),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -296,7 +296,7 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _handleNext,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A237E), // Dark navy
+                    backgroundColor: const Color(0xFFFF9800), // Dark navy
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -357,7 +357,7 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? Colors.purple : Colors.grey[300]!,
+            color: isSelected ? const Color(0xFFFF9800) : Colors.grey[300]!,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
@@ -378,7 +378,7 @@ class _SelectDislikesPageState extends ConsumerState<SelectDislikesPage> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.purple[700] : Colors.black87,
+                color: isSelected ? const Color(0xFFE65100) : Colors.black87,
               ),
             ),
             if (showRemoveIcon) ...[

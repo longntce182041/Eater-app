@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/auth_providers.dart';
+import '../../../../core/utils/notification_service.dart';
 
 class SignUpPage extends ConsumerStatefulWidget {
   const SignUpPage({super.key});
@@ -31,14 +32,11 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
     if (!mounted) return;
     final error = ref.read(authControllerProvider).error;
     if (error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
+      NotificationService.showError(context, message: error);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sign up successful! Let\'s set up your profile.'),
-        ),
+      NotificationService.showSuccess(
+        context,
+        message: 'Sign up successful! Let\'s set up your profile.',
       );
       if (!mounted) return;
       context.go('/user-info');

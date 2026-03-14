@@ -599,6 +599,187 @@ async function generateCompleteMealPlan(req, res) {
   }
 }
 
+/**
+ * Generate meal plan preview (no database save yet)
+ * @route POST /api/ai/meal-plan/preview
+ */
+async function generateMealPlanPreview(req, res) {
+  try {
+    const {
+      userId,
+      age,
+      gender,
+      height_cm,
+      weight_kg,
+      goal_weight_kg,
+      health_goals,
+      activity_level,
+      dietTypes = [],
+      allergies = [],
+      disliked_ingredients = [],
+      days = 1,
+    } = req.body;
+
+    // Validation
+    if (
+      !userId ||
+      !age ||
+      !gender ||
+      !height_cm ||
+      !weight_kg ||
+      !goal_weight_kg ||
+      !health_goals ||
+      !activity_level
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields for meal plan generation",
+      });
+    }
+
+    console.log("📋 Step 1: Analyzing user profile...");
+    const profileResponse = await aiClient.analyzeUserProfile({
+      user_id: userId,
+      age,
+      gender,
+      height_cm,
+      weight_kg,
+      goal_weight_kg,
+      health_goals,
+      activity_level,
+    });
+
+    // Map profile response to body_profile format expected by meal plan pipeline
+    const body_profile = {
+      age: age,
+      gender: gender,
+      bmi: profileResponse.bmi,
+      bmr: profileResponse.health_metrics.bmr,
+      tdee: profileResponse.health_metrics.tdee,
+      activity_level: profileResponse.activity_level,
+      weight_kg: weight_kg,
+      height_cm: height_cm,
+    };
+
+    console.log("🗄️  Step 2: Fetching recipes...");
+    const recipes = await recipeService.getRecipesForAI({
+      dietTypes: dietTypes.length > 0 ? dietTypes : undefined,
+    });
+
+    if (recipes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No recipes found in database",
+      });
+    }
+
+    console.log("🍽️  Step 3: Generating meal plan...");
+    const mealPlanResult = await aiClient.generateMealPlanPipeline({
+      user_id: userId,
+      body_profile: body_profile,
+      diet_types: dietTypes,
+      allergies: allergies,
+      disliked_ingredients: disliked_ingredients,
+      health_goal: health_goals,
+      days: days,
+      recipe_database: recipes,
+    });
+
+    console.log(
+      `✅ Meal plan generated with ${mealPlanResult.meal_plan?.meals?.length || 0} meals`,
+    );
+
+    // Generate preview (NOT saving to database)
+    const previewResult = await aiService.generateMealPlanPreview(
+      userId,
+      mealPlanResult,
+      {
+        days,
+        dietTypes,
+        healthGoal: health_goals,
+      },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Meal plan preview generated",
+      data: {
+        preview: previewResult.preview,
+        // Keep the original AI response for later save
+        _originalAIMealPlan: mealPlanResult,
+        _mealPlanOptions: {
+          days,
+          dietTypes,
+          healthGoal: health_goals,
+          startDate: new Date(),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error in meal plan preview:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to generate meal plan preview",
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * Save modified meals from preview (with replacements)
+ * @route POST /api/ai/meal-plan/save-preview
+ */
+async function saveMealPlanFromPreview(req, res) {
+  try {
+    const userId = req.user?.id || req.body.userId;
+    const { originalAIMealPlan, mealPlanOptions, modifiedMeals = {} } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    if (!originalAIMealPlan) {
+      return res.status(400).json({
+        success: false,
+        message: "Original AI meal plan data is required",
+      });
+    }
+
+    console.log(`💾 Saving modified meals for user ${userId}`);
+    console.log(`📝 Modified meals count: ${Object.keys(modifiedMeals).length}`);
+
+    const result = await aiService.saveModifiedMealsFromPreview(
+      userId,
+      originalAIMealPlan,
+      modifiedMeals,
+      mealPlanOptions || {},
+    );
+
+    // Delete other meal plans (keep only latest)
+    await aiService.deleteOtherMealPlansWithItems(userId, result.mealPlan._id);
+
+    return res.status(201).json({
+      success: true,
+      message: "Meal plan saved successfully",
+      data: {
+        mealPlan: result.mealPlan,
+        items: result.items,
+        summary: result.summary,
+      },
+    });
+  } catch (error) {
+    console.error("Error saving meal plan from preview:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to save meal plan",
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   generateMealPlan,
   getUserMealPlans,
@@ -613,4 +794,6 @@ module.exports = {
   analyzeUserProfile,
   saveMealPlanFromAI,
   generateCompleteMealPlan,
+  generateMealPlanPreview,
+  saveMealPlanFromPreview,
 };

@@ -9,7 +9,7 @@ const GroceryItemSchema = new mongoose.Schema(
         },
         ingredientId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "ingredients",
+            ref: "Ingredient",
             required: true,
         },
         ingredientName: { type: String, required: true },
@@ -17,7 +17,7 @@ const GroceryItemSchema = new mongoose.Schema(
         unit: { type: String, required: true }, // ml, g, unit, tbsp, etc
         recipeId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Recipes",
+            ref: "Recipe",
             required: false,
             default: null,
         },

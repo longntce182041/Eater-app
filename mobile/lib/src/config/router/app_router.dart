@@ -4,8 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/routes/auth_routes.dart';
 import '../../features/home/presentation/pages/main_navigation_page.dart';
 import '../../features/reminders/presentation/pages/reminders_page.dart';
-import '../../features/consultation/presentation/pages/new_consultation_page.dart';
-import '../../features/consultation/presentation/pages/consultation_detail_page.dart';
+import '../../features/chat/presentation/pages/chat_page.dart';
 import '../../features/userHeath/presentation/pages/set_age.dart';
 import '../../features/userHeath/presentation/pages/set_height.dart';
 import '../../features/userHeath/presentation/pages/set_weight.dart';
@@ -145,14 +144,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RemindersPage(),
       ),
       GoRoute(
-        path: '/consultations/new',
-        builder: (context, state) => const NewConsultationPage(),
-      ),
-      GoRoute(
-        path: '/consultations/:id',
-        builder: (context, state) => ConsultationDetailPage(
-          id: state.pathParameters['id']!,
-        ),
+        path: '/chat/:nutritionistId',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return ChatPage(
+            nutritionistId: state.pathParameters['nutritionistId']!,
+            nutritionistName: extra['nutritionistName'] as String? ?? 'Nutritionist',
+          );
+        },
       ),
       ...authRoutes,
     ],

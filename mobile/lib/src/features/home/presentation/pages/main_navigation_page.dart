@@ -5,6 +5,7 @@ import 'profile_page.dart';
 import 'recipes_page.dart';
 import '../../../meal_plan/presentation/pages/meal_plan_page.dart';
 import '../../../grocery/presentation/pages/groceries_page.dart';
+import '../../../consultation/presentation/pages/consultation_list_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -22,6 +23,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     const RecipesPage(),
     const GroceriesPage(),
     const ProfilePage(),
+    const ConsultationListPage(),
   ];
 
   @override
@@ -62,6 +64,11 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             icon: Icon(Icons.person_outlined),
             activeIcon: Icon(Icons.person),
             label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.medical_services_outlined),
+            activeIcon: Icon(Icons.medical_services),
+            label: 'Consult',
           ),
         ],
       ),

@@ -33,7 +33,7 @@ const LoginForm = () => {
                 const token = res.data.data?.token || res.data.token;
                 const role = res.data.data?.user?.role || res.data.user?.role;
 
-                if(token) {
+                if (token) {
                     localStorage.setItem('token', token);
                     localStorage.setItem('userRole', role);
 
@@ -41,7 +41,7 @@ const LoginForm = () => {
 
                     // Chờ 1 chút để lưu xong token rồi mới chuyển trang
                     setTimeout(() => {
-                        navigate('/dashboard');
+                        navigate(role === 'nutritionist' ? '/consultations' : '/dashboard');
                     }, 500);
                 } else {
                     toast.error("Login success but no Token found!");

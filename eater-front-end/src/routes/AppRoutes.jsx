@@ -8,6 +8,7 @@ import IngredientsPage from "../pages/ingredients/index.jsx";
 import MicronutrientsPage from "../pages/micronutrients/index.jsx";
 import RecipesPage from "../pages/recipes/index.jsx";
 import BackupsPage from "../pages/backups/index.jsx";
+import ConsultationsPage from "../pages/consultations/index.jsx";
 import LoginPage from "../pages/auth/index.jsx";
 
 // Import Layout (Cái khung sidebar)
@@ -45,6 +46,7 @@ export function AppRoutes() {
                     <Route path="micronutrients" element={<MicronutrientsPage />} />
                     <Route path="recipes" element={<RecipesPage />} />
                     <Route path="backups" element={<BackupsPage />} />
+                    <Route path="consultations" element={<ConsultationsPage />} />
 
                     {/* Các route khác thêm vào đây */}
                 </Route>

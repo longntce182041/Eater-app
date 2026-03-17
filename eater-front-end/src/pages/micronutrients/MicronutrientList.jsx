@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'react-toastify';
 import micronutrientService from '../../services/micronutrientService';
@@ -14,17 +14,17 @@ const MicronutrientList = () => {
     const [createdFrom, setCreatedFrom] = useState('');
     const [createdTo, setCreatedTo] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
-    
+
     // Form state
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({ name: '', unit: '', description: '' });
 
     // Fetch micronutrients
-    const fetchMicronutrients = async (page = 1, keyword = '') => {
+    const fetchMicronutrients = useCallback(async (page = 1, keyword = '') => {
         setLoading(true);
         setError('');
         try {
@@ -47,12 +47,12 @@ const MicronutrientList = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pageSize, unitFilter, createdFrom, createdTo]);
 
     // Initial load
     useEffect(() => {
         fetchMicronutrients(1, '');
-    }, []);
+    }, [fetchMicronutrients]);
 
     // Search handler
     const handleSearch = (e) => {
@@ -139,7 +139,7 @@ const MicronutrientList = () => {
         <div className="micronutrient-container">
             <div className="micronutrient-header">
                 <h1>Micronutrient Management</h1>
-                <button 
+                <button
                     className="btn-primary"
                     onClick={() => openForm()}
                 >

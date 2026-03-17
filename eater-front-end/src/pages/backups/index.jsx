@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import { Download, CloudUpload, RotateCcw, AlertTriangle, X } from 'lucide-react';
@@ -13,7 +13,7 @@ const BackupsPage = () => {
     const navigate = useNavigate();
     const [backups, setBackups] = useState([]);
 
-    const fetchBackups = async () => {
+    const fetchBackups = useCallback(async () => {
         try {
             setLoading(true);
             const res = await axiosClient.get('/admin/backups');
@@ -31,9 +31,9 @@ const BackupsPage = () => {
             }
             toast.error('Failed to load backups');
         } finally { setLoading(false); }
-    };
+    }, [navigate]);
 
-    useEffect(() => { fetchBackups(); }, []);
+    useEffect(() => { fetchBackups(); }, [fetchBackups]);
 
     const handleCreate = async () => {
         try {

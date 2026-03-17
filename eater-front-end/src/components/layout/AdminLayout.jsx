@@ -15,13 +15,15 @@ import "./AdminLayout.css";
 
 const AdminLayout = () => {
   const navigate = useNavigate();
+  const userRole = localStorage.getItem("userRole");
+  const isNutritionist = userRole === "nutritionist";
 
   const handleLogout = () => {
     localStorage.clear(); // Xóa sạch token
     navigate("/login");
   };
 
-  const menuItems = [
+  const adminMenuItems = [
     {
       name: "Dashboard",
       path: "/dashboard",
@@ -45,16 +47,21 @@ const AdminLayout = () => {
     },
     { name: "Manage Recipes", path: "/recipes", icon: <BookOpen size={20} /> },
     {
-      name: "Manage Reviews",
-      path: "/reviews",
-      icon: <MessageSquare size={20} />,
-    },
-    {
       name: "System Backups",
       path: "/backups",
       icon: <CloudUpload size={20} />,
     },
   ];
+
+  const nutritionistMenuItems = [
+    {
+      name: "Live Chat",
+      path: "/chat",
+      icon: <MessageCircle size={20} />,
+    },
+  ];
+
+  const menuItems = isNutritionist ? nutritionistMenuItems : adminMenuItems;
 
   return (
     <div className="admin-container">

@@ -4,6 +4,8 @@ import 'home_page.dart';
 import 'profile_page.dart';
 import 'recipes_page.dart';
 import '../../../meal_plan/presentation/pages/meal_plan_page.dart';
+import '../../../grocery/presentation/pages/groceries_page.dart';
+import '../../../chat/presentation/pages/nutritionist_list_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -19,7 +21,9 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     const HomePage(),
     const MealPlanPage(),
     const RecipesPage(),
+    const GroceriesPage(),
     const ProfilePage(),
+    const NutritionistListPage(),
   ];
 
   @override
@@ -52,10 +56,19 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             label: 'Recipes',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_bag_outlined),
+            activeIcon: Icon(Icons.shopping_bag),
+            label: 'Groceries',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person_outlined),
             activeIcon: Icon(Icons.person),
             label: 'Profile',
           ),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.medical_services_outlined),
+              activeIcon: Icon(Icons.medical_services),
+              label: 'Nutritionist'),
         ],
       ),
     );

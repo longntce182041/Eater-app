@@ -7,6 +7,8 @@ require('dotenv').config();
 var app = require('../app');
 var debug = require('debug')('eater-backend:server');
 var http = require('http');
+var { Server: SocketIOServer } = require('socket.io');
+var { setupChatSocket } = require('../src/api/sockets/chat.socket');
 
 /**
  * Get port from environment and store in Express.
@@ -20,6 +22,17 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+
+/**
+ * Attach Socket.io to the HTTP server for real-time chat.
+ */
+var io = new SocketIOServer(server, {
+  cors: {
+    origin: process.env.ALLOWED_ORIGINS || '*',
+    methods: ['GET', 'POST'],
+  },
+});
+setupChatSocket(io);
 
 /**
  * Listen on provided port, on all network interfaces.

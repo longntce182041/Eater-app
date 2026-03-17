@@ -1,12 +1,13 @@
-import 'dart:math' as math;
-
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/env/app_config.dart';
 import '../../../../config/env/env_loader.dart';
 import '../../../../shared/providers/auth_token_provider.dart';
+import '../../../grocery/presentation/providers/grocery_list_provider.dart';
+import '../../../home/presentation/providers/profile_provider.dart';
+import '../../../home/presentation/providers/recipe_provider.dart';
+import '../../../meal_plan/presentation/providers/meal_plan_provider.dart';
 import '../../data/auth_api_client.dart';
 import '../../data/auth_repository.dart';
 import '../../data/token_storage.dart';
@@ -16,15 +17,40 @@ final appConfigProvider = Provider<AppConfig>((ref) {
 });
 
 final dioProvider = Provider<Dio>((ref) {
-  final dio = Dio();
-  dio.options.headers['Content-Type'] = 'application/json';
+  final config = ref.watch(appConfigProvider);
+
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: config.apiBaseUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      headers: {'Content-Type': 'application/json'},
+    ),
+  );
+
+  // Add auth token interceptor
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final authToken = ref.read(authTokenProvider);
+        if (authToken.accessToken != null) {
+          options.headers['Authorization'] = 'Bearer ${authToken.accessToken}';
+        }
+        return handler.next(options);
+      },
+      onError: (error, handler) async {
+        return handler.next(error);
+      },
+    ),
+  );
+
   return dio;
 });
 
 final authApiClientProvider = Provider<AuthApiClient>((ref) {
-  final config = ref.watch(appConfigProvider);
   final dio = ref.watch(dioProvider);
-  return AuthApiClient(dio: dio, baseUrl: '${config.apiBaseUrl}/api');
+  final config = ref.watch(appConfigProvider);
+  return AuthApiClient(dio: dio, baseUrl: config.apiBaseUrl);
 });
 
 final tokenStorageProvider = Provider<TokenStorage>((ref) => TokenStorage());
@@ -46,12 +72,14 @@ class AuthState {
   AuthState copyWith({
     bool? isLoading,
     String? error,
+    bool clearError = false,
     Map<String, dynamic>? user,
-  }) => AuthState(
-    isLoading: isLoading ?? this.isLoading,
-    error: error,
-    user: user ?? this.user,
-  );
+  }) =>
+      AuthState(
+        isLoading: isLoading ?? this.isLoading,
+        error: clearError ? null : (error ?? this.error),
+        user: user ?? this.user,
+      );
 }
 
 class AuthController extends StateNotifier<AuthState> {
@@ -61,7 +89,7 @@ class AuthController extends StateNotifier<AuthState> {
   AuthController(this._repo, this._ref) : super(const AuthState());
 
   Future<void> login(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final res = await _repo.login(email: email, password: password);
 
@@ -69,23 +97,23 @@ class AuthController extends StateNotifier<AuthState> {
       final accessToken = res['accessToken'] as String?;
       final refreshToken = res['refreshToken'] as String?;
       if (accessToken != null && refreshToken != null) {
-        _ref.read(authTokenProvider.notifier).state = AuthTokenProvider(
+        _ref.read(authTokenProvider.notifier).state =
+            AuthTokenProvider.fromTokens(
           accessToken: accessToken,
           refreshToken: refreshToken,
         );
       }
 
-      state = state.copyWith(
-        isLoading: false,
-        user: res['user'] as Map<String, dynamic>?,
-      );
+      final userData = res['user'] as Map<String, dynamic>?;
+
+      state = state.copyWith(isLoading: false, user: userData);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: _errorMessage(e));
     }
   }
 
   Future<void> register(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final res = await _repo.register(email: email, password: password);
 
@@ -93,24 +121,12 @@ class AuthController extends StateNotifier<AuthState> {
       final accessToken = res['accessToken'] as String?;
       final refreshToken = res['refreshToken'] as String?;
 
-      final accessPreview = accessToken != null
-          ? accessToken.substring(0, math.min(accessToken.length, 20))
-          : 'null';
-      final refreshPreview = refreshToken != null
-          ? refreshToken.substring(0, math.min(refreshToken.length, 20))
-          : 'null';
-      debugPrint(
-        'Register response - accessToken: $accessPreview..., refreshToken: $refreshPreview...',
-      );
-
       if (accessToken != null && refreshToken != null) {
-        _ref.read(authTokenProvider.notifier).state = AuthTokenProvider(
+        _ref.read(authTokenProvider.notifier).state =
+            AuthTokenProvider.fromTokens(
           accessToken: accessToken,
           refreshToken: refreshToken,
         );
-        debugPrint('Auth tokens updated in authTokenProvider');
-      } else {
-        debugPrint('No tokens in register response');
       }
 
       state = state.copyWith(
@@ -146,7 +162,26 @@ class AuthController extends StateNotifier<AuthState> {
     _ref.read(authTokenProvider.notifier).state = const AuthTokenProvider(
       accessToken: null,
       refreshToken: null,
+      userId: null,
     );
+
+    // Invalidate all user-specific providers to prevent data leaks between users
+    try {
+      _ref.invalidate(groceryListProvider);
+    } catch (_) {}
+    try {
+      _ref.invalidate(profileNotifierProvider);
+    } catch (_) {}
+    try {
+      _ref.invalidate(recipeListProvider);
+    } catch (_) {}
+    try {
+      _ref.invalidate(favoriteRecipesProvider);
+    } catch (_) {}
+    try {
+      _ref.invalidate(mealPlanNotifierProvider);
+    } catch (_) {}
+
     state = const AuthState();
   }
 

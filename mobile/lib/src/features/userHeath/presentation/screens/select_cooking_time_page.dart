@@ -170,7 +170,7 @@ class _SelectCookingTimePageState extends ConsumerState<SelectCookingTimePage> {
                     child: ElevatedButton(
                       onPressed: _selectedTime == null ? null : _continue,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A237E),
+                        backgroundColor: const Color(0xFFFF9800),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -205,15 +205,15 @@ class _OnboardingProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: const [
-        _ProgressSegment(color: Colors.green, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.yellow, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.orange, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.purple, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
         SizedBox(width: 6),
-        _ProgressSegment(color: Colors.purple, isActive: true),
+        _ProgressSegment(color: Color(0xFFFF9800), isActive: true),
       ],
     );
   }
@@ -246,7 +246,7 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFD4C4ED),
+        color: const Color(0xFFFFF3E0),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -265,7 +265,7 @@ class _InfoCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.schedule, size: 32, color: Colors.purple),
+            child: const Icon(Icons.schedule, size: 32, color: Color(0xFFFF9800)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -323,7 +323,7 @@ class _CookingTimeCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFD4C4ED) : Colors.white,
+          color: isSelected ? const Color(0xFFFFF3E0) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -342,14 +342,14 @@ class _CookingTimeCard extends StatelessWidget {
                 height: 56,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.purple.withValues(alpha: 0.2)
+                      ? const Color(0xFFFF9800).withValues(alpha: 0.2)
                       : Colors.grey[100],
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
                   size: 28,
-                  color: isSelected ? Colors.purple[700] : Colors.grey[700],
+                  color: isSelected ? const Color(0xFFE65100) : Colors.grey[700],
                 ),
               ),
               const SizedBox(width: 16),
@@ -377,7 +377,7 @@ class _CookingTimeCard extends StatelessWidget {
                 ),
               ),
               if (isSelected)
-                const Icon(Icons.check_circle, color: Colors.purple, size: 28),
+                const Icon(Icons.check_circle, color: Color(0xFFFF9800), size: 28),
             ],
           ),
         ),

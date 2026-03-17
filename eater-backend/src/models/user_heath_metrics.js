@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
-const userHealthMetricsSchema = {
-  userId: { type: String, required: true },
+
+const userHealthMetricsSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "Users", required: true },
   bmi: { type: Number, required: true },
   bmr: { type: Number, required: true },
   tdee: { type: Number, required: true },
@@ -14,7 +15,7 @@ const userHealthMetricsSchema = {
     required: true,
     enum: ["AI", "Nutritionist"],
   },
-};
+});
 
 const UserHealthMetrics = mongoose.model(
   "UserHealthMetrics",

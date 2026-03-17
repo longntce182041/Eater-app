@@ -25,7 +25,9 @@ class AuthNotifier extends ChangeNotifier {
 
     // Load tokens into authTokenProvider for Dio interceptor
     if (accessToken != null && refreshToken != null) {
-      _ref.read(authTokenProvider.notifier).state = AuthTokenProvider(
+      _ref
+          .read(authTokenProvider.notifier)
+          .state = AuthTokenProvider.fromTokens(
         accessToken: accessToken,
         refreshToken: refreshToken,
       );

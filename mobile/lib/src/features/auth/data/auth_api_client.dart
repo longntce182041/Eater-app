@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthApiClient {
   final Dio _dio;
@@ -10,54 +11,45 @@ class AuthApiClient {
     required String email,
     required String password,
   }) {
-    return _dio.post(
-      '$baseUrl/auth/user/register',
-      data: {'email': email, 'password': password},
-    );
+    final url = '$baseUrl/api/auth/user/register';
+    debugPrint('🌐 API register: $url');
+    return _dio.post(url, data: {'email': email, 'password': password});
   }
 
   Future<Response<dynamic>> login({
     required String email,
     required String password,
   }) {
-    return _dio.post(
-      '$baseUrl/auth/user/login',
-      data: {'email': email, 'password': password},
-    );
+    final url = '$baseUrl/api/auth/user/login';
+    debugPrint('🌐 API login URL: $url');
+    return _dio.post(url, data: {'email': email, 'password': password});
   }
 
   Future<Response<dynamic>> verifyEmail({required String token}) {
-    return _dio.post('$baseUrl/auth/verify-email', data: {'token': token});
+    final url = '$baseUrl/api/auth/verify-email';
+    return _dio.post(url, data: {'token': token});
   }
 
   Future<Response<dynamic>> requestPasswordReset({required String email}) {
-    return _dio.post(
-      '$baseUrl/auth/user/request-password-reset',
-      data: {'email': email},
-    );
+    final url = '$baseUrl/api/auth/user/request-password-reset';
+    return _dio.post(url, data: {'email': email});
   }
 
   Future<Response<dynamic>> resetPassword({
     required String otp,
     required String newPassword,
   }) {
-    return _dio.post(
-      '$baseUrl/auth/user/reset-password',
-      data: {'otp': otp, 'newPassword': newPassword},
-    );
+    final url = '$baseUrl/api/auth/user/reset-password';
+    return _dio.post(url, data: {'otp': otp, 'newPassword': newPassword});
   }
 
   Future<Response<dynamic>> refresh({required String refreshToken}) {
-    return _dio.post(
-      '$baseUrl/auth/user/refresh',
-      data: {'refreshToken': refreshToken},
-    );
+    final url = '$baseUrl/api/auth/user/refresh';
+    return _dio.post(url, data: {'refreshToken': refreshToken});
   }
 
   Future<Response<dynamic>> logout({required String refreshToken}) {
-    return _dio.post(
-      '$baseUrl/auth/user/logout',
-      data: {'refreshToken': refreshToken},
-    );
+    final url = '$baseUrl/api/auth/user/logout';
+    return _dio.post(url, data: {'refreshToken': refreshToken});
   }
 }

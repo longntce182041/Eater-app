@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/auth_providers.dart';
+import '../../../../core/utils/notification_service.dart';
 
 class VerifyEmailPage extends ConsumerStatefulWidget {
   const VerifyEmailPage({super.key});
@@ -27,13 +28,13 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
           .read(authRepositoryProvider)
           .verifyEmail(token: _tokenController.text.trim());
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email verified successfully')),
+      NotificationService.showSuccess(
+        context,
+        message: 'Email verified successfully',
       );
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (!mounted) return;
+      NotificationService.showError(context, message: e.toString());
     }
   }
 

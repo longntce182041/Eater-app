@@ -16,4 +16,6 @@ class ApiEndpoints {
   static const String mealLogs = '/meal-logs';
 
   static const String shoppingList = '/shopping-list';
+
+  static const String reminders = '/reminders';
 }

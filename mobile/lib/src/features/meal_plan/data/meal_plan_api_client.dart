@@ -2,27 +2,28 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/providers/app_config_provider.dart';
 import '../../../shared/providers/dio_provider.dart';
 import '../domain/meal_plan_models.dart';
 
 final mealPlanApiClientProvider = Provider<MealPlanApiClient>((ref) {
   final dio = ref.watch(dioProvider);
-  return MealPlanApiClient(dio);
+  final config = ref.watch(appConfigProvider);
+  return MealPlanApiClient(dio, config.apiBaseUrl);
 });
 
 class MealPlanApiClient {
   final Dio _dio;
+  final String baseUrl;
 
-  MealPlanApiClient(this._dio);
+  MealPlanApiClient(this._dio, this.baseUrl);
 
   Future<MealPlanGenerationResult> generateMealPlan({
     required int days,
     bool useML = false,
   }) async {
-    final res = await _dio.post(
-      '/api/ai/meal-plan/generate',
-      data: {'days': days, 'useML': useML},
-    );
+    final url = '$baseUrl/api/ai/meal-plan/generate';
+    final res = await _dio.post(url, data: {'days': days, 'useML': useML});
 
     final data = res.data as Map<String, dynamic>;
     if (data['success'] != true) {
@@ -35,7 +36,8 @@ class MealPlanApiClient {
   }
 
   Future<MealPlanGenerationResult?> fetchLatestMealPlan() async {
-    final res = await _dio.get('/api/ai/meal-plans/latest');
+    final url = '$baseUrl/api/ai/meal-plans/latest';
+    final res = await _dio.get(url);
 
     final data = res.data as Map<String, dynamic>;
     if (data['success'] != true) {
@@ -49,7 +51,8 @@ class MealPlanApiClient {
   }
 
   Future<void> deleteLatestMealPlan() async {
-    final res = await _dio.delete('/api/ai/meal-plans/latest');
+    final url = '$baseUrl/api/ai/meal-plans/latest';
+    final res = await _dio.delete(url);
 
     final data = res.data as Map<String, dynamic>;
     if (data['success'] != true) {
@@ -59,7 +62,8 @@ class MealPlanApiClient {
   }
 
   Future<void> deleteMealPlanById(String mealPlanId) async {
-    final res = await _dio.delete('/api/ai/meal-plans/$mealPlanId');
+    final url = '$baseUrl/api/ai/meal-plans/$mealPlanId';
+    final res = await _dio.delete(url);
 
     final data = res.data as Map<String, dynamic>;
     if (data['success'] != true) {
@@ -69,7 +73,8 @@ class MealPlanApiClient {
   }
 
   Future<void> deleteAllMealPlans() async {
-    final res = await _dio.delete('/api/ai/meal-plans');
+    final url = '$baseUrl/api/ai/meal-plans';
+    final res = await _dio.delete(url);
 
     final data = res.data as Map<String, dynamic>;
     if (data['success'] != true) {
@@ -84,9 +89,8 @@ class MealPlanApiClient {
     String itemId,
   ) async {
     try {
-      final response = await _dio.get(
-        '/api/meal-plans/$planId/items/$itemId/suggestions',
-      );
+      final url = '$baseUrl/api/meal-plans/$planId/items/$itemId/suggestions';
+      final response = await _dio.get(url);
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
@@ -118,8 +122,9 @@ class MealPlanApiClient {
     String? reason,
   ) async {
     try {
+      final url = '$baseUrl/api/meal-plans/$planId/items/$itemId/replace';
       final response = await _dio.patch(
-        '/api/meal-plans/$planId/items/$itemId/replace',
+        url,
         data: {'newRecipeId': newRecipeId, 'reason': reason},
       );
 
@@ -147,10 +152,8 @@ class MealPlanApiClient {
     int rating,
   ) async {
     try {
-      final response = await _dio.post(
-        '/api/meal-plans/$planId/items/$itemId/rate',
-        data: {'rating': rating},
-      );
+      final url = '$baseUrl/api/meal-plans/$planId/items/$itemId/rate';
+      final response = await _dio.post(url, data: {'rating': rating});
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
@@ -172,9 +175,8 @@ class MealPlanApiClient {
   /// Get optimization suggestions for a meal plan
   Future<Map<String, dynamic>> getOptimizationSuggestions(String planId) async {
     try {
-      final response = await _dio.get(
-        '/api/meal-plans/$planId/optimization-suggestions',
-      );
+      final url = '$baseUrl/api/meal-plans/$planId/optimization-suggestions';
+      final response = await _dio.get(url);
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
@@ -197,7 +199,8 @@ class MealPlanApiClient {
   /// Optimize entire meal plan
   Future<Map<String, dynamic>> optimizeMealPlan(String planId) async {
     try {
-      final response = await _dio.post('/api/meal-plans/$planId/optimize');
+      final url = '$baseUrl/api/meal-plans/$planId/optimize';
+      final response = await _dio.post(url);
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
@@ -213,5 +216,79 @@ class MealPlanApiClient {
       debugPrint('Error optimizing meal plan: $e');
       throw Exception('Failed to optimize meal plan: $e');
     }
+  }
+
+  /// Generate meal plan preview (no database save yet)
+  Future<Map<String, dynamic>> generateMealPlanPreview({
+    required String userId,
+    required int age,
+    required String gender,
+    required double heightCm,
+    required double weightKg,
+    required double goalWeightKg,
+    required String healthGoals,
+    required String activityLevel,
+    required List<String> dietTypes,
+    required List<String> allergies,
+    required List<String> dislikedIngredients,
+    required int days,
+  }) async {
+    final url = '$baseUrl/api/ai/meal-plan/preview';
+    final res = await _dio.post(
+      url,
+      data: {
+        'userId': userId,
+        'age': age,
+        'gender': gender,
+        'height_cm': heightCm,
+        'weight_kg': weightKg,
+        'goal_weight_kg': goalWeightKg,
+        'health_goals': healthGoals,
+        'activity_level': activityLevel,
+        'dietTypes': dietTypes,
+        'allergies': allergies,
+        'disliked_ingredients': dislikedIngredients,
+        'days': days,
+      },
+    );
+
+    final data = res.data as Map<String, dynamic>;
+    if (data['success'] != true) {
+      debugPrint('generateMealPlanPreview error: ${data['message']}');
+      throw Exception(
+        data['message'] ?? 'Failed to generate meal plan preview',
+      );
+    }
+
+    return data['data'] as Map<String, dynamic>;
+  }
+
+  /// Save modified meals from preview
+  Future<MealPlanGenerationResult> saveMealPlanFromPreview({
+    required String userId,
+    required Map<String, dynamic> originalAIMealPlan,
+    required Map<String, dynamic> mealPlanOptions,
+    required Map<String, dynamic> modifiedMeals,
+  }) async {
+    final url = '$baseUrl/api/ai/meal-plan/save-preview';
+    final res = await _dio.post(
+      url,
+      data: {
+        'userId': userId,
+        'originalAIMealPlan': originalAIMealPlan,
+        'mealPlanOptions': mealPlanOptions,
+        'modifiedMeals': modifiedMeals,
+      },
+    );
+
+    final data = res.data as Map<String, dynamic>;
+    if (data['success'] != true) {
+      debugPrint('saveMealPlanFromPreview error: ${data['message']}');
+      throw Exception(data['message'] ?? 'Failed to save meal plan');
+    }
+
+    return MealPlanGenerationResult.fromJson(
+      data['data'] as Map<String, dynamic>,
+    );
   }
 }

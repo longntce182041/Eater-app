@@ -756,6 +756,326 @@ async function analyzeUserProfileAndSave(userId) {
   }
 }
 
+/**
+ * Generate meal plan preview (without saving to database)
+ * @param {string} userId - User ID for context
+ * @param {Object} aiMealPlan - AI response with meal plan data
+ * @param {Object} options - Options including days
+ * @returns {Promise<Object>} Preview data with meals organized by day
+ */
+async function generateMealPlanPreview(userId, aiMealPlan, options = {}) {
+  try {
+    console.log("📋 Generating meal plan preview (not saving to DB)");
+
+    // Extract meal plan data - handle both old and new response formats
+    const mealPlanData = aiMealPlan.meal_plan || aiMealPlan;
+    const meals = mealPlanData.meals || [];
+    const daysData = mealPlanData.days || [];
+
+    // Use meals array from AI response
+    let allMeals = meals.length > 0 ? meals : [];
+    let numDays = options.days || 7;
+
+    // If flat array is empty, try to extract from days structure
+    if (allMeals.length === 0 && Array.isArray(daysData) && daysData.length > 0) {
+      allMeals = daysData.flatMap((day) => day.meals || []);
+      numDays = options.days || daysData.length;
+    }
+
+    console.log(
+      `Preview: ${allMeals.length} meals for ${numDays} days`,
+    );
+
+    // Calculate totals
+    const totalCalories = allMeals.reduce(
+      (sum, meal) => sum + (meal.calories || meal.estimated_calories || 0),
+      0,
+    );
+    const avgCaloriesPerDay = totalCalories / numDays;
+
+    // Organize meals by day for preview
+    const mealsPerDay = Math.ceil(allMeals.length / numDays);
+    const mealsByDay = [];
+
+    for (let dayIdx = 0; dayIdx < numDays; dayIdx++) {
+      const dayMeals = [];
+      for (let mealIdx = 0; mealIdx < mealsPerDay; mealIdx++) {
+        const mealIndex = dayIdx * mealsPerDay + mealIdx;
+        if (mealIndex < allMeals.length) {
+          const meal = allMeals[mealIndex];
+          dayMeals.push({
+            id: `${dayIdx}_${mealIdx}`, // Temporary ID for preview
+            mealType: meal.meal_type?.toLowerCase() || "snack",
+            name: meal.name || meal.recipe_name || "Meal",
+            calories: meal.calories || meal.estimated_calories || 0,
+            protein: meal.protein_g || 0,
+            carbs: meal.carbs_g || 0,
+            fat: meal.fat_g || 0,
+            servings: meal.servings || 1,
+            recipeId: meal.recipe_id,
+            dayIndex: dayIdx,
+            selected: true, // Default to selected for preview
+          });
+        }
+      }
+      mealsByDay.push({
+        dayNumber: dayIdx + 1,
+        meals: dayMeals,
+        dayCalories: dayMeals.reduce((sum, m) => sum + m.calories, 0),
+      });
+    }
+
+    return {
+      success: true,
+      preview: {
+        mealsByDay,
+        totalMeals: allMeals.length,
+        days: numDays,
+        totalCalories,
+        avgCaloriesPerDay,
+        dietTypes: aiMealPlan.diet_constraints?.diet_types || options.dietTypes || [],
+        healthGoal: aiMealPlan.goal_profile?.primary_goal || options.healthGoal,
+      },
+      allMeals, // Keep original meals for later save
+    };
+  } catch (error) {
+    console.error("❌ Error generating meal plan preview:", error);
+    throw new Error(`Failed to generate preview: ${error.message}`);
+  }
+}
+
+/**
+ * Save modified meals from preview to database (with replacements)
+ * @param {string} userId - User ID
+ * @param {Object} aiMealPlan - Original AI response
+ * @param {Object} modifiedMeals - Modified meals object {mealId: mealData}
+ * @param {Object} options - Options including days
+ * @returns {Promise<Object>} Saved meal plan with items
+ */
+async function saveModifiedMealsFromPreview(userId, aiMealPlan, modifiedMeals = {}, options = {}) {
+  try {
+    console.log(`💾 Saving modified meals for user ${userId}`);
+
+    const numDays = options.days || 7;
+
+    // Convert modifiedMeals object to array and sort by mealId (dayIndex_mealIndex)
+    const mealsArray = Object.entries(modifiedMeals)
+      .sort((a, b) => {
+        const [aDayIdx, aMealIdx] = a[0].split('_').map(Number);
+        const [bDayIdx, bMealIdx] = b[0].split('_').map(Number);
+        return aDayIdx === bDayIdx ? aMealIdx - bMealIdx : aDayIdx - bDayIdx;
+      })
+      .map(([mealId, mealData]) => {
+        const [dayIdx, mealIdx] = mealId.split('_').map(Number);
+        return {
+          ...mealData,
+          dayIndex: dayIdx,
+        };
+      });
+
+    console.log(`Saving ${mealsArray.length} meals (including replacements)`);
+
+    const totalCalories = mealsArray.reduce(
+      (sum, meal) => sum + (meal.calories || 0),
+      0,
+    );
+    const avgCaloriesPerDay = totalCalories / numDays;
+
+    // Create meal plan
+    const mealPlan = new MealPlan({
+      userId: new mongoose.Types.ObjectId(userId),
+      date: options.startDate || new Date(),
+      days: numDays,
+      targetCalories:
+        aiMealPlan.goal_profile?.target_calories || avgCaloriesPerDay,
+      actualCalories: avgCaloriesPerDay,
+      dietTypes: options.dietTypes || [],
+      healthGoal: aiMealPlan.goal_profile?.primary_goal || options.healthGoal,
+      status: "active",
+      aiGenerated: true,
+      metadata: {
+        pipelineVersion: aiMealPlan.pipeline_metadata?.pipeline_version,
+        stepsExecuted: aiMealPlan.pipeline_metadata?.steps_executed,
+        generatedAt: new Date(),
+        hasReplacements: mealsArray.some(m => m.isReplaced),
+      },
+    });
+
+    await mealPlan.save();
+    console.log(`✅ Meal plan saved with ID: ${mealPlan._id}`);
+
+    // Save meal plan items
+    const mealPlanItems = [];
+
+    for (const meal of mealsArray) {
+      let recipeObjectId;
+      try {
+        recipeObjectId = new mongoose.Types.ObjectId(meal.recipeId);
+      } catch (error) {
+        console.warn(
+          `⚠️ Invalid recipe ID: ${meal.recipeId}, skipping meal`,
+        );
+        continue;
+      }
+
+      const mealItem = new MealPlanItem({
+        mealPlanId: mealPlan._id,
+        recipeId: recipeObjectId,
+        mealType: meal.mealType?.toLowerCase() || "snack",
+        servings: meal.servings || 1,
+        calories: meal.calories || 0,
+        protein: meal.protein || 0,
+        carbohydrates: meal.carbs || 0,
+        fat: meal.fat || 0,
+        dayIndex: meal.dayIndex,
+      });
+
+      await mealItem.save();
+      mealPlanItems.push(mealItem);
+    }
+
+    console.log(`✅ Saved ${mealPlanItems.length} meal plan items`);
+
+    return {
+      success: true,
+      mealPlan: mealPlan.toObject(),
+      items: mealPlanItems.map((item) => item.toObject()),
+      summary: {
+        totalMeals: mealPlanItems.length,
+        days: numDays,
+        avgCaloriesPerDay: avgCaloriesPerDay,
+      },
+    };
+  } catch (error) {
+    console.error("❌ Error saving modified meals:", error);
+    throw new Error(`Failed to save meals: ${error.message}`);
+  }
+}
+
+/**
+ * Save selected meals from preview to database
+ * @param {string} userId - User ID
+ * @param {Object} aiMealPlan - Original AI response
+ * @param {Array} selectedMealIds - IDs of meals to save (format: "dayIdx_mealIdx")
+ * @param {Object} options - Options including days
+ * @returns {Promise<Object>} Saved meal plan with items
+ */
+async function saveSelectedMealsFromPreview(userId, aiMealPlan, selectedMealIds = [], options = {}) {
+  try {
+    console.log(`💾 Saving selected meals for user ${userId}`);
+
+    // Extract meal plan data
+    const mealPlanData = aiMealPlan.meal_plan || aiMealPlan;
+    const meals = mealPlanData.meals || [];
+    const daysData = mealPlanData.days || [];
+
+    let allMeals = meals.length > 0 ? meals : [];
+    let numDays = options.days || 7;
+
+    if (allMeals.length === 0 && Array.isArray(daysData) && daysData.length > 0) {
+      allMeals = daysData.flatMap((day) => day.meals || []);
+      numDays = options.days || daysData.length;
+    }
+
+    // If selectedMealIds is empty, save all (backward compatibility)
+    let mealsToSave = allMeals;
+    if (selectedMealIds && selectedMealIds.length > 0) {
+      const selectedIndexes = selectedMealIds.map(id => {
+        const [dayIdx, mealIdx] = id.split('_').map(Number);
+        const mealsPerDay = Math.ceil(allMeals.length / numDays);
+        return dayIdx * mealsPerDay + mealIdx;
+      });
+
+      mealsToSave = allMeals.filter((_, idx) => selectedIndexes.includes(idx));
+    }
+
+    console.log(
+      `Saving ${mealsToSave.length} out of ${allMeals.length} meals`,
+    );
+
+    const totalCalories = mealsToSave.reduce(
+      (sum, meal) => sum + (meal.calories || meal.estimated_calories || 0),
+      0,
+    );
+    const avgCaloriesPerDay = totalCalories / numDays;
+
+    // Create meal plan
+    const mealPlan = new MealPlan({
+      userId: new mongoose.Types.ObjectId(userId),
+      date: options.startDate || new Date(),
+      days: numDays,
+      targetCalories:
+        aiMealPlan.goal_profile?.target_calories ||
+        mealPlanData.daily_calories ||
+        avgCaloriesPerDay,
+      actualCalories: avgCaloriesPerDay,
+      dietTypes:
+        aiMealPlan.diet_constraints?.diet_types || options.dietTypes || [],
+      healthGoal: aiMealPlan.goal_profile?.primary_goal || options.healthGoal,
+      status: "active",
+      aiGenerated: true,
+      metadata: {
+        pipelineVersion: aiMealPlan.pipeline_metadata?.pipeline_version,
+        stepsExecuted: aiMealPlan.pipeline_metadata?.steps_executed,
+        generatedAt: new Date(),
+      },
+    });
+
+    await mealPlan.save();
+    console.log(`✅ Meal plan saved with ID: ${mealPlan._id}`);
+
+    // Save meal plan items
+    const mealPlanItems = [];
+    const mealsPerDay = Math.ceil(mealsToSave.length / numDays);
+
+    for (let i = 0; i < mealsToSave.length; i++) {
+      const meal = mealsToSave[i];
+      const dayIndex = Math.floor(i / mealsPerDay);
+
+      let recipeObjectId;
+      try {
+        recipeObjectId = new mongoose.Types.ObjectId(meal.recipe_id);
+      } catch (error) {
+        console.warn(
+          `⚠️ Invalid recipe ID: ${meal.recipe_id}, skipping meal`,
+        );
+        continue;
+      }
+
+      const mealItem = new MealPlanItem({
+        mealPlanId: mealPlan._id,
+        recipeId: recipeObjectId,
+        mealType: meal.meal_type?.toLowerCase() || "snack",
+        servings: meal.servings || 1,
+        calories: meal.calories || meal.estimated_calories || 0,
+        protein: meal.protein_g || 0,
+        carbohydrates: meal.carbs_g || 0,
+        fat: meal.fat_g || 0,
+        dayIndex: dayIndex,
+      });
+
+      await mealItem.save();
+      mealPlanItems.push(mealItem);
+    }
+
+    console.log(`✅ Saved ${mealPlanItems.length} meal plan items`);
+
+    return {
+      success: true,
+      mealPlan: mealPlan.toObject(),
+      items: mealPlanItems.map((item) => item.toObject()),
+      summary: {
+        totalMeals: mealPlanItems.length,
+        days: numDays,
+        avgCaloriesPerDay: avgCaloriesPerDay,
+      },
+    };
+  } catch (error) {
+    console.error("❌ Error saving selected meals:", error);
+    throw new Error(`Failed to save meals: ${error.message}`);
+  }
+}
+
 module.exports = {
   getUserProfile,
   getUserDietaryPreferences,
@@ -773,4 +1093,7 @@ module.exports = {
   getRecommendedRecipes,
   generateAndSaveMealPlan,
   analyzeUserProfileAndSave,
+  generateMealPlanPreview,
+  saveSelectedMealsFromPreview,
+  saveModifiedMealsFromPreview,
 };

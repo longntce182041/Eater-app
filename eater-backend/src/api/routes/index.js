@@ -17,6 +17,9 @@ const micronutrientRoutes = require("./micronutrient.management.routes");
 const adminBackupRoutes = require("./admin.backup.routes");
 const aiRoutes = require("./ai.routes");
 const mealPlanOptimizationRoutes = require("./meal.plan.optimization.routes");
+const groceryRoutes = require("./grocery.routes");
+const reminderRoutes = require("./reminder.routes");
+const chatRoutes = require("./chat.routes");
 
 const router = express.Router();
 router.use("/auth/user", authUserRoutes);
@@ -35,5 +38,8 @@ router.use("/reviews", reviewsRoutes);
 router.use("/micronutrients", micronutrientRoutes);
 router.use("/admin", adminBackupRoutes);
 router.use("/meal-plans", mealPlanOptimizationRoutes);
+router.use("/groceries", groceryRoutes);
+router.use("/reminders", reminderRoutes);
+router.use("/chat", chatRoutes);
 
 module.exports = router;

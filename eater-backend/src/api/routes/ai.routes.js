@@ -117,6 +117,28 @@ router.get("/health", aiController.checkAIServiceHealth);
 router.get("/status", aiController.getAIServiceStatus);
 
 /**
+ * @route   POST /api/ai/meal-plan/preview
+ * @desc    Generate meal plan preview (no database save, returns preview data)
+ * @access  Private
+ */
+router.post(
+  "/meal-plan/preview",
+  // authMiddleware,
+  aiController.generateMealPlanPreview,
+);
+
+/**
+ * @route   POST /api/ai/meal-plan/save-preview
+ * @desc    Save selected meals from preview to database
+ * @access  Private
+ */
+router.post(
+  "/meal-plan/save-preview",
+  // authMiddleware,
+  aiController.saveMealPlanFromPreview,
+);
+
+/**
  * @route   POST /api/ai/user-profile/analyze
  * @desc    Analyze user profile and calculate health metrics (BMR, TDEE, BMI)
  * @access  Private

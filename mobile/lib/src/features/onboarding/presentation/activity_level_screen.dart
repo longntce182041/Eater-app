@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/notification_service.dart';
 
 class ActivityLevelOption {
   final String id;
@@ -60,8 +61,9 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
 
   Future<void> _submit() async {
     if (_selectedLevelId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please choose your activity level.')),
+      NotificationService.showWarning(
+        context,
+        message: 'Please choose your activity level.',
       );
       return;
     }

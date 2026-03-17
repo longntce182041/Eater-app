@@ -12,9 +12,9 @@ class AuthAdminService {
       throw new Error("User not found");
     }
 
-    // 2. Kiểm tra Role (Quan trọng: Chỉ cho phép Admin)
-    if (user.role !== "admin") {
-      throw new Error("Access denied. You are not an Admin.");
+    // 2. Kiểm tra Role (Admin hoặc Nutritionist)
+    if (!["admin", "nutritionist"].includes(user.role)) {
+      throw new Error("Access denied. Insufficient permissions.");
     }
 
     // 3. So sánh mật khẩu (Input password vs Hash password trong DB)

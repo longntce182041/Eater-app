@@ -10,51 +10,49 @@ import RecipesPage from "../pages/recipes/index.jsx";
 import BackupsPage from "../pages/backups/index.jsx";
 import LoginPage from "../pages/auth/index.jsx";
 import ReviewsPage from "../pages/reviews/index.jsx";
+import NutritionistsPage from "../pages/nutritionists/index.jsx";
 
 // Import Layout (Cái khung sidebar)
 import AdminLayout from "../components/layout/AdminLayout";
 
-
 // --- 1. Tạo Component Bảo Vệ (Chặn người chưa login) ---
 const PrivateRoute = () => {
-    // Kiểm tra token trong localStorage (lúc login xong đã lưu)
-    const token = localStorage.getItem("token");
+  // Kiểm tra token trong localStorage (lúc login xong đã lưu)
+  const token = localStorage.getItem("token");
 
-    // Nếu có token -> Cho đi tiếp (Outlet), Nếu không -> Đá về /login
-    return token ? <Outlet /> : <Navigate to="/login" replace />;
+  // Nếu có token -> Cho đi tiếp (Outlet), Nếu không -> Đá về /login
+  return token ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
 export function AppRoutes() {
-    return (
-        <Routes>
-            {/* Route Login (Ai cũng vào được) */}
-            <Route path="/login" element={<LoginPage />} />
+  return (
+    <Routes>
+      {/* Route Login (Ai cũng vào được) */}
+      <Route path="/login" element={<LoginPage />} />
 
-            {/* --- 2. Khu vực Admin (Phải Login mới vào được) --- */}
-            <Route element={<PrivateRoute />}>
+      {/* --- 2. Khu vực Admin (Phải Login mới vào được) --- */}
+      <Route element={<PrivateRoute />}>
+        {/* Bọc trong AdminLayout để có Sidebar */}
+        <Route path="/" element={<AdminLayout />}>
+          {/* Mặc định vào / thì nhảy sang dashboard */}
+          <Route index element={<Navigate to="/dashboard" replace />} />
 
-                {/* Bọc trong AdminLayout để có Sidebar */}
-                <Route path="/" element={<AdminLayout />}>
+          {/* Các trang con sẽ hiện ở giữa màn hình */}
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="ingredients" element={<IngredientsPage />} />
+          <Route path="micronutrients" element={<MicronutrientsPage />} />
+          <Route path="recipes" element={<RecipesPage />} />
+          <Route path="reviews" element={<ReviewsPage />} />
+          <Route path="nutritionists" element={<NutritionistsPage />} />
+          <Route path="backups" element={<BackupsPage />} />
 
-                    {/* Mặc định vào / thì nhảy sang dashboard */}
-                    <Route index element={<Navigate to="/dashboard" replace />} />
+          {/* Các route khác thêm vào đây */}
+        </Route>
+      </Route>
 
-                    {/* Các trang con sẽ hiện ở giữa màn hình */}
-                    <Route path="dashboard" element={<DashboardPage />} />
-                    <Route path="users" element={<UsersPage />} />
-                    <Route path="ingredients" element={<IngredientsPage />} />
-                    <Route path="micronutrients" element={<MicronutrientsPage />} />
-                    <Route path="recipes" element={<RecipesPage />} />
-                    <Route path="reviews" element={<ReviewsPage />} />
-                    <Route path="backups" element={<BackupsPage />} />
-
-                    {/* Các route khác thêm vào đây */}
-                </Route>
-
-            </Route>
-
-            {/* Route sai -> Về Login */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-    );
+      {/* Route sai -> Về Login */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
 }

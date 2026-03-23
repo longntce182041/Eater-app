@@ -34,6 +34,7 @@ class MealPlanModel {
 
 class MealPlanItemModel {
   final String id;
+  final String? recipeId;
   final String mealType;
   final int servings;
   final double calories;
@@ -47,9 +48,13 @@ class MealPlanItemModel {
   final int? userRating;
   final String userAction;
   final bool isLocked;
+  // NEW FIELDS FOR MEAL TRACKING
+  final bool isEaten;
+  final DateTime? eatenDate;
 
   MealPlanItemModel({
     required this.id,
+    this.recipeId,
     required this.mealType,
     required this.servings,
     required this.calories,
@@ -62,6 +67,8 @@ class MealPlanItemModel {
     this.userRating,
     this.userAction = 'none',
     this.isLocked = false,
+    this.isEaten = false,
+    this.eatenDate,
   });
 
   factory MealPlanItemModel.fromJson(Map<String, dynamic> json) {
@@ -71,6 +78,7 @@ class MealPlanItemModel {
 
     return MealPlanItemModel(
       id: json['_id']?.toString() ?? '',
+      recipeId: recipe?['_id']?.toString(),
       mealType: json['mealType']?.toString() ?? 'snack',
       servings: (json['servings'] as num?)?.toInt() ?? 1,
       calories: (json['calories'] as num?)?.toDouble() ?? 0,
@@ -83,6 +91,10 @@ class MealPlanItemModel {
       userRating: (json['userRating'] as num?)?.toInt(),
       userAction: json['userAction']?.toString() ?? 'none',
       isLocked: json['isLocked'] == true,
+      isEaten: json['isEaten'] == true,
+      eatenDate: json['eatenDate'] != null
+          ? DateTime.tryParse(json['eatenDate'].toString())
+          : null,
     );
   }
 }

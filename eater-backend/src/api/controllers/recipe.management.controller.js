@@ -73,6 +73,16 @@ class RecipeManagementController {
             res.status(404).json({ success: false, message: error.message });
         }
     }
+
+    // GET Full Recipe Details (with ingredients, steps, nutrition, micronutrients)
+    async getFullRecipeDetail(req, res) {
+        try {
+            const recipeDetail = await recipeService.getFullRecipeDetails(req.params.id);
+            res.json({ success: true, data: recipeDetail });
+        } catch (error) {
+            res.status(404).json({ success: false, message: error.message });
+        }
+    }
 }
 
 module.exports = new RecipeManagementController();

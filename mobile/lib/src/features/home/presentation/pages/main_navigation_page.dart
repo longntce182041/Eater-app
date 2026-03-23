@@ -1,22 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'home_page.dart';
 import 'profile_page.dart';
 import 'recipes_page.dart';
 import '../../../meal_plan/presentation/pages/meal_plan_page.dart';
+import '../../../nutrition/presentation/pages/meal_logging_page.dart';
+import '../../../nutrition/presentation/providers/navigation_provider.dart';
 
-class MainNavigationPage extends StatefulWidget {
+class MainNavigationPage extends ConsumerStatefulWidget {
   const MainNavigationPage({super.key});
 
   @override
-  State<MainNavigationPage> createState() => _MainNavigationPageState();
+  ConsumerState<MainNavigationPage> createState() => _MainNavigationPageState();
 }
 
-class _MainNavigationPageState extends State<MainNavigationPage> {
-  int _currentIndex = 0;
+class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = 0;
+
+    // Listen to targetTabIndexProvider for auto-navigation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.listen(targetTabIndexProvider, (previous, next) {
+        if (!mounted) return;
+        if (next != null) {
+          setState(() {
+            _currentIndex = next;
+          });
+          print('[main_navigation_page] Auto-navigated to tab: $next');
+          // Clear the target tab after using it (delayed to avoid provider modification during build)
+          Future.microtask(() {
+            ref.read(targetTabIndexProvider.notifier).clearTargetTab();
+          });
+        }
+      });
+    });
+  }
 
   final List<Widget> _pages = [
     const HomePage(),
+    const MealLoggingPage(),
     const MealPlanPage(),
     const RecipesPage(),
     const ProfilePage(),
@@ -42,9 +70,14 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.restaurant_outlined),
+            activeIcon: Icon(Icons.restaurant),
+            label: 'Meals',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today_outlined),
             activeIcon: Icon(Icons.calendar_today),
-            label: 'Meal Plans',
+            label: 'Plans',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.restaurant_menu_outlined),

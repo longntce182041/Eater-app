@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/routes/auth_routes.dart';
 import '../../features/home/presentation/pages/main_navigation_page.dart';
+import '../../features/meal_plan/presentation/pages/view_recipe_detail_page.dart';
+import '../../features/meal_plan/presentation/pages/view_recipe_details_page.dart';
 import '../../features/userHeath/presentation/pages/set_age.dart';
 import '../../features/userHeath/presentation/pages/set_height.dart';
 import '../../features/userHeath/presentation/pages/set_weight.dart';
@@ -137,6 +139,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/select-calories',
         builder: (context, state) => const SelectCaloriesPage(),
+      ),
+      GoRoute(
+        path: '/recipe/:recipeId',
+        builder: (context, state) {
+          final recipeId = state.pathParameters['recipeId']!;
+          final recipeName = state.uri.queryParameters['name'] ?? 'Recipe';
+          final imageUrl = state.uri.queryParameters['image'];
+          return ViewRecipeDetailPage(
+            recipeId: recipeId,
+            recipeName: recipeName,
+            recipeImageUrl: imageUrl,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/recipe-details/:recipeId',
+        builder: (context, state) {
+          final recipeId = state.pathParameters['recipeId']!;
+          final recipeName = state.uri.queryParameters['name'] ?? 'Recipe';
+          final imageUrl = state.uri.queryParameters['image'];
+          return ViewRecipeDetailsPage(
+            recipeId: recipeId,
+            recipeName: recipeName,
+            recipeImageUrl: imageUrl,
+          );
+        },
       ),
       ...authRoutes,
     ],

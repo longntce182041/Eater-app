@@ -142,6 +142,76 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
       );
     }
   }
+
+  /// Mark a meal as eaten
+  void markMealAsEaten(String mealId, DateTime eatenDate) {
+    if (state.result != null) {
+      final updatedItems = state.result!.items.map((item) {
+        if (item.id == mealId) {
+          return MealPlanItemModel(
+            id: item.id,
+            mealType: item.mealType,
+            servings: item.servings,
+            calories: item.calories,
+            protein: item.protein,
+            carbohydrates: item.carbohydrates,
+            fat: item.fat,
+            dayIndex: item.dayIndex,
+            recipeName: item.recipeName,
+            recipeImageUrl: item.recipeImageUrl,
+            userRating: item.userRating,
+            userAction: item.userAction,
+            isLocked: item.isLocked,
+            isEaten: true,
+            eatenDate: eatenDate,
+          );
+        }
+        return item;
+      }).toList();
+
+      final newResult = MealPlanGenerationResult(
+        mealPlan: state.result!.mealPlan,
+        items: updatedItems,
+        summary: state.result!.summary,
+      );
+      state = state.copyWith(result: newResult);
+    }
+  }
+
+  /// Mark a meal as uneaten
+  void markMealAsUneaten(String mealId) {
+    if (state.result != null) {
+      final updatedItems = state.result!.items.map((item) {
+        if (item.id == mealId) {
+          return MealPlanItemModel(
+            id: item.id,
+            mealType: item.mealType,
+            servings: item.servings,
+            calories: item.calories,
+            protein: item.protein,
+            carbohydrates: item.carbohydrates,
+            fat: item.fat,
+            dayIndex: item.dayIndex,
+            recipeName: item.recipeName,
+            recipeImageUrl: item.recipeImageUrl,
+            userRating: item.userRating,
+            userAction: item.userAction,
+            isLocked: item.isLocked,
+            isEaten: false,
+            eatenDate: null,
+          );
+        }
+        return item;
+      }).toList();
+
+      final newResult = MealPlanGenerationResult(
+        mealPlan: state.result!.mealPlan,
+        items: updatedItems,
+        summary: state.result!.summary,
+      );
+      state = state.copyWith(result: newResult);
+    }
+  }
 }
 
 final mealPlanNotifierProvider =

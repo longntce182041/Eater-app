@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/meal_plan_provider.dart';
 import '../../domain/meal_plan_models.dart';
 import '../widgets/macro_distribution_donut.dart';
 import '../widgets/detailed_macro_modal.dart';
+import '../../../nutrition/domain/entities/meal_log.dart';
+import '../../../nutrition/presentation/providers/meal_log_provider.dart';
+import '../../../nutrition/presentation/providers/navigation_provider.dart';
+import '../../../nutrition/data/providers/meal_log_service_provider.dart';
 
 class MealPlanPage extends ConsumerStatefulWidget {
   const MealPlanPage({super.key});
@@ -23,6 +28,9 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(mealPlanNotifierProvider.notifier).loadLatestMealPlan();
+      // Don't initialize meal logs here - local state starts empty
+      // As user checks meals, they get added to local state
+      // meal_logging_page will initialize when needed
     });
   }
 
@@ -469,6 +477,11 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     final sortedDays = itemsByDay.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
+    // Filter out days where all meals are eaten (completed days)
+    final visibleDays = sortedDays
+        .where((dayEntry) => !dayEntry.value.every((item) => item.isEaten))
+        .toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -497,7 +510,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${sortedDays.length} days',
+                  '${visibleDays.length} days remaining',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -509,10 +522,11 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
           ),
         ),
         const Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
-        ...sortedDays.asMap().entries.map((dayEntry) {
+        ...visibleDays.asMap().entries.map((dayEntry) {
           final dayIndex = dayEntry.value.key;
           final dayItems = dayEntry.value.value;
-          final isLastDay = dayEntry.key == sortedDays.length - 1;
+          final isLastDay = dayEntry.key == visibleDays.length - 1;
+          final allMealsEaten = dayItems.every((item) => item.isEaten);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,39 +537,61 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                   horizontal: 16,
                   vertical: 16,
                 ),
-                color: const Color(0xFFFFF3E0),
+                color: allMealsEaten 
+                  ? const Color(0xFFE8F5E9)  // Light green for completed
+                  : const Color(0xFFFFF3E0), // Light orange for in progress
                 child: Row(
                   children: [
                     Container(
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF9800),
+                        color: allMealsEaten 
+                          ? const Color(0xFF4CAF50) 
+                          : const Color(0xFFFF9800),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
-                        child: Text(
-                          '${dayIndex + 1}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
+                        child: allMealsEaten
+                          ? const Icon(Icons.check, color: Colors.white, size: 20)
+                          : Text(
+                              '${dayIndex + 1}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      'Day ${dayIndex + 1}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFFF9800),
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Day ${dayIndex + 1}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: allMealsEaten 
+                              ? const Color(0xFF4CAF50)
+                              : const Color(0xFFFF9800),
+                          ),
+                        ),
+                        if (allMealsEaten)
+                          const Text(
+                            'Completed',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF4CAF50),
+                            ),
+                          ),
+                      ],
                     ),
                     const Spacer(),
                     Text(
-                      '${dayItems.length} meals',
+                      '${dayItems.where((item) => item.isEaten).length}/${dayItems.length} meals',
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF999999),
@@ -611,144 +647,200 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
       children: [
         Row(
           children: [
-            // Meal type badge - consistent width for alignment
-            Container(
-              width: 90,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              decoration: BoxDecoration(
-                color: _getMealTypeColor(item.mealType).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: _getMealTypeColor(
-                    item.mealType,
-                  ).withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  _titleCase(item.mealType),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: _getMealTypeColor(item.mealType),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Recipe image - larger
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: item.recipeImageUrl?.isNotEmpty == true
-                  ? Image.network(
-                      item.recipeImageUrl!,
-                      width: 72,
-                      height: 72,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Color(0xFFFF9800),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.restaurant,
-                            color: Colors.grey,
-                            size: 28,
-                          ),
-                        );
-                      },
-                    )
-                  : Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.restaurant,
-                        color: Colors.grey,
-                        size: 28,
-                      ),
-                    ),
-            ),
-            const SizedBox(width: 14),
-            // Meal info - expanded
+            // Check if meal is logged from mealLogsProvider
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.recipeName?.isNotEmpty == true
-                        ? item.recipeName!
-                        : 'Recipe',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: Color(0xFF2D2D2D),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final mealLogs = ref.watch(mealLogsProvider);
+                  final planState = ref.watch(mealPlanNotifierProvider);
+                  final mealPlanStartDate = planState.result?.mealPlan.date ?? DateTime.now();
+                  final mealDate = mealPlanStartDate.add(Duration(days: item.dayIndex));
+                  
+                  // Check if this meal is logged on the correct date
+                  final isLogged = mealLogs.any((log) =>
+                      log.mealName == item.recipeName &&
+                      log.mealType == item.mealType &&
+                      log.calories == item.calories &&
+                      log.loggedAt.year == mealDate.year &&
+                      log.loggedAt.month == mealDate.month &&
+                      log.loggedAt.day == mealDate.day);
+
+                  return Row(
+                  children: [
+                    // Checkbox to mark meal as eaten
+                    Checkbox(
+                      value: isLogged,
+                      onChanged: (value) {
+                        if (value == true) {
+                          _onMealChecked(context, item);
+                        } else {
+                          _onMealUnchecked(item);
+                        }
+                      },
+                      activeColor: const Color(0xFFFF9800),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      visualDensity: VisualDensity.compact,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${item.calories.toStringAsFixed(0)} kcal • ${item.servings.toStringAsFixed(2)} serving${item.servings.toInt() != 1 ? 's' : ''}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF666666),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  if (item.protein > 0 ||
-                      item.carbohydrates > 0 ||
-                      item.fat > 0)
+                    const SizedBox(width: 8),
+                    // Meal type badge - consistent width for alignment
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                      width: 90,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F5F5),
-                        borderRadius: BorderRadius.circular(6),
+                        color: _getMealTypeColor(item.mealType)
+                            .withValues(alpha: isLogged ? 0.08 : 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _getMealTypeColor(item.mealType)
+                              .withValues(alpha: isLogged ? 0.15 : 0.3),
+                          width: 1,
+                        ),
                       ),
-                      child: Text(
-                        'P: ${item.protein.toStringAsFixed(1)}g | C: ${item.carbohydrates.toStringAsFixed(1)}g | F: ${item.fat.toStringAsFixed(1)}g',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF666666),
+                      child: Center(
+                        child: Text(
+                          _titleCase(item.mealType),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: _getMealTypeColor(item.mealType)
+                                .withValues(alpha: isLogged ? 0.5 : 1),
+                          ),
                         ),
                       ),
                     ),
-                ],
+                    const SizedBox(width: 12),
+                    // Recipe image - larger
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Opacity(
+                        opacity: isLogged ? 0.5 : 1,
+                        child: item.recipeImageUrl?.isNotEmpty == true
+                            ? Image.network(
+                                item.recipeImageUrl!,
+                                width: 72,
+                                height: 72,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    width: 72,
+                                    height: 72,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            Color(0xFFFF9800),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 72,
+                                    height: 72,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[300],
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.restaurant,
+                                      color: Colors.grey,
+                                      size: 28,
+                                    ),
+                                  );
+                                },
+                              )
+                            : Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.restaurant,
+                                  color: Colors.grey,
+                                  size: 28,
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    // Meal info - expanded
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.recipeName?.isNotEmpty == true
+                                ? item.recipeName!
+                                : 'Recipe',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: isLogged
+                                  ? const Color(0xFF999999)
+                                  : const Color(0xFF2D2D2D),
+                              decoration:
+                                  isLogged ? TextDecoration.lineThrough : null,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${item.calories.toStringAsFixed(0)} kcal • ${item.servings.toStringAsFixed(2)} serving${item.servings.toInt() != 1 ? 's' : ''}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isLogged
+                                  ? const Color(0xFFCCCCCC)
+                                  : const Color(0xFF666666),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          if (item.protein > 0 ||
+                              item.carbohydrates > 0 ||
+                              item.fat > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isLogged
+                                    ? const Color(0xFFEEEEEE)
+                                    : const Color(0xFFF5F5F5),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'P: ${item.protein.toStringAsFixed(1)}g | C: ${item.carbohydrates.toStringAsFixed(1)}g | F: ${item.fat.toStringAsFixed(1)}g',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: isLogged
+                                      ? const Color(0xFFCCCCCC)
+                                      : const Color(0xFF666666),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+                },
               ),
             ),
           ],
@@ -859,8 +951,46 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
           ),
         ),
         const SizedBox(width: 8),
-        // Replace meal button (disabled if locked)
-        if (!item.isLocked)
+        // View Recipe Details button
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3E0),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFFE0B2), width: 1),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _viewRecipeDetails(context, item),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: Color(0xFFFF9800),
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'Recipe',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFFF9800),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -1210,9 +1340,199 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     );
   }
 
+  /// Navigate to recipe detail page
+  void _viewRecipeDetails(BuildContext context, MealPlanItemModel meal) {
+    if (meal.recipeId == null || meal.recipeId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Recipe information not available')),
+      );
+      return;
+    }
+
+    // Navigate to recipe details page using GoRouter with the actual recipe ID
+    final recipeUrl = '/recipe-details/${meal.recipeId}?name=${Uri.encodeComponent(meal.recipeName ?? "Recipe")}&image=${Uri.encodeComponent(meal.recipeImageUrl ?? "")}';
+    
+    print('[_viewRecipeDetails] Navigating to recipe: ${meal.recipeName} (recipeId: ${meal.recipeId})');
+    
+    if (context.mounted) {
+      context.push(recipeUrl);
+    }
+  }
+
   String _titleCase(String input) {
     if (input.isEmpty) return input;
     return input[0].toUpperCase() + input.substring(1).toLowerCase();
+  }
+
+  /// Handle meal checked - creates a meal log entry and marks meal as eaten
+  void _onMealChecked(BuildContext context, MealPlanItemModel meal) {
+    // When user clicks a meal from the meal plan TODAY, log it for TODAY
+    // (not for the old meal plan start date)
+    final now = DateTime.now();
+    final mealDate = DateTime(now.year, now.month, now.day);
+    
+    print('[_onMealChecked] DateTime.now(): ${now.toString()}');
+    print('[_onMealChecked] Meal date (year/month/day): ${mealDate.toString()}');
+    print('[_onMealChecked] Meal date ISO8601: ${mealDate.toIso8601String()}');
+    
+    // Convert meal type to lowercase for backend compatibility
+    final mealTypeInput = meal.mealType.toLowerCase();
+    
+    // Create a meal log entry from the meal plan item with STABLE ID
+    final mealLog = MealLog(
+      id: '${meal.id}_${mealDate.toIso8601String()}',
+      mealType: mealTypeInput,
+      mealName: meal.recipeName ?? 'Unknown Meal',
+      calories: meal.calories,
+      protein: meal.protein,
+      carbs: meal.carbohydrates,
+      fats: meal.fat,
+      quantity: meal.servings.toDouble(),
+      unit: 'servings',
+      loggedAt: mealDate,
+      notes: 'From meal plan',
+      imageUrl: meal.recipeImageUrl,
+    );
+
+    // Show loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Saving meal to log...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    // Add to local state immediately for responsive UI
+    ref.read(mealLogsProvider.notifier).addMealLog(mealLog);
+
+    // Update meal plan item state to mark as eaten
+    ref
+        .read(mealPlanNotifierProvider.notifier)
+        .markMealAsEaten(meal.id, DateTime.now());
+
+    // Save to backend asynchronously (fire and forget)
+    Future.microtask(() async {
+      try {
+        final service = ref.read(mealLogServiceProvider);
+        final savedMealLog = await service.saveMealLog(mealLog);
+
+        print('[_onMealChecked] Saved meal - ID: ${savedMealLog.id}, name: ${savedMealLog.mealName}, loggedAt: ${savedMealLog.loggedAt}');
+
+        // Update local state with the real ID from the server
+        // First remove the temporary ID version
+        print('[_onMealChecked] Deleting temp ID: ${mealLog.id}');
+        ref.read(mealLogsProvider.notifier).deleteMealLog(mealLog.id);
+        
+        // Then add the version with the real server ID
+        print('[_onMealChecked] Adding real ID: ${savedMealLog.id}');
+        ref.read(mealLogsProvider.notifier).addMealLog(savedMealLog);
+
+        print('[_onMealChecked] State updated - local mealLogsProvider should now have the saved meal');
+
+        // Set target date and tab for auto-navigation to meal logging
+        print('[_onMealChecked] Setting target date: ${mealDate.toString().split(' ')[0]} and tab index: 1');
+        ref.read(targetMealDateProvider.notifier).setTargetDate(mealDate);
+        ref.read(targetTabIndexProvider.notifier).setTargetTab(1); // Tab 1 = Meal Logging
+
+        // Show success message only if widget still mounted
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${meal.recipeName} logged to meal log'),
+              duration: const Duration(seconds: 2),
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () {
+                  if (!context.mounted) return;
+                  
+                  // Remove from local state using the real ID
+                  ref
+                      .read(mealLogsProvider.notifier)
+                      .deleteMealLog(savedMealLog.id);
+                  
+                  // Delete from backend using real ID (fire and forget)
+                  ref
+                      .read(mealLogServiceProvider)
+                      .deleteMealLog(savedMealLog.id)
+                      .then((_) {
+                    if (context.mounted) {
+                      ref
+                          .read(mealPlanNotifierProvider.notifier)
+                          .markMealAsUneaten(meal.id);
+                    }
+                  }).catchError((e) {
+                    print('Error deleting from backend: $e');
+                  });
+                },
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        // Show error message only if widget still mounted
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error saving meal: ${e.toString()}'),
+              duration: const Duration(seconds: 3),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        print('Error saving meal log to backend: $e');
+      }
+    });
+  }
+
+  /// Handle meal unchecked - removes meal from meal log
+  void _onMealUnchecked(MealPlanItemModel meal) {
+    // When user unchecks a meal from the meal plan TODAY, delete it from TODAY's log
+    // (not from the old meal plan start date)
+    final now = DateTime.now();
+    final mealDate = DateTime(now.year, now.month, now.day);
+    
+    // Find the actual meal log by matching its content, not by ID
+    final mealLogs = ref.read(mealLogsProvider);
+    MealLog? mealLogToDelete;
+    try {
+      mealLogToDelete = mealLogs.firstWhere(
+        (log) =>
+            log.mealName == meal.recipeName &&
+            log.mealType == meal.mealType &&
+            log.calories == meal.calories &&
+            log.loggedAt.year == mealDate.year &&
+            log.loggedAt.month == mealDate.month &&
+            log.loggedAt.day == mealDate.day,
+      );
+    } catch (e) {
+      // Meal log not found in local state
+      mealLogToDelete = null;
+    }
+
+    // If found, delete it
+    if (mealLogToDelete != null) {
+      // Capture ID before async closure
+      final mealLogId = mealLogToDelete.id;
+      
+      // Remove from local state immediately
+      ref.read(mealLogsProvider.notifier).deleteMealLog(mealLogId);
+      
+      // Mark as uneaten in meal plan state immediately
+      ref.read(mealPlanNotifierProvider.notifier).markMealAsUneaten(meal.id);
+
+      // Delete from backend asynchronously (fire and forget)
+      Future.microtask(() async {
+        try {
+          final service = ref.read(mealLogServiceProvider);
+          await service.deleteMealLog(mealLogId);
+          // Backend deletion complete, local state already updated
+        } catch (e) {
+          print('Error deleting meal log from backend: $e');
+        }
+      });
+    }
   }
 }
 

@@ -67,26 +67,22 @@ class UserManagementService {
   async updateUser(id, data) {
     const user = await User.findById(id);
     if (!user) throw new Error("User not found");
-
-    // Nếu đổi email, check trùng
-    if (data.email && data.email !== user.email) {
-      const existingEmail = await User.findOne({ email: data.email });
-      if (existingEmail) throw new Error("Email is already taken");
-      user.email = data.email;
+    // 1. Cập nhật Role
+    if (data.role) {
+        user.role = data.role;
     }
 
-    // Nếu admin muốn reset password cho user
-    if (data.password) {
-      const salt = await bcrypt.genSalt(10);
-      user.passwordHash = await bcrypt.hash(data.password, salt);
+    // 2. Cập nhật trạng thái Khóa/Mở tài khoản
+    if (data.isActive !== undefined) {
+        user.isActive = data.isActive;
     }
 
-    if (data.role) user.role = data.role;
-    if (data.isActive !== undefined) user.isActive = data.isActive;
-
+    // 3. Cập nhật trạng thái Xác thực Email (Admin verify thủ công)
+    if (data.isEmailVerified !== undefined) {
+        user.isEmailVerified = data.isEmailVerified;
+    }
     return await user.save();
   }
-
   // 5. Xóa mềm (Soft Delete)
   async softDeleteUser(id) {
     const user = await User.findById(id);

@@ -35,6 +35,11 @@ var io = new SocketIOServer(server, {
 setupChatSocket(io);
 
 /**
+ * Attach io to app for access in controllers/services
+ */
+app.io = io;
+
+/**
  * Listen on provided port, on all network interfaces.
  */
 

@@ -196,9 +196,6 @@ const ReviewsPage = () => {
                                         <button onClick={() => handleViewDetail(item)} style={{ marginRight: '8px', border: 'none', background: 'none', cursor: 'pointer', color: '#555' }} title="View Detail">
                                             <Eye size={18} />
                                         </button>
-                                        <button onClick={() => handleOpenEdit(item)} style={{ marginRight: '8px', border: 'none', background: 'none', cursor: 'pointer', color: '#30a5ff' }} title="Edit">
-                                            <Edit size={18} />
-                                        </button>
                                         <button onClick={() => handleDelete(item._id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#f9243f' }} title="Delete">
                                             <Trash2 size={18} />
                                         </button>
@@ -218,42 +215,6 @@ const ReviewsPage = () => {
                     <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} style={{ padding: '5px 10px', cursor: 'pointer' }}>Next &gt;</button>
                 </div>
             </div>
-
-            {/* --- MODAL EDIT (Moderation) --- */}
-            {showEditModal && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                    <div style={{ background: 'white', padding: '30px', borderRadius: '8px', width: '450px', position: 'relative' }}>
-                        <button onClick={() => setShowEditModal(false)} style={{ position: 'absolute', top: '15px', right: '15px', border: 'none', background: 'none', cursor: 'pointer' }}><X size={20} /></button>
-                        <h3 style={{ marginTop: 0, color: '#30a5ff' }}>Edit Review</h3>
-
-                        <form onSubmit={handleUpdate}>
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px' }}>Rating</label>
-                                <select
-                                    value={formData.rating}
-                                    onChange={e => setFormData({ ...formData, rating: parseInt(e.target.value) })}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                                >
-                                    {[1, 2, 3, 4, 5].map(num => <option key={num} value={num}>{num} Stars</option>)}
-                                </select>
-                            </div>
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px' }}>Comment Content</label>
-                                <textarea
-                                    rows="5"
-                                    value={formData.comment}
-                                    onChange={e => setFormData({ ...formData, comment: e.target.value })}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                                />
-                            </div>
-                            <button type="submit" style={{ width: '100%', padding: '10px', background: '#30a5ff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-                                Save Changes
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
-
             {/* --- MODAL DETAIL (Read Only) --- */}
             {showDetailModal && selectedReview && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>

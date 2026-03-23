@@ -4,7 +4,7 @@ const userController = require("../controllers/user.management.controller");
 const { protect, authorize } = require("../../middleware/authMiddleware");
 
 // GET List & Create
-router.get("/",protect, authorize('admin'), userController.getUsers);
+router.get("/",protect, authorize('admin', 'nutritionist'), userController.getUsers);
 router.post("/create",protect, authorize('admin'), userController.createUser);
 
 // Detail, Update, Delete theo ID

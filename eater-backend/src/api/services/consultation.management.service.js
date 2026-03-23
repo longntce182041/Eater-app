@@ -1,0 +1,260 @@
+const { MealPlan } = require("../../models/meal_plans");
+const { MealPlanItem } = require("../../models/meal_plan_item");
+const { Recipe } = require("../../models/Recipe");
+const { Nutritionist } = require("../../models/nutritionist");
+const Consultation = require("../../models/Consultation");
+const User = require("../../models/User");
+const { User_Profile } = require("../../models/User_Profile");
+const { ChatMessage } = require("../../models/chat_message");
+const { sendConsultationEmail, sendNutritionReportEmail } = require("../../utils/mailer");
+const { getRoomId } = require("../sockets/chat.socket");
+
+class ConsultationManagementService {
+    
+    // Hàm phụ: Kiểm tra quyền bác sĩ
+    async getNutritionistProfile(authUserId) {
+        const nutri = await Nutritionist.findOne({ userId: authUserId });
+        if (!nutri) throw new Error("Nutritionist profile not found. Please update your profile.");
+        if (!nutri.verified) throw new Error("Account not verified by Admin yet.");
+        return nutri;
+    }
+
+    // Hàm phụ: Gửi notification qua chat + email
+    async sendDiagnosisNotification(io, nutritionistUserId, userId, consultation, nutritionistName, userName, userEmail) {
+        try {
+            // 1. Lưu ChatMessage
+            const roomId = getRoomId(nutritionistUserId, userId);
+            const messageContent = `📋 **Consultation from ${nutritionistName}**\n\n**Diagnosis:**\n${consultation.diagnosis}\n\n**Recommendations:**\n${consultation.recommendations}${consultation.notes ? `\n\n**Notes:**\n${consultation.notes}` : ""}`;
+            
+            const chatMsg = await ChatMessage.create({
+                roomId: roomId,
+                senderId: nutritionistUserId,
+                senderRole: "nutritionist",
+                content: messageContent,
+            });
+
+            // 2. Emit socket event nếu user đang online
+            if (io) {
+                io.to(roomId).emit("receive_message", {
+                    id: chatMsg._id,
+                    senderId: chatMsg.senderId,
+                    senderRole: chatMsg.senderRole,
+                    content: chatMsg.content,
+                    createdAt: chatMsg.createdAt,
+                });
+            }
+
+            // 3. Gửi email thông báo
+            if (userEmail) {
+                await sendConsultationEmail({
+                    to: userEmail,
+                    userName: userName,
+                    nutritionistName: nutritionistName,
+                    diagnosis: consultation.diagnosis,
+                    recommendations: consultation.recommendations,
+                    notes: consultation.notes || "",
+                });
+            }
+        } catch (error) {
+            console.error("Error sending diagnosis notification:", error);
+            // Không throw error - chỉ log để không gây ra lỗi khi tạo consultation
+        }
+    }
+
+    // Hàm phụ: Gửi báo cáo qua chat + email (tuỳ chọn)
+    async sendReportNotification(io, nutritionistUserId, userId, reportData, nutritionistName, userName, userEmail, options = {}) {
+        try {
+            const { sendEmail = false, sendChat = false } = options;
+
+            if (!sendEmail && !sendChat) return;
+
+            if (sendChat) {
+                const roomId = getRoomId(nutritionistUserId, userId);
+                const messageContent = `Nutrition report from ${nutritionistName}\n\nSummary:\n- Consultations analyzed: ${reportData.consultationHistory.length}\n- Recent meal plans: ${reportData.recentMealPlans.length}\n- Generated at: ${new Date(reportData.generatedAt).toLocaleString()}\n\nPlease open the app to view full report details.`;
+
+                const chatMsg = await ChatMessage.create({
+                    roomId: roomId,
+                    senderId: nutritionistUserId,
+                    senderRole: "nutritionist",
+                    content: messageContent,
+                });
+
+                if (io) {
+                    io.to(roomId).emit("receive_message", {
+                        id: chatMsg._id,
+                        senderId: chatMsg.senderId,
+                        senderRole: chatMsg.senderRole,
+                        content: chatMsg.content,
+                        createdAt: chatMsg.createdAt,
+                    });
+                }
+            }
+
+            if (sendEmail && userEmail) {
+                await sendNutritionReportEmail({
+                    to: userEmail,
+                    userName: userName,
+                    nutritionistName: nutritionistName,
+                    reportData,
+                });
+            }
+        } catch (error) {
+            console.error("Error sending report notification:", error);
+            // Không throw error - chỉ log để không làm hỏng luồng generate report
+        }
+    }
+
+    // 1. Chẩn đoán & Gửi khuyến nghị
+    async createDiagnosisAndRecommendation(authUserId, data, io) {
+        const nutri = await this.getNutritionistProfile(authUserId);
+        
+        // Lấy thông tin user
+        const user = await User.findById(data.userId).select("email");
+        if (!user) throw new Error("Patient not found");
+        
+        // Lấy profile nutritionist
+        const nutritionistUser = await User.findById(authUserId).select("_id");
+
+        const newConsultation = new Consultation({
+            userId: data.userId, 
+            nutritionistId: nutri._id, 
+            diagnosis: data.diagnosis,
+            recommendations: data.recommendations,
+            notes: data.notes || ""
+        });
+
+        const savedConsultation = await newConsultation.save();
+
+        // Gửi thông báo (chat + email)
+        await this.sendDiagnosisNotification(
+            io,
+            nutritionistUser._id,
+            data.userId,
+            savedConsultation,
+            nutri.fullName,
+            user.email?.split("@")[0] || "User",
+            user.email
+        );
+
+        return savedConsultation;
+    }
+
+    // 2. Tạo & Gán Thực Đơn cá nhân hóa (cho 1 ngày hoặc 7 ngày)
+    async createAndAssignMealPlan(authUserId, data) {
+        // Allow both nutritionist and admin
+        let nutritionistId = null;
+        const nutri = await Nutritionist.findOne({ userId: authUserId });
+        if (nutri) {
+            if (!nutri.verified) throw new Error("Account not verified by Admin yet.");
+            nutritionistId = nutri._id;
+        }
+
+        const newMealPlan = new MealPlan({
+            userId: data.userId, 
+            nutritionistId: nutritionistId, 
+            date: new Date(data.date),
+            days: data.days || 1,
+            targetCalories: data.targetCalories,
+            dietTypes: data.dietTypes || [],
+            healthGoal: data.healthGoal || "Maintain Weight",
+            status: "active",
+            aiGenerated: false,
+            metadata: data.metadata || {}
+        });
+
+        const savedMealPlan = await newMealPlan.save();
+
+        // Nếu có dữ liệu meals, tạo các MealPlanItem
+        if (data.meals && Array.isArray(data.meals) && data.meals.length > 0) {
+            const mealPlanItems = [];
+            
+            for (const meal of data.meals) {
+                if (meal.dayIndex >= data.days) {
+                    throw new Error(`dayIndex ${meal.dayIndex} exceeds meal plan days ${data.days}`);
+                }
+
+                const recipe = await Recipe.findById(meal.recipeId);
+                if (!recipe) {
+                    throw new Error(`Recipe with ID ${meal.recipeId} not found`);
+                }
+
+                const servings = meal.servings || 1;
+                const mealPlanItem = new MealPlanItem({
+                    mealPlanId: savedMealPlan._id,
+                    recipeId: meal.recipeId,
+                    mealType: meal.mealType,
+                    servings: servings,
+                    dayIndex: meal.dayIndex,
+                    calories: (recipe.nutritionInfo?.calories || 0) * servings,
+                    protein: (recipe.nutritionInfo?.protein || 0) * servings,
+                    carbohydrates: (recipe.nutritionInfo?.carbs || 0) * servings,
+                    fat: (recipe.nutritionInfo?.fat || 0) * servings,
+                    userAction: "none",
+                    isLocked: meal.isLocked || false
+                });
+
+                mealPlanItems.push(mealPlanItem);
+            }
+
+            if (mealPlanItems.length > 0) {
+                await MealPlanItem.insertMany(mealPlanItems);
+            }
+        }
+
+        return {
+            mealPlan: savedMealPlan,
+            mealsAdded: data.meals ? data.meals.length : 0
+        };
+    }
+
+    // 3. Xuất Báo cáo Dinh dưỡng
+    async generateNutritionReport(authUserId, patientId, io, options = {}) {
+        // Check if user exists (no need to verify nutritionist profile for report generation)
+        const nutritionist = await User.findById(authUserId);
+        if (!nutritionist) throw new Error("Nutritionist not found");
+
+        const patient = await User.findById(patientId).select("email role isActive");
+        if (!patient) throw new Error("Patient not found");
+
+        const profile = await User_Profile.findOne({ userId: patientId });
+
+        const consultations = await Consultation.find({ userId: patientId })
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        const recentMealPlans = await MealPlan.find({ userId: patientId })
+            .sort({ date: -1 })
+            .limit(5);
+
+        const reportData = {
+            patientInfo: {
+                email: patient.email,
+                age: profile?.age,
+                gender: profile?.gender,
+                height: profile?.height,
+                weight: profile?.weight,
+                healthGoals: profile?.healthGoals,
+                allergies: profile?.allergies
+            },
+            consultationHistory: consultations,
+            recentMealPlans: recentMealPlans,
+            generatedAt: new Date()
+        };
+
+        const nutritionistProfile = await Nutritionist.findOne({ userId: authUserId }).select("fullName");
+        await this.sendReportNotification(
+            io,
+            authUserId,
+            patientId,
+            reportData,
+            nutritionistProfile?.fullName || "Your nutritionist",
+            patient.email?.split("@")[0] || "User",
+            patient.email,
+            options
+        );
+
+        return reportData;
+    }
+}
+
+module.exports = new ConsultationManagementService();

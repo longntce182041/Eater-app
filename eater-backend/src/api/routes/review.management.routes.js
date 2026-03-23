@@ -9,9 +9,6 @@ router.get("/", protect, authorize('admin'), reviewController.getReviews);
 // GET Detail
 router.get("/:id", protect, authorize('admin'), reviewController.getReviewDetail);
 
-// UPDATE
-router.put("/update/:id", protect, authorize('admin'), reviewController.updateReview);
-
 // DELETE
 router.delete("/delete/:id", protect, authorize('admin'), reviewController.deleteReview);
 

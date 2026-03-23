@@ -104,19 +104,7 @@ class ReviewService {
         return review;
     }
 
-
-    // 3. Update Review (VD: Admin ẩn nội dung comment thô tục)
-    async updateReview(id, data) {
-        const review = await RecipesReview.findById(id);
-        if (!review) throw new Error("Review not found");
-
-        if (data.rating) review.rating = data.rating;
-        if (data.comment !== undefined) review.comment = data.comment;
-
-        return await review.save();
-    }
-
-    // 4. Delete Review (Chức năng chính của Admin: Xóa review spam/xấu)
+    // 3. Delete Review (Chức năng chính của Admin: Xóa review spam/xấu)
     async deleteReview(id) {
         const review = await RecipesReview.findByIdAndDelete(id);
         if (!review) throw new Error("Review not found");

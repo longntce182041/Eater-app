@@ -23,18 +23,6 @@ class ReviewManagementController {
         }
     }
 
-
-    // PUT Update
-    async updateReview(req, res) {
-        try {
-            const updatedReview = await reviewService.updateReview(req.params.id, req.body);
-            const message = getActionMessage('update', 'Review');
-            res.json({ success: true, message, data: updatedReview });
-        } catch (error) {
-            res.status(400).json({ success: false, message: error.message });
-        }
-    }
-
     // DELETE
     async deleteReview(req, res) {
         try {

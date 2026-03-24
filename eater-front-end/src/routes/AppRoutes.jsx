@@ -12,56 +12,63 @@ import ChatPage from "../pages/chat/index.jsx";
 import LoginPage from "../pages/auth/index.jsx";
 import ReviewsPage from "../pages/reviews/index.jsx";
 import { NutritionistScheduleManagement, ScheduleChangeRequests, MySchedule } from "../pages/nutritionist-schedules";
+import ConsultationsPage from "../pages/consultations/index.jsx";
 
-// Import Layout (Cái khung sidebar)
-import AdminLayout from "../components/layout/AdminLayout";
+import AdminLayout from "../components/layout/AdminLayout.jsx"; 
 
-
-// --- 1. Tạo Component Bảo Vệ (Chặn người chưa login) ---
-const PrivateRoute = () => {
-    // Kiểm tra token trong localStorage (lúc login xong đã lưu)
+// --- Component Bảo Vệ Nâng Cao (Check Token + Check Role) ---
+const RoleProtectedRoute = ({ allowedRoles }) => {
     const token = localStorage.getItem("token");
+    const userRole = localStorage.getItem("userRole"); 
 
-    // Nếu có token -> Cho đi tiếp (Outlet), Nếu không -> Đá về /login
-    return token ? <Outlet /> : <Navigate to="/login" replace />;
+    if (!token) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // Nếu Role của user KHÔNG CÓ trong danh sách cho phép -> Đá về trang chủ của họ
+    if (!allowedRoles.includes(userRole)) {
+        return <Navigate to="/dashboard" replace />;
+    }
+
+    return <Outlet />;
 };
 
 export function AppRoutes() {
     return (
         <Routes>
-            {/* Route Login (Ai cũng vào được) */}
             <Route path="/login" element={<LoginPage />} />
 
-            {/* --- 2. Khu vực Admin (Phải Login mới vào được) --- */}
-            <Route element={<PrivateRoute />}>
-
-                {/* Bọc trong AdminLayout để có Sidebar */}
+            {/* --- KHU VỰC CHUNG (Admin & Nutritionist đều vào được Layout và Dashboard) --- */}
+            <Route element={<RoleProtectedRoute allowedRoles={['admin', 'nutritionist']} />}>
+                
                 <Route path="/" element={<AdminLayout />}>
-
-                    {/* Mặc định vào / thì nhảy sang dashboard */}
                     <Route index element={<Navigate to="/dashboard" replace />} />
-
-                    {/* Các trang con sẽ hiện ở giữa màn hình */}
                     <Route path="dashboard" element={<DashboardPage />} />
-                    <Route path="users" element={<UsersPage />} />
-                    <Route path="ingredients" element={<IngredientsPage />} />
-                    <Route path="micronutrients" element={<MicronutrientsPage />} />
-                    <Route path="recipes" element={<RecipesPage />} />
-                    <Route path="reviews" element={<ReviewsPage />} />
-                    <Route path="backups" element={<BackupsPage />} />
-                    <Route path="chat" element={<ChatPage />} />
 
+                    {/* --- KHU VỰC 1: CHỈ DÀNH CHO ADMIN --- */}
+                    <Route element={<RoleProtectedRoute allowedRoles={['admin']} />}>
+                        <Route path="users" element={<UsersPage />} />
+                        <Route path="ingredients" element={<IngredientsPage />} />
+                        <Route path="micronutrients" element={<MicronutrientsPage />} />
+                        <Route path="recipes" element={<RecipesPage />} />
+                        <Route path="reviews" element={<ReviewsPage />} />
+                        <Route path="backups" element={<BackupsPage />} />
+                    </Route>
+
+                    {/* --- KHU VỰC 2: CHỈ DÀNH CHO NUTRITIONIST --- */}
+                    {/* 👇 ĐÃ XÓA 'admin' KHỎI MẢNG NÀY */}
+                    <Route element={<RoleProtectedRoute allowedRoles={['nutritionist']} />}>
+                        <Route path="chat" element={<ChatPage />} />
+                        <Route path="consultations" element={<ConsultationsPage />} />
                     {/* Nutritionist Schedule Management */}
                     <Route path="admin/nutritionist-schedules" element={<NutritionistScheduleManagement />} />
                     <Route path="admin/schedule-requests" element={<ScheduleChangeRequests />} />
                     <Route path="nutritionist/my-schedule" element={<MySchedule />} />
 
-                    {/* Các route khác thêm vào đây */}
+                    </Route>
                 </Route>
-
             </Route>
 
-            {/* Route sai -> Về Login */}
             <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
     );

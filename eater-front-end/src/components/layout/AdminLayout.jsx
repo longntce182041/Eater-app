@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Utensils, Pill, LogOut, CloudUpload, BookOpen, MessageCircle, Star, CalendarDays, RefreshCcw } from 'lucide-react';
+import { LayoutDashboard, Users, Utensils, Pill, LogOut, CloudUpload, BookOpen, MessageCircle, Star, Stethoscope, CalendarDays, RefreshCcw } from 'lucide-react';
 import './AdminLayout.css';
 
 const AdminLayout = () => {
@@ -25,6 +25,7 @@ const AdminLayout = () => {
 
     const nutritionistMenuItems = [
         { name: 'Live Chat', path: '/chat', icon: <MessageCircle size={20} /> },
+        { name: 'Consultations', path: '/consultations', icon: <Stethoscope size={20}/>, roles: ['nutritionist'] },
         { name: 'View Work Schedule', path: '/nutritionist/my-schedule?tab=schedule', icon: <CalendarDays size={20} /> },
         { name: 'Request Schedule Change', path: '/nutritionist/my-schedule?tab=requests', icon: <RefreshCcw size={20} /> },
     ];

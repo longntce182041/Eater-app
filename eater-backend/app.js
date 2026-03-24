@@ -1,5 +1,4 @@
 require("dotenv").config();
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -12,14 +11,15 @@ const app = express();
 
 app.use(helmet());
 // CORS configuration for mobile apps and web clients
+const allowedOriginsRaw = process.env.ALLOWED_ORIGINS || "*";
+const isWildcardOrigin = allowedOriginsRaw.trim() === "*";
+const allowedOrigins = isWildcardOrigin
+  ? true
+  : allowedOriginsRaw.split(",").map((origin) => origin.trim());
+
 app.use(
   cors({
-    origin:
-      process.env.ALLOWED_ORIGINS === "*"
-        ? "*"
-        : process.env.ALLOWED_ORIGINS
-          ? process.env.ALLOWED_ORIGINS.split(",")
-          : "*", // Allow all origins in development
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

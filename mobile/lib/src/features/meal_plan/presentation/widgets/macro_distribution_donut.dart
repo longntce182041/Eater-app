@@ -71,20 +71,16 @@ class _MacroDistributionDonutState extends State<MacroDistributionDonut> {
 
     return Column(
       children: [
-        LimitedBox(
-          maxHeight: 260,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              CustomPaint(
-                painter: _DonutChartPainter(
-                  macroData: macroData,
-                  total: total,
-                  strokeWidth: 28,
-                ),
-                size: Size.infinite,
-              ),
-              Column(
+        SizedBox(
+          height: 200,
+          child: CustomPaint(
+            painter: _DonutChartPainter(
+              macroData: macroData,
+              total: total,
+              strokeWidth: 28,
+            ),
+            child: Center(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
@@ -104,7 +100,7 @@ class _MacroDistributionDonutState extends State<MacroDistributionDonut> {
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -116,8 +112,9 @@ class _MacroDistributionDonutState extends State<MacroDistributionDonut> {
           ),
           child: Column(
             children: macroData.map((macro) {
-              final percentage =
-                  total > 0 ? (macro.value / total * 100).toStringAsFixed(1) : '0.0';
+              final percentage = total > 0
+                  ? (macro.value / total * 100).toStringAsFixed(1)
+                  : '0.0';
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(

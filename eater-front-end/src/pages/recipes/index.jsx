@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { Trash2, Edit, Plus, X, Search, Filter, ChefHat, Clock, Users, Eye, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -31,7 +31,7 @@ const RecipesPage = () => {
     });
 
     // 1. Load danh sách Recipes (Có phân trang)
-    const fetchRecipes = async () => {
+    const fetchRecipes = useCallback(async () => {
         try {
             setLoading(true);
             const res = await axiosClient.get('/recipes', {
@@ -46,11 +46,12 @@ const RecipesPage = () => {
                 setTotalPages(res.data.data.totalPages); // Lưu tổng số trang backend trả về
             }
         } catch (error) {
+            console.error(error);
             toast.error("Failed to fetch recipes");
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, keyword]);
 
     // 2. Load Ingredients cho dropdown
     const fetchAllIngredients = async () => {
@@ -58,7 +59,7 @@ const RecipesPage = () => {
             const res = await axiosClient.get('/ingredients', { params: { limit: 1000 } });
             if (res.data.success) setAllIngredients(res.data.data.ingredients);
         } catch (error) {
-            console.error("Failed to load ingredients");
+            console.error("Failed to load ingredients", error);
         }
     };
 
@@ -77,7 +78,7 @@ const RecipesPage = () => {
             fetchRecipes();
         }, 500);
         return () => clearTimeout(timer);
-    }, [currentPage, keyword]);
+    }, [fetchRecipes]);
 
     // --- HANDLERS PHÂN TRANG ---
     const handlePrevPage = () => {
@@ -166,6 +167,7 @@ const RecipesPage = () => {
                 setShowModal(true);
             }
         } catch (error) {
+            console.error(error);
             toast.error("Error fetching detail");
         }
     };
@@ -178,6 +180,7 @@ const RecipesPage = () => {
                 setShowDetail(true);
             }
         } catch (error) {
+            console.error(error);
             toast.error("Failed to load details");
         }
     };
@@ -207,6 +210,7 @@ const RecipesPage = () => {
             toast.success(res.data.message);
             fetchRecipes();
         } catch (error) {
+            console.error(error);
             toast.error("Failed to delete");
         }
     };
@@ -226,7 +230,7 @@ const RecipesPage = () => {
                     />
                 </div>
                 <button onClick={handleOpenCreate} style={{ background: '#30a5ff', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', display: 'flex', gap: '5px', fontWeight: 'bold' }}>
-                    <Plus size={18}/> New Recipe
+                    <Plus size={18} /> New Recipe
                 </button>
             </div>
 
@@ -241,7 +245,7 @@ const RecipesPage = () => {
                                 <div style={{ height: '180px', background: '#f0f0f0', position: 'relative' }}>
                                     {item.imageUrl ?
                                         <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        : <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100%',color:'#ccc'}}><ChefHat size={40}/></div>
+                                        : <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#ccc' }}><ChefHat size={40} /></div>
                                     }
                                     <span style={{ position: 'absolute', top: 10, right: 10, background: item.status === 'published' ? '#28a745' : '#ffc107', color: 'white', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}>
                                         {item.status}
@@ -250,13 +254,13 @@ const RecipesPage = () => {
                                 <div style={{ padding: '15px' }}>
                                     <h3 style={{ margin: '0 0 5px 0', fontSize: '18px', color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</h3>
                                     <div style={{ display: 'flex', gap: '15px', fontSize: '13px', color: '#666', marginBottom: '10px' }}>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14}/> {item.cookingTime} min</span>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={14}/> {item.baseServings} serv</span>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14} /> {item.cookingTime} min</span>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={14} /> {item.baseServings} serv</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                                        <button onClick={() => handleViewDetail(item._id)} style={{ color: '#555', background: 'none', border: 'none', cursor: 'pointer' }}><Eye size={20}/></button>
-                                        <button onClick={() => handleOpenEdit(item._id)} style={{ color: '#30a5ff', background: 'none', border: 'none', cursor: 'pointer' }}><Edit size={18}/></button>
-                                        <button onClick={() => handleDelete(item._id)} style={{ color: '#f9243f', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18}/></button>
+                                        <button onClick={() => handleViewDetail(item._id)} style={{ color: '#555', background: 'none', border: 'none', cursor: 'pointer' }}><Eye size={20} /></button>
+                                        <button onClick={() => handleOpenEdit(item._id)} style={{ color: '#30a5ff', background: 'none', border: 'none', cursor: 'pointer' }}><Edit size={18} /></button>
+                                        <button onClick={() => handleDelete(item._id)} style={{ color: '#f9243f', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button>
                                     </div>
                                 </div>
                             </div>
@@ -276,7 +280,7 @@ const RecipesPage = () => {
                                     display: 'flex', alignItems: 'center', gap: '5px', color: currentPage === 1 ? '#999' : '#333'
                                 }}
                             >
-                                <ChevronLeft size={18}/> Previous
+                                <ChevronLeft size={18} /> Previous
                             </button>
 
                             <span style={{ fontWeight: 'bold', color: '#5f6468' }}>
@@ -293,7 +297,7 @@ const RecipesPage = () => {
                                     display: 'flex', alignItems: 'center', gap: '5px', color: currentPage === totalPages ? '#999' : '#333'
                                 }}
                             >
-                                Next <ChevronRight size={18}/>
+                                Next <ChevronRight size={18} />
                             </button>
                         </div>
                     )}
@@ -304,37 +308,37 @@ const RecipesPage = () => {
             {showDetail && detailData && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'start', zIndex: 1100, overflowY: 'auto', padding: '40px 0' }}>
                     <div style={{ background: 'white', padding: '30px', borderRadius: '8px', width: '900px', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
-                        <button onClick={() => { setShowDetail(false); setDetailData(null); }} style={{ position: 'absolute', top: '15px', right: '15px', border: 'none', background:'none', cursor:'pointer' }}><X size={26} /></button>
+                        <button onClick={() => { setShowDetail(false); setDetailData(null); }} style={{ position: 'absolute', top: '15px', right: '15px', border: 'none', background: 'none', cursor: 'pointer' }}><X size={26} /></button>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px' }}>
                             <div>
                                 <div style={{ width: '100%', height: '250px', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px', border: '1px solid #eee' }}>
                                     {detailData.imageUrl ?
                                         <img src={detailData.imageUrl} alt={detailData.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        : <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100%',background:'#f9f9f9',color:'#ccc'}}><ChefHat size={60}/></div>
+                                        : <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', background: '#f9f9f9', color: '#ccc' }}><ChefHat size={60} /></div>
                                     }
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', textAlign: 'center' }}>
-                                    <div style={{ background:'#f0f8ff', padding:'10px', borderRadius:'6px' }}>
-                                        <Clock size={20} color="#30a5ff" style={{marginBottom:'5px'}}/>
-                                        <div style={{fontWeight:'bold', color:'#333'}}>{detailData.cookingTime} min</div>
+                                    <div style={{ background: '#f0f8ff', padding: '10px', borderRadius: '6px' }}>
+                                        <Clock size={20} color="#30a5ff" style={{ marginBottom: '5px' }} />
+                                        <div style={{ fontWeight: 'bold', color: '#333' }}>{detailData.cookingTime} min</div>
                                     </div>
-                                    <div style={{ background:'#f0f8ff', padding:'10px', borderRadius:'6px' }}>
-                                        <Users size={20} color="#30a5ff" style={{marginBottom:'5px'}}/>
-                                        <div style={{fontWeight:'bold', color:'#333'}}>{detailData.baseServings}</div>
+                                    <div style={{ background: '#f0f8ff', padding: '10px', borderRadius: '6px' }}>
+                                        <Users size={20} color="#30a5ff" style={{ marginBottom: '5px' }} />
+                                        <div style={{ fontWeight: 'bold', color: '#333' }}>{detailData.baseServings}</div>
                                     </div>
                                 </div>
                                 <div style={{ marginTop: '20px', padding: '15px', background: '#fff8e1', borderRadius: '8px' }}>
-                                    <h4 style={{ margin: '0 0 10px 0', color: '#d97706', display:'flex', alignItems:'center', gap:'5px' }}><Activity size={18}/> Nutrition Facts</h4>
-                                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:'14px', marginBottom:'5px' }}>
+                                    <h4 style={{ margin: '0 0 10px 0', color: '#d97706', display: 'flex', alignItems: 'center', gap: '5px' }}><Activity size={18} /> Nutrition Facts</h4>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '5px' }}>
                                         <span>Calories:</span> <strong>{detailData.nutrition?.calories} kcal</strong>
                                     </div>
-                                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:'14px', marginBottom:'5px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '5px' }}>
                                         <span>Protein:</span> <strong>{detailData.nutrition?.protein} g</strong>
                                     </div>
-                                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:'14px', marginBottom:'5px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '5px' }}>
                                         <span>Carbs:</span> <strong>{detailData.nutrition?.carbohydrates} g</strong>
                                     </div>
-                                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:'14px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                                         <span>Fats:</span> <strong>{detailData.nutrition?.fat} g</strong>
                                     </div>
                                 </div>
@@ -386,50 +390,50 @@ const RecipesPage = () => {
             {showModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'start', zIndex: 1000, overflowY: 'auto', padding: '40px 0' }}>
                     <div style={{ background: 'white', padding: '30px', borderRadius: '8px', width: '800px', position: 'relative', boxShadow: '0 5px 15px rgba(0,0,0,0.2)' }}>
-                        <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '15px', right: '15px', border: 'none', background:'none', cursor:'pointer' }}><X size={24} /></button>
+                        <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '15px', right: '15px', border: 'none', background: 'none', cursor: 'pointer' }}><X size={24} /></button>
                         <h2 style={{ marginTop: 0, color: '#30a5ff', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
                             {isEditing ? 'Edit Recipe' : 'Create New Recipe'}
                         </h2>
                         <form onSubmit={handleSubmit}>
                             {/* FORM CONTENT GIỮ NGUYÊN NHƯ CŨ */}
-                            <h4 style={{color: '#555', marginBottom: '10px'}}>1. Basic Information</h4>
+                            <h4 style={{ color: '#555', marginBottom: '10px' }}>1. Basic Information</h4>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '15px' }}>
                                 <div>
-                                    <label style={{display:'block', fontSize:'13px'}}>Recipe Name</label>
-                                    <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} style={{width:'100%', padding:'8px', border:'1px solid #ddd', borderRadius:'4px'}} required />
+                                    <label style={{ display: 'block', fontSize: '13px' }}>Recipe Name</label>
+                                    <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} required />
                                 </div>
                                 <div>
-                                    <label style={{display:'block', fontSize:'13px'}}>Image URL</label>
-                                    <input type="text" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} style={{width:'100%', padding:'8px', border:'1px solid #ddd', borderRadius:'4px'}} placeholder="http://..." />
+                                    <label style={{ display: 'block', fontSize: '13px' }}>Image URL</label>
+                                    <input type="text" value={formData.imageUrl} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} placeholder="http://..." />
                                 </div>
                             </div>
                             <div style={{ marginBottom: '15px' }}>
-                                <label style={{display:'block', fontSize:'13px'}}>Description</label>
-                                <textarea rows="3" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{width:'100%', padding:'8px', border:'1px solid #ddd', borderRadius:'4px'}} required />
+                                <label style={{ display: 'block', fontSize: '13px' }}>Description</label>
+                                <textarea rows="3" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} required />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                                 <div>
-                                    <label style={{display:'block', fontSize:'13px'}}>Cooking Time (mins)</label>
-                                    <input type="number" value={formData.cookingTime} onChange={e => setFormData({...formData, cookingTime: e.target.value})} style={{width:'100%', padding:'8px', border:'1px solid #ddd', borderRadius:'4px'}} required />
+                                    <label style={{ display: 'block', fontSize: '13px' }}>Cooking Time (mins)</label>
+                                    <input type="number" value={formData.cookingTime} onChange={e => setFormData({ ...formData, cookingTime: e.target.value })} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} required />
                                 </div>
                                 <div>
-                                    <label style={{display:'block', fontSize:'13px'}}>Servings</label>
-                                    <input type="number" value={formData.baseServings} onChange={e => setFormData({...formData, baseServings: e.target.value})} style={{width:'100%', padding:'8px', border:'1px solid #ddd', borderRadius:'4px'}} required />
+                                    <label style={{ display: 'block', fontSize: '13px' }}>Servings</label>
+                                    <input type="number" value={formData.baseServings} onChange={e => setFormData({ ...formData, baseServings: e.target.value })} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} required />
                                 </div>
                                 <div>
-                                    <label style={{display:'block', fontSize:'13px'}}>Status</label>
-                                    <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={{width:'100%', padding:'8px', border:'1px solid #ddd', borderRadius:'4px'}}>
+                                    <label style={{ display: 'block', fontSize: '13px' }}>Status</label>
+                                    <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}>
                                         <option value="draft">Draft</option>
                                         <option value="published">Published</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <h4 style={{color: '#555', marginBottom: '10px', display:'flex', justifyContent:'space-between'}}>
+                            <h4 style={{ color: '#555', marginBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
                                 2. Ingredients List
-                                <button type="button" onClick={addIngredientRow} style={{background:'#eef6ff', border:'1px solid #30a5ff', color:'#30a5ff', padding:'2px 10px', borderRadius:'4px', cursor:'pointer', fontSize:'12px'}}>+ Add Item</button>
+                                <button type="button" onClick={addIngredientRow} style={{ background: '#eef6ff', border: '1px solid #30a5ff', color: '#30a5ff', padding: '2px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>+ Add Item</button>
                             </h4>
-                            <div style={{ background:'#f9f9f9', padding:'15px', borderRadius:'5px', marginBottom:'20px' }}>
+                            <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '5px', marginBottom: '20px' }}>
                                 {formData.ingredients.map((ing, idx) => (
                                     <div key={idx} style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                                         <select
@@ -446,60 +450,60 @@ const RecipesPage = () => {
                                         <input
                                             type="number" placeholder="Qty"
                                             value={ing.base_quantity} onChange={e => handleIngredientChange(idx, 'base_quantity', e.target.value)}
-                                            style={{ width:'80px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                            style={{ width: '80px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
                                             required
                                         />
                                         <input
                                             type="text" placeholder="Unit"
                                             value={ing.unit} onChange={e => handleIngredientChange(idx, 'unit', e.target.value)}
-                                            style={{ width:'80px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                            style={{ width: '80px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
                                             required
                                         />
-                                        <button type="button" onClick={() => removeIngredientRow(idx)} style={{ border:'none', background:'none', color:'#f9243f', cursor:'pointer' }}><Trash2 size={18}/></button>
+                                        <button type="button" onClick={() => removeIngredientRow(idx)} style={{ border: 'none', background: 'none', color: '#f9243f', cursor: 'pointer' }}><Trash2 size={18} /></button>
                                     </div>
                                 ))}
                             </div>
 
-                            <h4 style={{color: '#555', marginBottom: '10px', display:'flex', justifyContent:'space-between'}}>
+                            <h4 style={{ color: '#555', marginBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
                                 3. Cooking Steps
-                                <button type="button" onClick={addStepRow} style={{background:'#eef6ff', border:'1px solid #30a5ff', color:'#30a5ff', padding:'2px 10px', borderRadius:'4px', cursor:'pointer', fontSize:'12px'}}>+ Add Step</button>
+                                <button type="button" onClick={addStepRow} style={{ background: '#eef6ff', border: '1px solid #30a5ff', color: '#30a5ff', padding: '2px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>+ Add Step</button>
                             </h4>
-                            <div style={{ background:'#f9f9f9', padding:'15px', borderRadius:'5px', marginBottom:'20px' }}>
+                            <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '5px', marginBottom: '20px' }}>
                                 {formData.steps.map((step, idx) => (
-                                    <div key={idx} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems:'start' }}>
-                                        <span style={{fontWeight:'bold', marginTop:'8px', width:'20px'}}>{idx + 1}.</span>
+                                    <div key={idx} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'start' }}>
+                                        <span style={{ fontWeight: 'bold', marginTop: '8px', width: '20px' }}>{idx + 1}.</span>
                                         <textarea
                                             rows="2" placeholder="Instruction details..."
                                             value={step.instruction} onChange={e => handleStepChange(idx, e.target.value)}
                                             style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
                                             required
                                         />
-                                        <button type="button" onClick={() => removeStepRow(idx)} style={{ border:'none', background:'none', color:'#f9243f', cursor:'pointer' }}><Trash2 size={18}/></button>
+                                        <button type="button" onClick={() => removeStepRow(idx)} style={{ border: 'none', background: 'none', color: '#f9243f', cursor: 'pointer' }}><Trash2 size={18} /></button>
                                     </div>
                                 ))}
                             </div>
 
-                            <h4 style={{color: '#555', marginBottom: '10px'}}>4. Nutrition Facts (Total)</h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '15px', marginBottom: '20px', background:'#fff8e1', padding:'15px', borderRadius:'5px' }}>
+                            <h4 style={{ color: '#555', marginBottom: '10px' }}>4. Nutrition Facts (Total)</h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '15px', marginBottom: '20px', background: '#fff8e1', padding: '15px', borderRadius: '5px' }}>
                                 <div>
-                                    <label style={{display:'block', fontSize:'12px'}}>Calories</label>
-                                    <input type="number" value={formData.nutrition.calories} onChange={e => setFormData({...formData, nutrition: {...formData.nutrition, calories: e.target.value}})} style={{width:'100%', padding:'5px', border:'1px solid #ddd', borderRadius:'4px'}} />
+                                    <label style={{ display: 'block', fontSize: '12px' }}>Calories</label>
+                                    <input type="number" value={formData.nutrition.calories} onChange={e => setFormData({ ...formData, nutrition: { ...formData.nutrition, calories: e.target.value } })} style={{ width: '100%', padding: '5px', border: '1px solid #ddd', borderRadius: '4px' }} />
                                 </div>
                                 <div>
-                                    <label style={{display:'block', fontSize:'12px'}}>Protein (g)</label>
-                                    <input type="number" value={formData.nutrition.protein} onChange={e => setFormData({...formData, nutrition: {...formData.nutrition, protein: e.target.value}})} style={{width:'100%', padding:'5px', border:'1px solid #ddd', borderRadius:'4px'}} />
+                                    <label style={{ display: 'block', fontSize: '12px' }}>Protein (g)</label>
+                                    <input type="number" value={formData.nutrition.protein} onChange={e => setFormData({ ...formData, nutrition: { ...formData.nutrition, protein: e.target.value } })} style={{ width: '100%', padding: '5px', border: '1px solid #ddd', borderRadius: '4px' }} />
                                 </div>
                                 <div>
-                                    <label style={{display:'block', fontSize:'12px'}}>Carbs (g)</label>
-                                    <input type="number" value={formData.nutrition.carbohydrates} onChange={e => setFormData({...formData, nutrition: {...formData.nutrition, carbohydrates: e.target.value}})} style={{width:'100%', padding:'5px', border:'1px solid #ddd', borderRadius:'4px'}} />
+                                    <label style={{ display: 'block', fontSize: '12px' }}>Carbs (g)</label>
+                                    <input type="number" value={formData.nutrition.carbohydrates} onChange={e => setFormData({ ...formData, nutrition: { ...formData.nutrition, carbohydrates: e.target.value } })} style={{ width: '100%', padding: '5px', border: '1px solid #ddd', borderRadius: '4px' }} />
                                 </div>
                                 <div>
-                                    <label style={{display:'block', fontSize:'12px'}}>Fats (g)</label>
-                                    <input type="number" value={formData.nutrition.fat} onChange={e => setFormData({...formData, nutrition: {...formData.nutrition, fat: e.target.value}})} style={{width:'100%', padding:'5px', border:'1px solid #ddd', borderRadius:'4px'}} />
+                                    <label style={{ display: 'block', fontSize: '12px' }}>Fats (g)</label>
+                                    <input type="number" value={formData.nutrition.fat} onChange={e => setFormData({ ...formData, nutrition: { ...formData.nutrition, fat: e.target.value } })} style={{ width: '100%', padding: '5px', border: '1px solid #ddd', borderRadius: '4px' }} />
                                 </div>
                             </div>
 
-                            <button type="submit" style={{ width: '100%', padding: '15px', background: '#30a5ff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize:'16px' }}>
+                            <button type="submit" style={{ width: '100%', padding: '15px', background: '#30a5ff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
                                 {isEditing ? 'Update Recipe' : 'Create Recipe'}
                             </button>
                         </form>

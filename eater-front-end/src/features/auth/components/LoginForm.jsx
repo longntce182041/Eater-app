@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axiosClient from '../../../../src/api/axiosClient.js'; // Import axios client đã cấu hình
+import axiosClient from '../../../api/axiosClient.js'; // Import axios client đã cấu hình
 import { toast } from 'react-toastify'; // Import thư viện thông báo
 
 const LoginForm = () => {
@@ -26,32 +26,37 @@ const LoginForm = () => {
 
             // Kiểm tra xem Backend trả về success hay không?
             // Lưu ý: Tùy backend bạn code, có thể là res.data.success hoặc chỉ res.data
-            if (res.data.success) {
+            const isSuccess = res.data?.success || res.data?.status === 'success';
+
+            if (isSuccess) {
 
                 // Lấy token từ đúng chỗ (Kiểm tra kỹ xem token nằm ở res.data.token hay res.data.data.token)
                 // Dựa theo code backend bài trước mình hướng dẫn thì nó nằm trong data
                 const token = res.data.data?.token || res.data.token;
                 const role = res.data.data?.user?.role || res.data.user?.role;
 
-                if(token) {
+                if (token) {
                     localStorage.setItem('token', token);
-                    localStorage.setItem('userRole', role);
+                    if (role) localStorage.setItem('userRole', role);
 
                     toast.success("Login Success!");
 
                     // Chờ 1 chút để lưu xong token rồi mới chuyển trang
                     setTimeout(() => {
-                        navigate('/dashboard');
+                        navigate(role === 'nutritionist' ? '/chat' : '/dashboard');
                     }, 500);
                 } else {
                     toast.error("Login success but no Token found!");
                     console.error("Không tìm thấy token trong response");
                 }
+            } else {
+                toast.error(res.data?.message || "Login failed!");
             }
 
         } catch (error) {
             console.error("Lỗi Login:", error);
-            toast.error("Login failed!");
+            const backendMessage = error.response?.data?.message;
+            toast.error(backendMessage || "Login failed!");
         } finally {
             setLoading(false);
         }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/auth_providers.dart';
+import '../../../../core/utils/notification_service.dart';
 
 class ResetPasswordPage extends ConsumerStatefulWidget {
   const ResetPasswordPage({super.key});
@@ -37,16 +38,15 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password reset successfully!')),
+      NotificationService.showSuccess(
+        context,
+        message: 'Password reset successfully!',
       );
 
       context.go('/sign-in');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      NotificationService.showError(context, message: 'Error: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

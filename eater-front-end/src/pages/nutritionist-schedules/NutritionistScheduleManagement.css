@@ -1,0 +1,510 @@
+.nutritionist-schedule-management {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.schedule-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #2d2d2d;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  font-size: 16px;
+  color: #666;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.alert-error {
+  background-color: #ffebee;
+  border-left-color: #d32f2f;
+  color: #d32f2f;
+}
+
+.alert button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 0;
+}
+
+.schedules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.schedule-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.schedule-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.schedule-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.schedule-card-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d2d2d;
+  margin: 0;
+}
+
+.schedule-card-header .specialization {
+  font-size: 13px;
+  color: #666;
+  margin: 4px 0 0 0;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-badge.status-active {
+  background-color: #c8e6c9;
+  color: #2e7d32;
+}
+
+.status-badge.status-inactive {
+  background-color: #ffccbc;
+  color: #d84315;
+}
+
+.status-badge.status-on_leave {
+  background-color: #fff9c4;
+  color: #f57f17;
+}
+
+.schedule-info {
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 16px;
+}
+
+.schedule-info p {
+  margin: 6px 0;
+}
+
+.schedule-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background-color: #ff9800;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #f57c00;
+}
+
+.btn-secondary {
+  background-color: #f5f5f5;
+  color: #2d2d2d;
+  border: 1px solid #ddd;
+}
+
+.btn-secondary:hover {
+  background-color: #efefef;
+}
+
+.btn-warning {
+  background-color: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffe0b2;
+}
+
+.btn-warning:hover {
+  background-color: #ffe0b2;
+}
+
+.btn-danger {
+  background-color: #ffebee;
+  color: #d32f2f;
+  border: 1px solid #ef9a9a;
+}
+
+.btn-danger:hover {
+  background-color: #ef9a9a;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px;
+  color: #999;
+}
+
+.empty-state p {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #2d2d2d;
+  margin: 0;
+}
+
+.schedule-form {
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2d2d2d;
+  margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #ff9800;
+  box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d2d2d;
+  margin: 24px 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.schedule-details {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.day-schedule {
+  display: grid;
+  grid-template-columns: 100px 1fr 120px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+}
+
+.day-name {
+  font-weight: 500;
+  color: #2d2d2d;
+  font-size: 13px;
+}
+
+.time-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.time-inputs input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.time-inputs span {
+  color: #666;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #2d2d2d;
+}
+
+.checkbox input {
+  width: auto;
+  margin: 0;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 24px;
+  border-top: 1px solid #eee;
+}
+
+.form-actions .btn {
+  min-width: 120px;
+}
+
+.detail-content {
+  padding: 24px;
+}
+
+.detail-info {
+  background-color: #f9f9f9;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.detail-info p {
+  margin: 8px 0;
+  color: #2d2d2d;
+}
+
+.detail-info strong {
+  color: #000;
+}
+
+.schedule-accordion {
+  margin-bottom: 24px;
+}
+
+.accordion-item {
+  border: 1px solid #eee;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.accordion-header {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #f9f9f9;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2d2d2d;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.3s ease;
+}
+
+.accordion-header:hover {
+  background-color: #f0f0f0;
+}
+
+.day-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.time {
+  font-size: 13px;
+  color: #666;
+}
+
+.badge-available {
+  background-color: #c8e6c9;
+  color: #2e7d32;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.accordion-header .rotated {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  padding: 12px 16px;
+  background-color: #fff;
+  font-size: 13px;
+  color: #555;
+}
+
+.accordion-content p {
+  margin: 6px 0;
+}
+
+.special-dates-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #eee;
+}
+
+.special-dates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.special-date-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.type-badge {
+  background-color: #fff3e0;
+  color: #e65100;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.reason {
+  color: #666;
+  margin-left: auto;
+}
+
+.btn-block {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .schedules-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content {
+    width: 95%;
+  }
+
+  .day-schedule {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .schedule-actions {
+    flex-direction: column;
+  }
+
+  .schedule-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

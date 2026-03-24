@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/dietary_ref_provider.dart';
+import '../../../../core/utils/notification_service.dart';
 
 class DietaryReferencesScreen extends ConsumerWidget {
   const DietaryReferencesScreen({super.key});
@@ -223,17 +224,15 @@ class DietaryReferencesScreen extends ConsumerWidget {
                               .submitDietaryReferences();
                           if (!context.mounted) return;
                           if (ok) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Dietary preferences saved'),
-                              ),
+                            NotificationService.showSuccess(
+                              context,
+                              message: 'Dietary preferences saved',
                             );
                             context.go('/home');
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Failed to save preferences'),
-                              ),
+                            NotificationService.showError(
+                              context,
+                              message: 'Failed to save preferences',
                             );
                           }
                         },

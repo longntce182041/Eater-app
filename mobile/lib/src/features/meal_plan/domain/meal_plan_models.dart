@@ -97,6 +97,44 @@ class MealPlanItemModel {
           : null,
     );
   }
+
+  MealPlanItemModel copyWith({
+    String? id,
+    String? recipeId,
+    String? mealType,
+    int? servings,
+    double? calories,
+    double? protein,
+    double? carbohydrates,
+    double? fat,
+    int? dayIndex,
+    String? recipeName,
+    String? recipeImageUrl,
+    int? userRating,
+    String? userAction,
+    bool? isLocked,
+    bool? isEaten,
+    DateTime? eatenDate,
+  }) {
+    return MealPlanItemModel(
+      id: id ?? this.id,
+      recipeId: recipeId ?? this.recipeId,
+      mealType: mealType ?? this.mealType,
+      servings: servings ?? this.servings,
+      calories: calories ?? this.calories,
+      protein: protein ?? this.protein,
+      carbohydrates: carbohydrates ?? this.carbohydrates,
+      fat: fat ?? this.fat,
+      dayIndex: dayIndex ?? this.dayIndex,
+      recipeName: recipeName ?? this.recipeName,
+      recipeImageUrl: recipeImageUrl ?? this.recipeImageUrl,
+      userRating: userRating ?? this.userRating,
+      userAction: userAction ?? this.userAction,
+      isLocked: isLocked ?? this.isLocked,
+      isEaten: isEaten ?? this.isEaten,
+      eatenDate: eatenDate ?? this.eatenDate,
+    );
+  }
 }
 
 class MealPlanSummary {

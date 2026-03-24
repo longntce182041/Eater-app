@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { Trash2, Edit, Plus, X, Image as ImageIcon, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -43,7 +43,7 @@ const IngredientPage = () => {
     };
 
     // 1. Gọi API lấy danh sách (Có phân trang)
-    const fetchIngredients = async () => {
+    const fetchIngredients = useCallback(async () => {
         try {
             setLoading(true);
             const res = await axiosClient.get('/ingredients', {
@@ -54,7 +54,7 @@ const IngredientPage = () => {
                     limit: ITEMS_PER_PAGE   // Số lượng item/trang
                 }
             });
-            if(res.data.success) {
+            if (res.data.success) {
                 setIngredients(res.data.data.ingredients);
                 // Backend của bạn cần trả về totalPages, nếu chưa có thì có thể tính tạm hoặc yêu cầu backend update
                 setTotalPages(res.data.data.totalPages || 1);
@@ -65,7 +65,7 @@ const IngredientPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filters.keyword, filters.unit, currentPage]);
 
     // Effect: Gọi lại khi Filters hoặc Page thay đổi
     useEffect(() => {
@@ -73,7 +73,7 @@ const IngredientPage = () => {
             fetchIngredients();
         }, 500);
         return () => clearTimeout(timer);
-    }, [filters, currentPage]);
+    }, [fetchIngredients]);
 
     // Reset về trang 1 khi đổi bộ lọc
     useEffect(() => {
@@ -129,7 +129,8 @@ const IngredientPage = () => {
                 setFormData({ ...item, ImageUrl: item.ImageUrl || '', description: item.description || '' });
                 setSelectedMicros([]);
             }
-        } catch (err) {
+        } catch (error) {
+            console.error(error);
             setFormData({ ...item, ImageUrl: item.ImageUrl || '', description: item.description || '' });
             setSelectedMicros([]);
         }
@@ -137,7 +138,7 @@ const IngredientPage = () => {
     };
 
     const handleDelete = async (id) => {
-        if(!window.confirm("Delete this ingredient?")) return;
+        if (!window.confirm("Delete this ingredient?")) return;
         try {
             const res = await axiosClient.delete(`/ingredients/delete/${id}`);
             toast.success(res.data.message);
@@ -154,7 +155,8 @@ const IngredientPage = () => {
                 setDetailData(res.data.data);
                 setShowDetail(true);
             }
-        } catch (err) {
+        } catch (error) {
+            console.error(error);
             toast.error('Failed to load detail');
         }
     };
@@ -188,14 +190,14 @@ const IngredientPage = () => {
                     <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
                     <input
                         type="text" placeholder="Search ingredients..."
-                        value={filters.keyword} onChange={(e) => setFilters({...filters, keyword: e.target.value})}
+                        value={filters.keyword} onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
                         style={{ width: '100%', padding: '10px 10px 10px 35px', borderRadius: '4px', border: '1px solid #ddd' }}
                     />
                 </div>
                 <div style={{ position: 'relative', width: '200px' }}>
                     <Filter size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
                     <select
-                        value={filters.unit} onChange={(e) => setFilters({...filters, unit: e.target.value})}
+                        value={filters.unit} onChange={(e) => setFilters({ ...filters, unit: e.target.value })}
                         style={{ width: '100%', padding: '10px 10px 10px 35px', borderRadius: '4px', border: '1px solid #ddd', cursor: 'pointer' }}
                     >
                         <option value="">All Units</option>
@@ -206,26 +208,26 @@ const IngredientPage = () => {
                     </select>
                 </div>
                 <button onClick={handleOpenCreate} style={{ background: '#30a5ff', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', display: 'flex', gap: '5px', fontWeight: 'bold' }}>
-                    <Plus size={18}/> Add Ingredient
+                    <Plus size={18} /> Add Ingredient
                 </button>
             </div>
 
             {/* --- LIST CARDS --- */}
-            {loading ? <p style={{textAlign:'center', color: '#666'}}>Loading data...</p> : (
+            {loading ? <p style={{ textAlign: 'center', color: '#666' }}>Loading data...</p> : (
                 <>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
                         {ingredients.map((item) => (
                             <div key={item._id} style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', border: '1px solid #eee' }}>
                                 <div style={{ height: '160px', background: '#f8f9fa' }}>
-                                    {item.ImageUrl ? <img src={item.ImageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100%', color:'#ccc' }}><ImageIcon size={40}/></div>}
+                                    {item.ImageUrl ? <img src={item.ImageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#ccc' }}><ImageIcon size={40} /></div>}
                                 </div>
                                 <div style={{ padding: '15px' }}>
                                     <h3 style={{ margin: '0 0 5px 0', color: '#333' }}>{item.name}</h3>
-                                    <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>Calories: <strong style={{color:'#30a5ff'}}>{item.calories_per_unit}</strong> / {item.unit}</p>
+                                    <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>Calories: <strong style={{ color: '#30a5ff' }}>{item.calories_per_unit}</strong> / {item.unit}</p>
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '15px', gap: '15px' }}>
                                         <button onClick={() => handleView(item._id)} style={{ color: '#555', background: 'none', border: 'none', cursor: 'pointer' }}>View</button>
-                                        <button onClick={() => handleOpenEdit(item)} style={{ color: '#30a5ff', background: 'none', border: 'none', cursor: 'pointer' }}><Edit size={20}/></button>
-                                        <button onClick={() => handleDelete(item._id)} style={{ color: '#f9243f', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={20}/></button>
+                                        <button onClick={() => handleOpenEdit(item)} style={{ color: '#30a5ff', background: 'none', border: 'none', cursor: 'pointer' }}><Edit size={20} /></button>
+                                        <button onClick={() => handleDelete(item._id)} style={{ color: '#f9243f', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={20} /></button>
                                     </div>
                                 </div>
                             </div>
@@ -239,14 +241,14 @@ const IngredientPage = () => {
                                 onClick={handlePrevPage} disabled={currentPage === 1}
                                 style={{ background: currentPage === 1 ? '#eee' : 'white', border: '1px solid #ddd', padding: '8px 15px', borderRadius: '5px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: currentPage === 1 ? '#999' : '#333' }}
                             >
-                                <ChevronLeft size={18}/> Previous
+                                <ChevronLeft size={18} /> Previous
                             </button>
                             <span style={{ fontWeight: 'bold', color: '#5f6468' }}>Page {currentPage} of {totalPages}</span>
                             <button
                                 onClick={handleNextPage} disabled={currentPage === totalPages}
                                 style={{ background: currentPage === totalPages ? '#eee' : 'white', border: '1px solid #ddd', padding: '8px 15px', borderRadius: '5px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: currentPage === totalPages ? '#999' : '#333' }}
                             >
-                                Next <ChevronRight size={18}/>
+                                Next <ChevronRight size={18} />
                             </button>
                         </div>
                     )}
@@ -257,13 +259,13 @@ const IngredientPage = () => {
             {showModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
                     <div style={{ background: 'white', padding: '30px', borderRadius: '8px', width: '500px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
-                        <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '15px', right: '15px', border: 'none', background:'none', cursor:'pointer' }}><X size={20} /></button>
+                        <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '15px', right: '15px', border: 'none', background: 'none', cursor: 'pointer' }}><X size={20} /></button>
                         <h3 style={{ marginTop: 0, color: '#30a5ff' }}>{isEditing ? 'Edit Ingredient' : 'Add New Ingredient'}</h3>
                         <form onSubmit={handleSubmit}>
                             {/* ... FORM CONTENT GIỮ NGUYÊN ... */}
                             <div style={{ marginBottom: '10px' }}>
                                 <label style={{ display: 'block', fontSize: '13px' }}>Ingredient Name</label>
-                                <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} required />
+                                <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} required />
                             </div>
                             {/* ... CÁC INPUT KHÁC GIỮ NGUYÊN ... */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
@@ -273,7 +275,7 @@ const IngredientPage = () => {
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '13px' }}>Unit</label>
-                                    <select value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}>
+                                    <select value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}>
                                         <option value="gram">gram</option>
                                         <option value="ml">ml</option>
                                         <option value="piece">piece</option>
@@ -298,11 +300,11 @@ const IngredientPage = () => {
                             </div>
                             <div style={{ marginBottom: '10px' }}>
                                 <label style={{ display: 'block', fontSize: '13px' }}>Image URL</label>
-                                <input type="text" value={formData.ImageUrl} onChange={e => setFormData({...formData, ImageUrl: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} placeholder="https://..." />
+                                <input type="text" value={formData.ImageUrl} onChange={e => setFormData({ ...formData, ImageUrl: e.target.value })} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} placeholder="https://..." />
                             </div>
                             <div style={{ marginBottom: '20px' }}>
                                 <label style={{ display: 'block', fontSize: '13px' }}>Description</label>
-                                <textarea rows="2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}></textarea>
+                                <textarea rows="2" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}></textarea>
                             </div>
                             {/* MICRONUTRIENTS SECTION */}
                             <div style={{ marginBottom: '12px' }}>
@@ -328,13 +330,13 @@ const IngredientPage = () => {
                                                 .map(a => <option key={a._id || a.id} value={a._id || a.id}>{a.name}</option>)}
                                         </select>
                                         <input type="number" min="0" onKeyDown={blockInvalidChar} value={m.amount}
-                                               onChange={e => {
-                                                   const copy = [...selectedMicros];
-                                                   copy[idx].amount = e.target.value;
-                                                   setSelectedMicros(copy);
-                                               }}
-                                               placeholder="amount" style={{ width: '110px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
-                                        <button type="button" onClick={() => { const copy = selectedMicros.filter((_, i) => i !== idx); setSelectedMicros(copy); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#f0243f' }}><Trash2 size={16}/></button>
+                                            onChange={e => {
+                                                const copy = [...selectedMicros];
+                                                copy[idx].amount = e.target.value;
+                                                setSelectedMicros(copy);
+                                            }}
+                                            placeholder="amount" style={{ width: '110px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
+                                        <button type="button" onClick={() => { const copy = selectedMicros.filter((_, i) => i !== idx); setSelectedMicros(copy); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#f0243f' }}><Trash2 size={16} /></button>
                                     </div>
                                 ))}
                                 <div>
@@ -364,20 +366,20 @@ const IngredientPage = () => {
                         {detailData.micronutrients && detailData.micronutrients.length ? (
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
-                                <tr style={{ textAlign: 'left', borderBottom: '1px solid #eee' }}>
-                                    <th style={{ padding: '8px' }}>Name</th>
-                                    <th style={{ padding: '8px' }}>Amount</th>
-                                    <th style={{ padding: '8px' }}>Unit</th>
-                                </tr>
+                                    <tr style={{ textAlign: 'left', borderBottom: '1px solid #eee' }}>
+                                        <th style={{ padding: '8px' }}>Name</th>
+                                        <th style={{ padding: '8px' }}>Amount</th>
+                                        <th style={{ padding: '8px' }}>Unit</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
-                                {detailData.micronutrients.map((m, i) => (
-                                    <tr key={i} style={{ borderBottom: '1px solid #fafafa' }}>
-                                        <td style={{ padding: '8px' }}>{m.name || (m.micronutrientId)}</td>
-                                        <td style={{ padding: '8px' }}>{m.amount}</td>
-                                        <td style={{ padding: '8px' }}>{m.unit || '-'}</td>
-                                    </tr>
-                                ))}
+                                    {detailData.micronutrients.map((m, i) => (
+                                        <tr key={i} style={{ borderBottom: '1px solid #fafafa' }}>
+                                            <td style={{ padding: '8px' }}>{m.name || (m.micronutrientId)}</td>
+                                            <td style={{ padding: '8px' }}>{m.amount}</td>
+                                            <td style={{ padding: '8px' }}>{m.unit || '-'}</td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         ) : (

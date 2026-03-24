@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ShoppingCart, MessageSquare, Users, Eye } from 'lucide-react';
+import { ShoppingCart, MessageSquare, Users, Eye, Calendar, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -24,6 +25,7 @@ const data = [
 ];
 
 const DashboardPage = () => {
+    const navigate = useNavigate();
     const [macroSummary, setMacroSummary] = useState(null);
     const [macroLoading, setMacroLoading] = useState(true);
 
@@ -89,6 +91,76 @@ const DashboardPage = () => {
                     color="#f9243f" // Đỏ
                     icon={<Eye size={24}/>}
                 />
+            </div>
+
+            {/* --- PHẦN 1.5: NUTRITIONIST SCHEDULE MANAGEMENT --- */}
+            <div style={{ marginBottom: '30px' }}>
+                <h3 style={{ margin: '0 0 15px 0', color: '#2d2d2d', fontSize: '18px', fontWeight: '600' }}>
+                    Nutritionist Management
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+                    {/* Card: Quản lý lịch làm */}
+                    <div
+                        onClick={() => navigate('/admin/nutritionist-schedules')}
+                        style={{
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            padding: '20px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            color: 'white',
+                            boxShadow: '0 2px 10px rgba(102, 126, 234, 0.2)',
+                            transition: 'all 0.3s ease',
+                            transform: 'translateY(0)',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-5px)';
+                            e.currentTarget.style.boxShadow = '0 5px 20px rgba(102, 126, 234, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 10px rgba(102, 126, 234, 0.2)';
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                            <Calendar size={32} />
+                            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Schedule Management</h4>
+                        </div>
+                        <p style={{ margin: '8px 0 0 0', fontSize: '13px', opacity: 0.9 }}>
+                            Create, edit, and manage nutritionist work schedules
+                        </p>
+                    </div>
+
+                    {/* Card: Quản lý yêu cầu thay đổi lịch */}
+                    <div
+                        onClick={() => navigate('/admin/schedule-requests')}
+                        style={{
+                            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                            padding: '20px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            color: 'white',
+                            boxShadow: '0 2px 10px rgba(245, 87, 108, 0.2)',
+                            transition: 'all 0.3s ease',
+                            transform: 'translateY(0)',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-5px)';
+                            e.currentTarget.style.boxShadow = '0 5px 20px rgba(245, 87, 108, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 10px rgba(245, 87, 108, 0.2)';
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                            <Clock size={32} />
+                            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Change Requests</h4>
+                        </div>
+                        <p style={{ margin: '8px 0 0 0', fontSize: '13px', opacity: 0.9 }}>
+                            Review and approve schedule change requests from nutritionists
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* --- PHẦN 2: BIỂU ĐỒ (ANALYTICS) --- */}

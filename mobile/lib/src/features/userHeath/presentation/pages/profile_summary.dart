@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/profile_setup_provider.dart';
+import '../../../../core/utils/notification_service.dart';
 
 class ProfileSummaryPage extends ConsumerWidget {
   const ProfileSummaryPage({super.key});
@@ -15,21 +16,17 @@ class ProfileSummaryPage extends ConsumerWidget {
     if (!context.mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile created successfully!'),
-          backgroundColor: Colors.green,
-        ),
+      NotificationService.showSuccess(
+        context,
+        message: 'Profile created successfully!',
       );
       context.go('/select-diet-type');
     } else {
       final userId = ref.read(profileSetupProvider('')).data.userId ?? '';
       final errorMessage = ref.read(profileSetupProvider(userId)).errorMessage;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage ?? 'Failed to submit profile'),
-          backgroundColor: Colors.red,
-        ),
+      NotificationService.showError(
+        context,
+        message: errorMessage ?? 'Failed to submit profile',
       );
     }
   }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/router/auth_notifier.dart';
 import '../providers/auth_providers.dart';
 import '../routes/auth_routes.dart';
+import '../../../../core/utils/notification_service.dart';
 
 class SignInPage extends ConsumerStatefulWidget {
   const SignInPage({super.key});
@@ -33,9 +34,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     if (!mounted) return;
     final error = ref.read(authControllerProvider).error;
     if (error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
+      NotificationService.showError(context, message: error);
     } else {
       // Wait for auth state to refresh from storage
       await ref.read(authNotifierProvider).refresh();

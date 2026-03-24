@@ -6,6 +6,9 @@ import '../providers/meal_plan_provider.dart';
 import '../../domain/meal_plan_models.dart';
 import '../widgets/macro_distribution_donut.dart';
 import '../widgets/detailed_macro_modal.dart';
+import '../pages/meal_plan_preview_page.dart';
+import '../../../../core/utils/notification_service.dart';
+import '../../../../shared/providers/auth_token_provider.dart';
 import '../../../nutrition/domain/entities/meal_log.dart';
 import '../../../nutrition/presentation/providers/meal_log_provider.dart';
 import '../../../nutrition/presentation/providers/navigation_provider.dart';
@@ -143,9 +146,9 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                         onPressed: state.isLoading
                             ? null
                             : () => _optimizeAllMeals(
-                                context,
-                                state.result!.mealPlan.id,
-                              ),
+                                  context,
+                                  state.result!.mealPlan.id,
+                                ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF4CAF50),
                           foregroundColor: Colors.white,
@@ -398,12 +401,14 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
   void _showDetailedMacroModal(List<_DailyMacro> dailyMacros) {
     // Convert internal _DailyMacro to public DailyMacro
     final dailyMacroList = dailyMacros
-        .map((m) => DailyMacro(
-              dayIndex: m.dayIndex,
-              protein: m.protein,
-              carbohydrates: m.carbohydrates,
-              fat: m.fat,
-            ))
+        .map(
+          (m) => DailyMacro(
+            dayIndex: m.dayIndex,
+            protein: m.protein,
+            carbohydrates: m.carbohydrates,
+            fat: m.fat,
+          ),
+        )
         .toList();
 
     showModalBottomSheet(
@@ -424,9 +429,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
               ),
               child: SingleChildScrollView(
                 controller: scrollController,
-                child: DetailedMacroBottomSheet(
-                  dailyMacros: dailyMacroList,
-                ),
+                child: DetailedMacroBottomSheet(dailyMacros: dailyMacroList),
               ),
             );
           },
@@ -860,76 +863,76 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     return Row(
       children: [
         // Rating button
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF3E0),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFFFE0B2), width: 1),
-          ),
-          child: PopupMenuButton<int>(
-            onSelected: (rating) {
-              ref
-                  .read(mealPlanNotifierProvider.notifier)
-                  .rateMeal(mealPlanId, item.id, rating);
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(
-                  value: 1,
-                  child: Row(
-                    children: [
-                      _buildStarRating(1),
-                      const SizedBox(width: 8),
-                      const Text('Poor'),
-                    ],
+        Expanded(
+          child: Container(
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E0),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFFFE0B2), width: 1),
+            ),
+            child: PopupMenuButton<int>(
+              onSelected: (rating) {
+                ref
+                    .read(mealPlanNotifierProvider.notifier)
+                    .rateMeal(mealPlanId, item.id, rating);
+              },
+              itemBuilder: (BuildContext context) {
+                return [
+                  PopupMenuItem(
+                    value: 1,
+                    child: Row(
+                      children: [
+                        _buildStarRating(1),
+                        const SizedBox(width: 8),
+                        const Text('Poor'),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 2,
-                  child: Row(
-                    children: [
-                      _buildStarRating(2),
-                      const SizedBox(width: 8),
-                      const Text('Fair'),
-                    ],
+                  PopupMenuItem(
+                    value: 2,
+                    child: Row(
+                      children: [
+                        _buildStarRating(2),
+                        const SizedBox(width: 8),
+                        const Text('Fair'),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 3,
-                  child: Row(
-                    children: [
-                      _buildStarRating(3),
-                      const SizedBox(width: 8),
-                      const Text('Good'),
-                    ],
+                  PopupMenuItem(
+                    value: 3,
+                    child: Row(
+                      children: [
+                        _buildStarRating(3),
+                        const SizedBox(width: 8),
+                        const Text('Good'),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 4,
-                  child: Row(
-                    children: [
-                      _buildStarRating(4),
-                      const SizedBox(width: 8),
-                      const Text('Very Good'),
-                    ],
+                  PopupMenuItem(
+                    value: 4,
+                    child: Row(
+                      children: [
+                        _buildStarRating(4),
+                        const SizedBox(width: 8),
+                        const Text('Very Good'),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 5,
-                  child: Row(
-                    children: [
-                      _buildStarRating(5),
-                      const SizedBox(width: 8),
-                      const Text('Excellent'),
-                    ],
+                  PopupMenuItem(
+                    value: 5,
+                    child: Row(
+                      children: [
+                        _buildStarRating(5),
+                        const SizedBox(width: 8),
+                        const Text('Excellent'),
+                      ],
+                    ),
                   ),
-                ),
-              ];
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ];
+              },
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     item.userRating != null ? Icons.star : Icons.star_outline,
@@ -950,49 +953,12 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        // View Recipe Details button
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF3E0),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFFFE0B2), width: 1),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _viewRecipeDetails(context, item),
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(
-                      Icons.info_outline,
-                      size: 18,
-                      color: Color(0xFFFF9800),
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      'Recipe',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFFF9800),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+        // Replace meal button (disabled if locked)
+        if (!item.isLocked) ...[
+          const SizedBox(width: 8),
           Expanded(
             child: Container(
+              height: 36,
               decoration: BoxDecoration(
                 color: const Color(0xFFFFF3E0),
                 borderRadius: BorderRadius.circular(8),
@@ -1000,40 +966,35 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
               ),
               child: Material(
                 color: Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
                 child: InkWell(
                   onTap: () =>
                       _showReplacementDialog(context, mealPlanId, item),
                   borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          Icons.swap_horiz,
-                          size: 18,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.swap_horiz,
+                        size: 18,
+                        color: Color(0xFFFF9800),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Replace',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                           color: Color(0xFFFF9800),
                         ),
-                        SizedBox(width: 6),
-                        Text(
-                          'Replace',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFFFF9800),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
           ),
+        ],
       ],
     );
   }
@@ -1060,102 +1021,89 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     showDialog(
       context: context,
       builder: (dialogContext) {
+        String selectedReason = 'dont_like_taste';
         return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return Dialog(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Replace meal',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D2D2D),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Current: ${currentItem.recipeName}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF666666),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Reason dropdown
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'Why are you replacing this?',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'dont_like_taste',
-                          child: Text('Don\'t like the taste'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'allergies',
-                          child: Text('Have allergies'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'prep_difficulty',
-                          child: Text('Too difficult to prepare'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'ingredients_unavailable',
-                          child: Text('Ingredients not available'),
-                        ),
-                      ],
-                      onChanged: (_) {},
-                      value: 'dont_like_taste',
-                    ),
-                    const SizedBox(height: 16),
-                    // Action buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF9800),
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: () {
-                            // In a real app, fetch suggestions and show them
-                            // For now, we'll show a simple message
-                            Navigator.pop(dialogContext);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Fetching replacement suggestions...',
-                                ),
-                              ),
-                            );
-                          },
-                          child: const Text('Get suggestions'),
-                        ),
-                      ],
-                    ),
-                  ],
+              title: const Text(
+                'Replace meal',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D2D2D),
                 ),
               ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Current: ${currentItem.recipeName}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF666666),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedReason,
+                    decoration: InputDecoration(
+                      labelText: 'Why are you replacing this?',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'dont_like_taste',
+                        child: Text("Don't like the taste"),
+                      ),
+                      DropdownMenuItem(
+                        value: 'allergies',
+                        child: Text('Have allergies'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'prep_difficulty',
+                        child: Text('Too difficult to prepare'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'ingredients_unavailable',
+                        child: Text('Ingredients not available'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) selectedReason = value;
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF9800),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    NotificationService.showInfo(
+                      context,
+                      message: 'Fetching replacement suggestions...',
+                    );
+                  },
+                  child: const Text('Get suggestions'),
+                ),
+              ],
             );
           },
         );
@@ -1182,9 +1130,126 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     final days = await _pickDays(context, _selectedDays);
     if (days == null) return;
     setState(() => _selectedDays = days);
-    await ref
-        .read(mealPlanNotifierProvider.notifier)
-        .generateMealPlan(days: days);
+
+    // Get actual user ID from auth token
+    final authToken = ref.read(authTokenProvider);
+    final userId = authToken.userId;
+
+    if (userId == null || userId.isEmpty) {
+      if (!mounted) return;
+      NotificationService.showError(
+        context,
+        message: 'Error: User authentication required. Please log in again.',
+      );
+      return;
+    }
+
+    const userAge = 30;
+    const userGender = "male"; // AI service expects: male, female, or other
+    const userHeightCm = 175.0;
+    const userWeightKg = 75.0;
+    const userGoalWeightKg = 70.0;
+    const userHealthGoals =
+        "weight_loss"; // AI service expects: weight_loss, muscle_gain, maintenance, etc.
+    const userActivityLevel =
+        "moderate"; // AI service expects: sedentary, light, moderate, active, very_active
+    const dietTypes = <String>[];
+    const allergies = <String>[];
+    const dislikedIngredients = <String>[];
+
+    // Step 1: Generate preview
+    if (!mounted) return;
+
+    try {
+      final previewData = await ref
+          .read(mealPlanNotifierProvider.notifier)
+          .generateMealPlanPreview(
+            userId: userId,
+            age: userAge,
+            gender: userGender,
+            heightCm: userHeightCm,
+            weightKg: userWeightKg,
+            goalWeightKg: userGoalWeightKg,
+            healthGoals: userHealthGoals,
+            activityLevel: userActivityLevel,
+            dietTypes: dietTypes,
+            allergies: allergies,
+            dislikedIngredients: dislikedIngredients,
+            days: days,
+          );
+
+      if (!mounted) return;
+
+      if (previewData == null) {
+        final state = ref.read(mealPlanNotifierProvider);
+        NotificationService.showError(
+          context,
+          message: 'Error: ${state.error ?? 'Failed to generate preview'}',
+        );
+        return;
+      }
+
+      // Step 2: Show preview screen
+      if (!mounted) return;
+      final result = await Navigator.push<Map<String, dynamic>>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MealPlanPreviewPage(
+            previewData: previewData,
+            onSaveMealPlan: (modifiedMeals) {
+              Navigator.pop(context, modifiedMeals);
+            },
+          ),
+        ),
+      );
+
+      if (result == null || !mounted) return;
+
+      // Step 3: Save modified meals
+      final savedSuccessfully = await _saveAndShowPreview(
+        modifiedMeals: result,
+        originalMealPlan:
+            previewData['_originalAIMealPlan'] as Map<String, dynamic>,
+        mealPlanOptions:
+            previewData['_mealPlanOptions'] as Map<String, dynamic>,
+        userId: userId,
+      );
+
+      if (savedSuccessfully && mounted) {
+        NotificationService.showSuccess(
+          context,
+          message: 'Meal plan saved successfully!',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationService.showError(context, message: 'Error: $e');
+      }
+    }
+  }
+
+  Future<bool> _saveAndShowPreview({
+    required Map<String, dynamic> modifiedMeals,
+    required Map<String, dynamic> originalMealPlan,
+    required Map<String, dynamic> mealPlanOptions,
+    required String userId,
+  }) async {
+    try {
+      await ref.read(mealPlanNotifierProvider.notifier).saveMealPlanFromPreview(
+            userId: userId,
+            originalAIMealPlan: originalMealPlan,
+            mealPlanOptions: mealPlanOptions,
+            modifiedMeals: modifiedMeals,
+          );
+
+      final state = ref.read(mealPlanNotifierProvider);
+      return state.error == null && state.result != null;
+    } catch (e) {
+      if (mounted) {
+        NotificationService.showError(context, message: 'Save failed: $e');
+      }
+      return false;
+    }
   }
 
   Future<void> _optimizeAllMeals(
@@ -1220,47 +1285,28 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
         .read(mealPlanNotifierProvider.notifier)
         .optimizeMealPlan(mealPlanId);
 
+    final state = ref.read(mealPlanNotifierProvider);
     if (!mounted) return;
 
-    final state = ref.read(mealPlanNotifierProvider);
     if (state.error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${state.error}')));
+      NotificationService.showError(this.context,
+          message: 'Error: ${state.error}');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Meal plan optimized successfully!'),
-          duration: Duration(seconds: 2),
-        ),
+      NotificationService.showSuccess(
+        this.context,
+        message: 'Meal plan optimized successfully!',
       );
     }
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Delete meal plans?'),
-          content: const Text(
-            'This will remove all meal plans and their meals. This action cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFD32F2F),
-              ),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+    final shouldDelete = await NotificationService.showConfirmation(
+      context,
+      title: 'Delete meal plans?',
+      message:
+          'This will remove all meal plans and their meals. This action cannot be undone.',
+      confirmText: 'Delete',
+      isDangerous: true,
     );
 
     if (shouldDelete != true) return;
@@ -1268,9 +1314,8 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     await ref.read(mealPlanNotifierProvider.notifier).deleteAllMealPlans();
     if (!mounted) return;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('All meal plans deleted')));
+    NotificationService.showSuccess(this.context,
+        message: 'All meal plans deleted');
   }
 
   Future<int?> _pickDays(BuildContext context, int current) async {
@@ -1568,7 +1613,5 @@ class _DailyMacro {
   double carbohydrates = 0;
   double fat = 0;
 
-  _DailyMacro({
-    required this.dayIndex,
-  });
+  _DailyMacro({required this.dayIndex});
 }

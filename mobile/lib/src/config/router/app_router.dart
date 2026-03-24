@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/routes/auth_routes.dart';
 import '../../features/home/presentation/pages/main_navigation_page.dart';
+import '../../features/reminders/presentation/pages/reminders_page.dart';
+import '../../features/chat/presentation/pages/chat_page.dart';
 import '../../features/meal_plan/presentation/pages/view_recipe_detail_page.dart';
 import '../../features/meal_plan/presentation/pages/view_recipe_details_page.dart';
 import '../../features/userHeath/presentation/pages/set_age.dart';
@@ -35,8 +37,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final isAuthenticated = authNotifier.isAuthenticated;
 
-      final isAuthRoute =
-          state.matchedLocation.startsWith('/sign-in') ||
+      final isAuthRoute = state.matchedLocation.startsWith('/sign-in') ||
           state.matchedLocation.startsWith('/sign-up') ||
           state.matchedLocation.startsWith('/forgot-password') ||
           state.matchedLocation.startsWith('/reset-password') ||
@@ -139,6 +140,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/select-calories',
         builder: (context, state) => const SelectCaloriesPage(),
+      ),
+      GoRoute(
+        path: '/reminders',
+        builder: (context, state) => const RemindersPage(),
+      ),
+      GoRoute(
+        path: '/chat/:nutritionistId',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return ChatPage(
+            nutritionistId: state.pathParameters['nutritionistId']!,
+            nutritionistName: extra['nutritionistName'] as String? ?? 'Nutritionist',
+          );
+        },
       ),
       GoRoute(
         path: '/recipe/:recipeId',

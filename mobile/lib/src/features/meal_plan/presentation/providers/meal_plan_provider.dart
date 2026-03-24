@@ -13,12 +13,13 @@ class MealPlanState {
   MealPlanState copyWith({
     bool? isLoading,
     String? error,
+    bool clearError = false,
     MealPlanGenerationResult? result,
     bool clearResult = false,
   }) {
     return MealPlanState(
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: clearError ? null : (error ?? this.error),
       result: clearResult ? null : (result ?? this.result),
     );
   }
@@ -30,11 +31,9 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
   MealPlanNotifier(this._apiClient) : super(const MealPlanState());
 
   Future<void> loadLatestMealPlan() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final result = await _apiClient.fetchLatestMealPlan();
-      // Small delay for smooth UI transition
-      await Future.delayed(const Duration(milliseconds: 300));
       state = state.copyWith(isLoading: false, result: result);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -42,16 +41,12 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
   }
 
   Future<void> generateMealPlan({required int days}) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       // Generate new meal plan
       await _apiClient.generateMealPlan(days: days);
-      // Wait for server to process
-      await Future.delayed(const Duration(milliseconds: 500));
       // Reload latest meal plan from server (ensures complete data)
       final result = await _apiClient.fetchLatestMealPlan();
-      // Small delay for smooth UI transition
-      await Future.delayed(const Duration(milliseconds: 300));
       state = state.copyWith(isLoading: false, result: result);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -59,11 +54,11 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
   }
 
   Future<void> deleteAllMealPlans() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       await _apiClient.deleteAllMealPlans();
-      await Future.delayed(const Duration(milliseconds: 200));
-      state = state.copyWith(isLoading: false, clearResult: true);
+      state =
+          state.copyWith(isLoading: false, clearResult: true, clearError: true);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -97,7 +92,7 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
     String newRecipeId,
     String? reason,
   ) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final updatedItem = await _apiClient.replaceMeal(
         mealPlanId,
@@ -127,13 +122,11 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
 
   /// Optimize the entire meal plan
   Future<void> optimizeMealPlan(String mealPlanId) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       await _apiClient.optimizeMealPlan(mealPlanId);
       // Reload the optimized meal plan
-      await Future.delayed(const Duration(milliseconds: 500));
       final result = await _apiClient.fetchLatestMealPlan();
-      await Future.delayed(const Duration(milliseconds: 300));
       state = state.copyWith(isLoading: false, result: result);
     } catch (e) {
       state = state.copyWith(
@@ -143,32 +136,81 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
     }
   }
 
-  /// Mark a meal as eaten
-  void markMealAsEaten(String mealId, DateTime eatenDate) {
-    if (state.result != null) {
-      final updatedItems = state.result!.items.map((item) {
-        if (item.id == mealId) {
-          return MealPlanItemModel(
-            id: item.id,
-            mealType: item.mealType,
-            servings: item.servings,
-            calories: item.calories,
-            protein: item.protein,
-            carbohydrates: item.carbohydrates,
-            fat: item.fat,
-            dayIndex: item.dayIndex,
-            recipeName: item.recipeName,
-            recipeImageUrl: item.recipeImageUrl,
-            userRating: item.userRating,
-            userAction: item.userAction,
-            isLocked: item.isLocked,
-            isEaten: true,
-            eatenDate: eatenDate,
-          );
-        }
-        return item;
-      }).toList();
+  /// Generate meal plan preview (no database save yet)
+  Future<Map<String, dynamic>?> generateMealPlanPreview({
+    required String userId,
+    required int age,
+    required String gender,
+    required double heightCm,
+    required double weightKg,
+    required double goalWeightKg,
+    required String healthGoals,
+    required String activityLevel,
+    required List<String> dietTypes,
+    required List<String> allergies,
+    required List<String> dislikedIngredients,
+    required int days,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final previewData = await _apiClient.generateMealPlanPreview(
+        userId: userId,
+        age: age,
+        gender: gender,
+        heightCm: heightCm,
+        weightKg: weightKg,
+        goalWeightKg: goalWeightKg,
+        healthGoals: healthGoals,
+        activityLevel: activityLevel,
+        dietTypes: dietTypes,
+        allergies: allergies,
+        dislikedIngredients: dislikedIngredients,
+        days: days,
+      );
+      state = state.copyWith(isLoading: false);
+      return previewData;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to generate preview: ${e.toString()}',
+      );
+      return null;
+    }
+  }
 
+  /// Save modified meals from preview to database
+  Future<void> saveMealPlanFromPreview({
+    required String userId,
+    required Map<String, dynamic> originalAIMealPlan,
+    required Map<String, dynamic> mealPlanOptions,
+    required Map<String, dynamic> modifiedMeals,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final result = await _apiClient.saveMealPlanFromPreview(
+        userId: userId,
+        originalAIMealPlan: originalAIMealPlan,
+        mealPlanOptions: mealPlanOptions,
+        modifiedMeals: modifiedMeals,
+      );
+      state = state.copyWith(isLoading: false, result: result);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to save meal plan: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Mark a meal as eaten
+  void markMealAsEaten(String itemId, DateTime eatenDate) {
+    if (state.result != null) {
+      final updatedItems = state.result!.items
+          .map((item) =>
+              item.id == itemId
+                  ? item.copyWith(isEaten: true, eatenDate: eatenDate)
+                  : item)
+          .toList();
       final newResult = MealPlanGenerationResult(
         mealPlan: state.result!.mealPlan,
         items: updatedItems,
@@ -178,32 +220,15 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
     }
   }
 
-  /// Mark a meal as uneaten
-  void markMealAsUneaten(String mealId) {
+  /// Mark a meal as not eaten
+  void markMealAsUneaten(String itemId) {
     if (state.result != null) {
-      final updatedItems = state.result!.items.map((item) {
-        if (item.id == mealId) {
-          return MealPlanItemModel(
-            id: item.id,
-            mealType: item.mealType,
-            servings: item.servings,
-            calories: item.calories,
-            protein: item.protein,
-            carbohydrates: item.carbohydrates,
-            fat: item.fat,
-            dayIndex: item.dayIndex,
-            recipeName: item.recipeName,
-            recipeImageUrl: item.recipeImageUrl,
-            userRating: item.userRating,
-            userAction: item.userAction,
-            isLocked: item.isLocked,
-            isEaten: false,
-            eatenDate: null,
-          );
-        }
-        return item;
-      }).toList();
-
+      final updatedItems = state.result!.items
+          .map((item) =>
+              item.id == itemId
+                  ? item.copyWith(isEaten: false, eatenDate: null)
+                  : item)
+          .toList();
       final newResult = MealPlanGenerationResult(
         mealPlan: state.result!.mealPlan,
         items: updatedItems,
@@ -216,6 +241,6 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
 
 final mealPlanNotifierProvider =
     StateNotifierProvider<MealPlanNotifier, MealPlanState>((ref) {
-      final apiClient = ref.watch(mealPlanApiClientProvider);
-      return MealPlanNotifier(apiClient);
-    });
+  final apiClient = ref.watch(mealPlanApiClientProvider);
+  return MealPlanNotifier(apiClient);
+});

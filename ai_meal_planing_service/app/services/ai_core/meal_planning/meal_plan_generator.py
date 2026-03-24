@@ -84,11 +84,18 @@ class MealPlanValidator:
         
         # 1. Kiểm tra Calories
         daily_calories = meal_plan.daily_calories
-        calorie_diff = abs(daily_calories - target_calories) / target_calories
         
         details["calorie_target"] = target_calories
         details["calorie_actual"] = daily_calories
-        details["calorie_diff_percent"] = round(calorie_diff * 100, 2)
+        
+        # Guard against division by zero
+        if target_calories > 0:
+            calorie_diff = abs(daily_calories - target_calories) / target_calories
+            details["calorie_diff_percent"] = round(calorie_diff * 100, 2)
+        else:
+            calorie_diff = 0
+            details["calorie_diff_percent"] = 0
+            issues.append("Target calories cannot be zero")
         
         if calorie_diff > CALORIE_TOLERANCE:
             issues.append(
@@ -353,11 +360,18 @@ class MealPlanGenerator:
         
         Uses goal profile's target_calories if available,
         otherwise computes from TDEE + adjustment.
+        Always returns a positive value to prevent division by zero.
         """
-        if goal_profile.target_calories is not None:
+        if goal_profile.target_calories is not None and goal_profile.target_calories > 0:
             return goal_profile.target_calories
         
-        return body_profile.tdee + goal_profile.calorie_adjustment
+        # Calculate from TDEE + adjustment
+        tdee = body_profile.tdee or 2000  # Fallback default
+        adjustment = goal_profile.calorie_adjustment or 0  # Fallback to zero
+        target = tdee + adjustment
+        
+        # Ensure minimum positive value to prevent division by zero
+        return max(target, 1000)  # Minimum 1000 calories
     
     def _filter_recipes(
         self,
@@ -509,6 +523,9 @@ class MealPlanGenerator:
             
             # Calculate servings to match calorie target
             recipe_calories_per_serving = selected_recipe.get('calories_per_serving', 400)
+            # Ensure recipe_calories_per_serving is never zero
+            if recipe_calories_per_serving <= 0:
+                recipe_calories_per_serving = 400
             servings = target_calories / recipe_calories_per_serving
             servings = round(servings, 2)
             
@@ -596,6 +613,9 @@ class MealPlanGenerator:
                 
                 # Calculate servings to match calorie target
                 recipe_calories_per_serving = selected_recipe.get('calories_per_serving', 400)
+                # Ensure recipe_calories_per_serving is never zero
+                if recipe_calories_per_serving <= 0:
+                    recipe_calories_per_serving = 400
                 servings = target_calories / recipe_calories_per_serving
                 servings = round(servings, 2)
                 

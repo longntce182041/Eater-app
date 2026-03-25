@@ -21,6 +21,7 @@ const groceryRoutes = require("./grocery.routes");
 const reminderRoutes = require("./reminder.routes");
 const chatRoutes = require("./chat.routes");
 const paymentRoutes = require("./payment.routes");
+const consultationRoutes = require("./consultation.management.routes");
 
 const router = express.Router();
 router.use("/auth/user", authUserRoutes);
@@ -43,5 +44,6 @@ router.use("/groceries", groceryRoutes);
 router.use("/reminders", reminderRoutes);
 router.use("/chat", chatRoutes);
 router.use("/payments", paymentRoutes);
+router.use("/consultations", consultationRoutes);
 
 module.exports = router;

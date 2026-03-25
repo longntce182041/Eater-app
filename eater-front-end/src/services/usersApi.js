@@ -2,18 +2,18 @@ import apiClient from "./apiClient";
 
 export const usersApi = {
   getUsers() {
-    return apiClient.get("/admin/users");
+    return apiClient.get("/users");
   },
   getUserById(id) {
-    return apiClient.get(`/admin/users/${id}`);
+    return apiClient.get(`/users/${id}`);
   },
   createUser(data) {
-    return apiClient.post("/admin/users", data);
+    return apiClient.post("/users/create", data);
   },
   updateUser(id, data) {
-    return apiClient.put(`/admin/users/${id}`, data);
+    return apiClient.put(`/users/update/${id}`, data);
   },
   deactivateUser(id) {
-    return apiClient.patch(`/admin/users/${id}/status`, { active: false });
+    return apiClient.delete(`/users/delete/${id}`);
   },
 };

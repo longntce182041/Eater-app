@@ -1,0 +1,19 @@
+const express = require("express");
+const router = express.Router();
+const consultationController = require("../controllers/consultation.management.controller");
+const { protect, authorize } = require("../../middleware/authMiddleware");
+
+// Yêu cầu đăng nhập VÀ bắt buộc phải là 'nutritionist' 
+router.use(protect);
+router.use(authorize('nutritionist'));
+
+// 1. Chẩn đoán & Khuyến nghị
+router.post("/diagnose", consultationController.createConsultation);
+
+// 2. Tạo & Gán Meal Plan cá nhân
+router.post("/meal-plans", consultationController.createMealPlan);
+
+// 3. Xuất Báo cáo cho 1 User
+router.get("/reports/:patientId", consultationController.getNutritionReport);
+
+module.exports = router;

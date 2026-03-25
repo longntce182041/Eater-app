@@ -9,6 +9,8 @@ import {
   CloudUpload,
   BookOpen,
   MessageCircle,
+  Star,
+  Stethoscope,
   UserCheck,
 } from "lucide-react";
 import "./AdminLayout.css";
@@ -46,6 +48,7 @@ const AdminLayout = () => {
       icon: <Pill size={20} />,
     },
     { name: "Manage Recipes", path: "/recipes", icon: <BookOpen size={20} /> },
+    { name: "Manage Reviews", path: "/reviews", icon: <Star size={20} /> },
     {
       name: "System Backups",
       path: "/backups",
@@ -54,11 +57,7 @@ const AdminLayout = () => {
   ];
 
   const nutritionistMenuItems = [
-    {
-      name: "Live Chat",
-      path: "/chat",
-      icon: <MessageCircle size={20} />,
-    },
+    { name: "Live Chat", path: "/chat", icon: <MessageCircle size={20} /> },
   ];
 
   const menuItems = isNutritionist ? nutritionistMenuItems : adminMenuItems;

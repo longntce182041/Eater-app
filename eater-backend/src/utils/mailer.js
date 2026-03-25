@@ -248,8 +248,79 @@ Eater Health Team`,
     }
 }
 
+async function sendMealPlanAssignedEmail({ to, userName, assignedByName, mealPlan }) {
+    const transport = getTransporter();
+
+    if (!transport) {
+        console.warn("[Mail] SMTP not configured - meal plan assignment email not sent to", to);
+        return;
+    }
+
+    const planDate = mealPlan?.date ? new Date(mealPlan.date).toLocaleDateString() : "N/A";
+    const days = mealPlan?.days || 1;
+    const targetCalories = mealPlan?.targetCalories ?? "N/A";
+    const healthGoal = mealPlan?.healthGoal || "Maintain Weight";
+    const dietTypes = Array.isArray(mealPlan?.dietTypes) && mealPlan.dietTypes.length > 0
+        ? mealPlan.dietTypes.join(", ")
+        : "N/A";
+
+    const mail = {
+        from: mailConfig.from,
+        to,
+        subject: "New Meal Plan Assigned",
+        text: `Hello ${userName},
+
+${assignedByName} has assigned a new personalized meal plan for you.
+
+Meal Plan Summary:
+- Start date: ${planDate}
+- Duration: ${days} day(s)
+- Target calories: ${targetCalories}
+- Health goal: ${healthGoal}
+- Diet types: ${dietTypes}
+
+Please open the Eater app to review your detailed meal schedule.
+
+Best regards,
+Eater Health Team`,
+        html: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+    <h2 style="color: #2c3e50; margin-bottom: 20px;">New Meal Plan Assigned</h2>
+    <p style="color: #555; font-size: 16px;">Hello <strong>${userName}</strong>,</p>
+    <p style="color: #555; font-size: 16px;"><strong>${assignedByName}</strong> has assigned a new personalized meal plan for you.</p>
+
+    <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #27ae60; margin: 20px 0;">
+        <p style="margin: 0 0 8px 0;"><strong>Start date:</strong> ${planDate}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Duration:</strong> ${days} day(s)</p>
+        <p style="margin: 0 0 8px 0;"><strong>Target calories:</strong> ${targetCalories}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Health goal:</strong> ${healthGoal}</p>
+        <p style="margin: 0;"><strong>Diet types:</strong> ${dietTypes}</p>
+    </div>
+
+    <p style="margin-top: 30px; color: #555; font-size: 14px;">
+        <a href="http://localhost:5173" style="background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            View Meal Plan in Eater App
+        </a>
+    </p>
+
+    <p style="margin-top: 30px; color: #999; font-size: 12px; border-top: 1px solid #e0e0e0; padding-top: 15px;">
+        Best regards,<br>
+        <strong>Eater Health Team</strong>
+    </p>
+</div>
+        `,
+    };
+
+    try {
+        await transport.sendMail(mail);
+    } catch (error) {
+        console.error("[Mail] Failed to send meal plan assignment email:", error.message);
+    }
+}
+
 module.exports = {
     sendPasswordResetEmail,
     sendConsultationEmail,
     sendNutritionReportEmail,
+    sendMealPlanAssignedEmail,
 };

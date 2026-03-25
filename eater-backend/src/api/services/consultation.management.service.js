@@ -6,7 +6,7 @@ const Consultation = require("../../models/Consultation");
 const User = require("../../models/User");
 const { User_Profile } = require("../../models/User_Profile");
 const { ChatMessage } = require("../../models/chat_message");
-const { sendConsultationEmail, sendNutritionReportEmail } = require("../../utils/mailer");
+const { sendConsultationEmail, sendNutritionReportEmail, sendMealPlanAssignedEmail } = require("../../utils/mailer");
 const { getRoomId } = require("../sockets/chat.socket");
 
 class ConsultationManagementService {
@@ -104,6 +104,43 @@ class ConsultationManagementService {
         }
     }
 
+    // Hàm phụ: Gửi thông báo gán meal plan qua chat + email
+    async sendMealPlanAssignmentNotification(io, assignedByUserId, userId, mealPlan, assignedByName, userName, userEmail) {
+        try {
+            const roomId = getRoomId(assignedByUserId, userId);
+            const messageContent = `New meal plan assigned by ${assignedByName}\n\nSummary:\n- Start date: ${new Date(mealPlan.date).toLocaleDateString()}\n- Duration: ${mealPlan.days} day(s)\n- Target calories: ${mealPlan.targetCalories ?? "N/A"}\n- Health goal: ${mealPlan.healthGoal || "Maintain Weight"}\n\nPlease open the app to view your detailed meal plan.`;
+
+            const chatMsg = await ChatMessage.create({
+                roomId: roomId,
+                senderId: assignedByUserId,
+                senderRole: "nutritionist",
+                content: messageContent,
+            });
+
+            if (io) {
+                io.to(roomId).emit("receive_message", {
+                    id: chatMsg._id,
+                    senderId: chatMsg.senderId,
+                    senderRole: chatMsg.senderRole,
+                    content: chatMsg.content,
+                    createdAt: chatMsg.createdAt,
+                });
+            }
+
+            if (userEmail) {
+                await sendMealPlanAssignedEmail({
+                    to: userEmail,
+                    userName,
+                    assignedByName,
+                    mealPlan,
+                });
+            }
+        } catch (error) {
+            console.error("Error sending meal plan assignment notification:", error);
+            // Không throw error - chỉ log để không làm hỏng luồng tạo meal plan
+        }
+    }
+
     // 1. Chẩn đoán & Gửi khuyến nghị
     async createDiagnosisAndRecommendation(authUserId, data, io) {
         const nutri = await this.getNutritionistProfile(authUserId);
@@ -140,14 +177,24 @@ class ConsultationManagementService {
     }
 
     // 2. Tạo & Gán Thực Đơn cá nhân hóa (cho 1 ngày hoặc 7 ngày)
-    async createAndAssignMealPlan(authUserId, data) {
+    async createAndAssignMealPlan(authUserId, data, io) {
         // Allow both nutritionist and admin
         let nutritionistId = null;
+        let assignedByName = "Your nutritionist";
         const nutri = await Nutritionist.findOne({ userId: authUserId });
         if (nutri) {
             if (!nutri.verified) throw new Error("Account not verified by Admin yet.");
             nutritionistId = nutri._id;
+            assignedByName = nutri.fullName || assignedByName;
         }
+
+        const assignedByUser = await User.findById(authUserId).select("email");
+        if (!assignedByName || assignedByName === "Your nutritionist") {
+            assignedByName = assignedByUser?.email?.split("@")[0] || "Your nutritionist";
+        }
+
+        const patient = await User.findById(data.userId).select("email");
+        if (!patient) throw new Error("Patient not found");
 
         const newMealPlan = new MealPlan({
             userId: data.userId, 
@@ -200,6 +247,16 @@ class ConsultationManagementService {
                 await MealPlanItem.insertMany(mealPlanItems);
             }
         }
+
+        await this.sendMealPlanAssignmentNotification(
+            io,
+            authUserId,
+            data.userId,
+            savedMealPlan,
+            assignedByName,
+            patient.email?.split("@")[0] || "User",
+            patient.email
+        );
 
         return {
             mealPlan: savedMealPlan,

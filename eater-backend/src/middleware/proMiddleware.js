@@ -18,6 +18,11 @@ async function loadProStatus(req, res, next) {
 
 async function requirePro(req, res, next) {
   try {
+    const role = req.user?.role;
+    if (role === "admin" || role === "nutritionist") {
+      return next();
+    }
+
     if (!req.proStatus) {
       const userId = req.user?.id || req.user?.sub || req.user?.userId;
       if (!userId) {

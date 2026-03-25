@@ -54,10 +54,20 @@ const AdminLayout = () => {
       path: "/backups",
       icon: <CloudUpload size={20} />,
     },
+    {
+      name: "Consultations",
+      path: "/consultations",
+      icon: <Stethoscope size={20} />,
+    },
   ];
 
   const nutritionistMenuItems = [
     { name: "Live Chat", path: "/chat", icon: <MessageCircle size={20} /> },
+    {
+      name: "Consultations",
+      path: "/consultations",
+      icon: <Stethoscope size={20} />,
+    },
   ];
 
   const menuItems = isNutritionist ? nutritionistMenuItems : adminMenuItems;

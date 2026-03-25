@@ -57,8 +57,10 @@ class ProUpgradePage extends ConsumerWidget {
               const SizedBox(height: 12),
               _currentBenefitsCard(state),
             ],
-            const SizedBox(height: 16),
-            _planSelector(ref, state),
+            if (state.status?.isPro != true) ...[
+              const SizedBox(height: 16),
+              _planSelector(ref, state),
+            ],
             if (state.error != null) ...[
               const SizedBox(height: 12),
               _errorCard(state.error!),

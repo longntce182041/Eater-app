@@ -20,6 +20,7 @@ const mealPlanOptimizationRoutes = require("./meal.plan.optimization.routes");
 const groceryRoutes = require("./grocery.routes");
 const reminderRoutes = require("./reminder.routes");
 const chatRoutes = require("./chat.routes");
+const paymentRoutes = require("./payment.routes");
 
 const router = express.Router();
 router.use("/auth/user", authUserRoutes);
@@ -41,5 +42,6 @@ router.use("/meal-plans", mealPlanOptimizationRoutes);
 router.use("/groceries", groceryRoutes);
 router.use("/reminders", reminderRoutes);
 router.use("/chat", chatRoutes);
+router.use("/payments", paymentRoutes);
 
 module.exports = router;

@@ -69,7 +69,9 @@ async function getContacts(req, res, next) {
     const userIds = [];
     for (const roomId of rooms) {
       const parts = roomId.split("_");
-      const otherUserId = parts.find((p) => p !== nutritionistUserId.toString());
+      const otherUserId = parts.find(
+        (p) => p !== nutritionistUserId.toString(),
+      );
       if (otherUserId && !userIds.includes(otherUserId)) {
         userIds.push(otherUserId);
       }
@@ -80,7 +82,7 @@ async function getContacts(req, res, next) {
       userIds.map(async (uid) => {
         const user = await User.findById(uid).select("email _id");
         return user ? { id: user._id, email: user.email } : null;
-      })
+      }),
     );
 
     return res.json({
@@ -99,7 +101,7 @@ async function getContacts(req, res, next) {
 async function getNutritionists(req, res, next) {
   try {
     const nutritionists = await Nutritionist.find({ verified: true }).select(
-      "fullName specialization experience userId"
+      "fullName specialization experience userId",
     );
 
     const data = await Promise.all(
@@ -112,7 +114,7 @@ async function getNutritionists(req, res, next) {
           experience: n.experience,
           email: user?.email ?? null,
         };
-      })
+      }),
     );
 
     return res.json({ success: true, data });
@@ -163,4 +165,9 @@ async function getNutritionistChatHistory(req, res, next) {
   }
 }
 
-module.exports = { getChatHistory, getContacts, getNutritionistChatHistory, getNutritionists };
+module.exports = {
+  getChatHistory,
+  getContacts,
+  getNutritionistChatHistory,
+  getNutritionists,
+};

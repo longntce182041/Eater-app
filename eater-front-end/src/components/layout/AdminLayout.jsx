@@ -8,7 +8,7 @@ import {
   LogOut,
   CloudUpload,
   BookOpen,
-  MessageSquare,
+  MessageCircle,
   UserCheck,
 } from "lucide-react";
 import "./AdminLayout.css";

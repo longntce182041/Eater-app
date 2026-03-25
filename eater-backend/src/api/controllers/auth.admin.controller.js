@@ -22,13 +22,18 @@ class AuthAdminController {
         message: "Admin login successfully",
         data: result,
       });
-
     } catch (error) {
       // Xử lý lỗi từ Service trả về
       let statusCode = 500;
-      if (error.message === "User not found" || error.message === "Invalid credentials") {
+      if (
+        error.message === "User not found" ||
+        error.message === "Invalid credentials"
+      ) {
         statusCode = 401; // Unauthorized
-      } else if (error.message.includes("Access denied")) {
+      } else if (
+        error.message.includes("Access denied") ||
+        error.message === "Account is inactive"
+      ) {
         statusCode = 403; // Forbidden
       }
 

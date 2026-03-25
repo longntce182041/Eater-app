@@ -55,44 +55,28 @@ router.get(
  * @desc    Delete all meal plans for user
  * @access  Private
  */
-router.delete(
-  "/meal-plans",
-  protect,
-  aiController.deleteAllMealPlans,
-);
+router.delete("/meal-plans", protect, aiController.deleteAllMealPlans);
 
 /**
  * @route   GET /api/ai/meal-plans/latest
  * @desc    Get user's latest meal plan with items
  * @access  Private
  */
-router.get(
-  "/meal-plans/latest",
-  protect,
-  aiController.getLatestMealPlan,
-);
+router.get("/meal-plans/latest", protect, aiController.getLatestMealPlan);
 
 /**
  * @route   DELETE /api/ai/meal-plans/latest
  * @desc    Delete user's latest meal plan and items
  * @access  Private
  */
-router.delete(
-  "/meal-plans/latest",
-  protect,
-  aiController.deleteLatestMealPlan,
-);
+router.delete("/meal-plans/latest", protect, aiController.deleteLatestMealPlan);
 
 /**
  * @route   DELETE /api/ai/meal-plans/:id
  * @desc    Delete user's meal plan by id and items
  * @access  Private
  */
-router.delete(
-  "/meal-plans/:id",
-  protect,
-  aiController.deleteMealPlanById,
-);
+router.delete("/meal-plans/:id", protect, aiController.deleteMealPlanById);
 
 /**
  * @route   GET /api/ai/recipes/recommended

@@ -250,7 +250,8 @@ class _ProfileContentState extends ConsumerState<_ProfileContent> {
               borderRadius: BorderRadius.circular(16),
               onTap: () => context.push('/reminders'),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -282,6 +283,55 @@ class _ProfileContentState extends ConsumerState<_ProfileContent> {
                           SizedBox(height: 2),
                           Text(
                             'Set daily meal time notifications',
+                            style: TextStyle(
+                                fontSize: 12, color: Color(0xFF666666)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: Color(0xFF666666)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => context.push('/pro-upgrade'),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8E1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.workspace_premium_outlined,
+                          color: Color(0xFFFFB300), size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Upgrade to Pro',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF2D2D2D),
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Unlock premium meal planning features',
                             style: TextStyle(
                                 fontSize: 12, color: Color(0xFF666666)),
                           ),

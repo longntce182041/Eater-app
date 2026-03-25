@@ -1,10 +1,11 @@
 const User = require("../../models/User"); // Model User bạn đã có
+const UserPro = require("../../models/userPro");
 const bcrypt = require("bcryptjs");
 
 class UserManagementService {
   // 1. Lấy danh sách + Search + Filter
   async getAllUsers(query) {
-    const { keyword, role, isActive, page = 1, limit = 10 } = query;
+    const { keyword, role, isActive, proOnly, page = 1, limit = 10 } = query;
 
     // Tạo bộ lọc
     let filter = {};
@@ -22,6 +23,17 @@ class UserManagementService {
     // Filter theo trạng thái (Active/Inactive)
     if (isActive !== undefined) {
       filter.isActive = isActive === "true";
+    }
+
+    // Chỉ lấy user Pro còn hạn nếu được yêu cầu
+    if (String(proOnly).toLowerCase() === "true") {
+      const now = new Date();
+      const proUsers = await UserPro.find(
+        { isActive: true, endDate: { $gte: now } },
+        { userId: 1 },
+      );
+      const proUserIds = proUsers.map((item) => item.userId);
+      filter._id = { $in: proUserIds };
     }
 
     // Phân trang

@@ -4,6 +4,7 @@ const { Recipe } = require("../../models/Recipe");
 const { Nutritionist } = require("../../models/nutritionist");
 const Consultation = require("../../models/Consultation");
 const User = require("../../models/User");
+const UserPro = require("../../models/userPro");
 const { User_Profile } = require("../../models/User_Profile");
 const { ChatMessage } = require("../../models/chat_message");
 const { sendConsultationEmail, sendNutritionReportEmail, sendMealPlanAssignedEmail } = require("../../utils/mailer");
@@ -17,6 +18,27 @@ class ConsultationManagementService {
         if (!nutri) throw new Error("Nutritionist profile not found. Please update your profile.");
         if (!nutri.verified) throw new Error("Account not verified by Admin yet.");
         return nutri;
+    }
+
+    // Hàm phụ: Chỉ cho phép user Pro còn hạn làm việc với chuyên gia dinh dưỡng
+    async validateProPatient(userId) {
+        const patient = await User.findById(userId).select("email role isActive");
+        if (!patient) throw new Error("Patient not found");
+        if (patient.role !== "user") throw new Error("Only normal users can be assigned to consultations");
+        if (!patient.isActive) throw new Error("Patient account is inactive");
+
+        const now = new Date();
+        const activeProPlan = await UserPro.findOne({
+            userId: patient._id,
+            isActive: true,
+            endDate: { $gte: now }
+        });
+
+        if (!activeProPlan) {
+            throw new Error("This patient is not a Pro user or Pro subscription has expired");
+        }
+
+        return patient;
     }
 
     // Hàm phụ: Gửi notification qua chat + email
@@ -145,9 +167,8 @@ class ConsultationManagementService {
     async createDiagnosisAndRecommendation(authUserId, data, io) {
         const nutri = await this.getNutritionistProfile(authUserId);
         
-        // Lấy thông tin user
-        const user = await User.findById(data.userId).select("email");
-        if (!user) throw new Error("Patient not found");
+        // Lấy thông tin user Pro hợp lệ
+        const user = await this.validateProPatient(data.userId);
         
         // Lấy profile nutritionist
         const nutritionistUser = await User.findById(authUserId).select("_id");
@@ -193,8 +214,7 @@ class ConsultationManagementService {
             assignedByName = assignedByUser?.email?.split("@")[0] || "Your nutritionist";
         }
 
-        const patient = await User.findById(data.userId).select("email");
-        if (!patient) throw new Error("Patient not found");
+        const patient = await this.validateProPatient(data.userId);
 
         const newMealPlan = new MealPlan({
             userId: data.userId, 
@@ -270,8 +290,7 @@ class ConsultationManagementService {
         const nutritionist = await User.findById(authUserId);
         if (!nutritionist) throw new Error("Nutritionist not found");
 
-        const patient = await User.findById(patientId).select("email role isActive");
-        if (!patient) throw new Error("Patient not found");
+        const patient = await this.validateProPatient(patientId);
 
         const profile = await User_Profile.findOne({ userId: patientId });
 

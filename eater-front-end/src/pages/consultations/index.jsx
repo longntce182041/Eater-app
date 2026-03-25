@@ -39,7 +39,7 @@ const ConsultationsPage = () => {
             setLoading(true);
             // Dùng API lấy users, lọc chỉ lấy user thường
             const res = await axiosClient.get('/users', { 
-                params: { role: 'user', keyword: searchTerm, limit: 50 } 
+                params: { role: 'user', proOnly: true, keyword: searchTerm, limit: 50 } 
             });
             if (res.data.success) {
                 setPatients(res.data.data.users);

@@ -6,6 +6,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../pro/data/pro_api_client.dart';
 import '../providers/profile_provider.dart';
 import '../../domain/profile_models.dart';
+import '../../../health_guides/presentation/pages/health_guides_screen.dart';
 
 // Validation constants matching backend
 const validationRules = {
@@ -110,7 +111,9 @@ class ProfilePage extends ConsumerWidget {
       await ref.read(authControllerProvider.notifier).logout();
       if (context.mounted) {
         await Future.delayed(const Duration(milliseconds: 50));
-        context.go('/sign-in');
+        if (context.mounted) {
+          context.go('/sign-in');
+        }
       }
     } catch (e) {
       if (context.mounted) {
@@ -453,6 +456,20 @@ class _ProfileContentState extends ConsumerState<_ProfileContent> {
               hasBadge: !isPro,
             ),
             _buildSettingsTile(
+              icon: Icons.school_outlined,
+              iconColor: const Color(0xFF1976D2),
+              iconBgColor: const Color(0xFFE3F2FD),
+              title: 'Health & Lifestyle Guides',
+              subtitle: 'Learn about fasting, workouts, and healthy habits',
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (context) => const HealthGuidesScreen(),
+                );
+              },
+            ),
+            _buildSettingsTile(
               icon: Icons.workspace_premium_outlined,
               iconColor: const Color(0xFFFFB300),
               iconBgColor: const Color(0xFFFFF8E1),
@@ -490,7 +507,7 @@ class _ProfileContentState extends ConsumerState<_ProfileContent> {
                   onPressed: _handleCancel,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF2D2D2D),
-                    side: const BorderSide(color: Color(0xFFDDD)),
+                    side: const BorderSide(color: Color(0xFFDDDDDD)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

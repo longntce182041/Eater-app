@@ -10,6 +10,7 @@ import '../../data/recipe_ingredients_api.dart';
 import '../../../grocery/domain/grocery_models.dart';
 import '../../../grocery/presentation/providers/grocery_list_provider.dart';
 import '../../../../core/utils/notification_service.dart';
+import '../../../cooking/presentation/pages/cooking_mode_screen.dart';
 
 /// Provider to track which recipes are currently being added to grocery list
 final addingRecipeProvider = StateProvider<Set<String>>((ref) => {});
@@ -1534,13 +1535,24 @@ class _RecipeDetailSheetState extends ConsumerState<_RecipeDetailSheet> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: () {},
+                                onPressed: () {
+                                  // Navigate to cooking mode with recipe ID
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CookingModeScreen(
+                                        recipeId: widget.recipe.id,
+                                        servings: _selectedServings,
+                                      ),
+                                    ),
+                                  );
+                                },
                                 icon: const Icon(
                                   Icons.play_arrow,
                                   color: Colors.black,
                                 ),
                                 label: const Text(
-                                  'Start Cooking',
+                                  'Cooking Steps',
                                   style: TextStyle(color: Colors.black),
                                 ),
                                 style: ElevatedButton.styleFrom(
@@ -1742,10 +1754,6 @@ class _RecipeDetailSheetState extends ConsumerState<_RecipeDetailSheet> {
     final isAdding = addingRecipes.contains(recipe.id);
 
     final ingredients = ingredientsAsync.asData?.value ?? const [];
-    final ingredientIdsOfRecipe = ingredients
-        .map((ingredient) => ingredient.ingredient.id)
-        .where((id) => id.isNotEmpty)
-        .toSet();
 
     // Only check if THIS RECIPE was already added (by recipeId)
     // Don't check other recipes with same ingredients

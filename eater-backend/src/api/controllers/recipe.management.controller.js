@@ -3,6 +3,16 @@ const { validateRecipe } = require("../validators/recipe.management.validators")
 const { getActionMessage } = require("../../utils/actionMessage.util");
 
 class RecipeManagementController {
+    // GET Filter Options
+    async getRecipeFilterOptions(req, res) {
+        try {
+            const options = await recipeService.getRecipeFilterOptions(req.query);
+            res.json({ success: true, data: options });
+        } catch (error) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
     // GET List
     async getRecipes(req, res) {
         try {

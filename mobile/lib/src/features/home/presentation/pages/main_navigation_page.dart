@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/navigation_provider.dart';
 import 'home_page.dart';
 import 'profile_page.dart';
 import 'recipes_page.dart';
@@ -7,33 +9,29 @@ import '../../../meal_plan/presentation/pages/meal_plan_page.dart';
 import '../../../grocery/presentation/pages/groceries_page.dart';
 import '../../../chat/presentation/pages/nutritionist_list_page.dart';
 
-class MainNavigationPage extends StatefulWidget {
+class MainNavigationPage extends ConsumerWidget {
   const MainNavigationPage({super.key});
 
-  @override
-  State<MainNavigationPage> createState() => _MainNavigationPageState();
-}
-
-class _MainNavigationPageState extends State<MainNavigationPage> {
-  int _currentIndex = 0;
-
-  final List<Widget> _pages = [
-    const HomePage(),
-    const MealPlanPage(),
-    const RecipesPage(),
-    const GroceriesPage(),
-    const ProfilePage(),
-    const NutritionistListPage(),
+  static const List<Widget> _pages = [
+    HomePage(),
+    MealPlanPage(),
+    RecipesPage(),
+    GroceriesPage(),
+    ProfilePage(),
+    NutritionistListPage(),
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentIndex = ref.watch(mainNavigationIndexProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
-      body: _pages[_currentIndex],
+      body: _pages[currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        currentIndex: currentIndex,
+        onTap: (index) =>
+            ref.read(mainNavigationIndexProvider.notifier).state = index,
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         selectedItemColor: const Color(0xFFFF9800),

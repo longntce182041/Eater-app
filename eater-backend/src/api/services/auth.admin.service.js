@@ -5,8 +5,12 @@ const { jwtConfig } = require("../../config/jwt");
 
 class AuthAdminService {
   async loginAdmin(email, password) {
+    const normalizedEmail = String(email || "")
+      .trim()
+      .toLowerCase();
+
     // 1. Tìm user theo email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       throw new Error("User not found");
@@ -21,6 +25,10 @@ class AuthAdminService {
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       throw new Error("Invalid credentials");
+    }
+
+    if (!user.isActive) {
+      throw new Error("Account is inactive");
     }
 
     // 4. Tạo JWT Token (Dùng jwtConfig để đồng bộ với middleware xác thực)

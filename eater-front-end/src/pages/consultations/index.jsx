@@ -7,8 +7,10 @@ const ConsultationsPage = () => {
     // --- STATES ---
     const [patients, setPatients] = useState([]);
     const [recipes, setRecipes] = useState([]);
+    const [dietTypes, setDietTypes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [recipesLoading, setRecipesLoading] = useState(false);
+    const [dietTypesLoading, setDietTypesLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
     // --- MODAL STATES ---
@@ -27,7 +29,7 @@ const ConsultationsPage = () => {
         days: 1,
         targetCalories: '',
         healthGoal: 'Maintain Weight',
-        dietTypes: '',
+        dietType: '',
         meals: [{ dayIndex: 0, mealType: 'breakfast', recipeId: '', servings: 1 }]
     });
 
@@ -37,7 +39,7 @@ const ConsultationsPage = () => {
             setLoading(true);
             // Dùng API lấy users, lọc chỉ lấy user thường
             const res = await axiosClient.get('/users', { 
-                params: { role: 'user', keyword: searchTerm, limit: 50 } 
+                params: { role: 'user', proOnly: true, keyword: searchTerm, limit: 50 } 
             });
             if (res.data.success) {
                 setPatients(res.data.data.users);
@@ -63,6 +65,20 @@ const ConsultationsPage = () => {
         }
     };
 
+    const fetchDietTypes = async () => {
+        try {
+            setDietTypesLoading(true);
+            const res = await axiosClient.get('/health/diet-types');
+            const dietTypesData = Array.isArray(res.data) ? res.data : [];
+            setDietTypes(dietTypesData);
+        } catch (error) {
+            toast.error('Failed to load diet types');
+            setDietTypes([]);
+        } finally {
+            setDietTypesLoading(false);
+        }
+    };
+
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchPatients();
@@ -84,11 +100,12 @@ const ConsultationsPage = () => {
             days: 1,
             targetCalories: '',
             healthGoal: 'Maintain Weight',
-            dietTypes: '',
+            dietType: '',
             meals: [{ dayIndex: 0, mealType: 'breakfast', recipeId: '', servings: 1 }]
         });
         setShowMealPlanModal(true);
         fetchRecipes();
+        fetchDietTypes();
     };
 
     const openReport = async (patient) => {
@@ -150,7 +167,7 @@ const ConsultationsPage = () => {
                 days: Number(mealForm.days),
                 targetCalories: Number(mealForm.targetCalories),
                 healthGoal: mealForm.healthGoal,
-                dietTypes: mealForm.dietTypes.split(',').map(d => d.trim()).filter(d => d),
+                dietTypes: mealForm.dietType ? [mealForm.dietType] : [],
                 meals: mealForm.meals.map((meal) => ({
                     dayIndex: Number(meal.dayIndex),
                     mealType: meal.mealType,
@@ -316,8 +333,19 @@ const ConsultationsPage = () => {
                                 </select>
                             </div>
                             <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Diet Types (comma separated)</label>
-                                <input type="text" value={mealForm.dietTypes} onChange={e => setMealForm({...mealForm, dietTypes: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} placeholder="E.g., Keto, Vegan" />
+                                <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Diet Types</label>
+                                <select
+                                    value={mealForm.dietType}
+                                    onChange={e => setMealForm({ ...mealForm, dietType: e.target.value })}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                >
+                                    <option value="">Select diet type (optional)</option>
+                                    {dietTypes.map((dietType) => (
+                                        <option key={dietType._id} value={dietType.name}>{dietType.name}</option>
+                                    ))}
+                                </select>
+                                {dietTypesLoading && <p style={{ fontSize: '12px', color: '#777', marginTop: '6px' }}>Loading diet types...</p>}
+                                {!dietTypesLoading && dietTypes.length === 0 && <p style={{ fontSize: '12px', color: '#dc3545', marginTop: '6px' }}>No diet types found in database.</p>}
                             </div>
 
                             <div style={{ marginBottom: '20px' }}>

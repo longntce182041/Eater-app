@@ -1,14 +1,32 @@
-import apiClient from "./apiClient";
+import axiosClient from "../api/axiosClient";
 
-const BASE_URL = "/nutritionists";
+export const nutritionistsApi = {
+  getNutritionists(params = {}) {
+    return axiosClient.get("/nutritionists", { params });
+  },
 
-export const getMyProfessionalProfile = async () => {
-	const response = await apiClient.get(`${BASE_URL}/profile/me`);
-	return response.data;
+  getNutritionistById(id) {
+    return axiosClient.get(`/nutritionists/${id}`);
+  },
+
+  createNutritionist(data) {
+    return axiosClient.post("/nutritionists/create", data);
+  },
+
+  updateNutritionist(id, data) {
+    return axiosClient.put(`/nutritionists/update/${id}`, data);
+  },
+
+  deleteNutritionist(id) {
+    return axiosClient.delete(`/nutritionists/delete/${id}`);
+  },
+
+  getNutritionistUsers() {
+    return axiosClient.get("/users", {
+      params: {
+        role: "nutritionist",
+        limit: 1000,
+      },
+    });
+  },
 };
-
-export const upsertMyProfessionalProfile = async (payload) => {
-	const response = await apiClient.put(`${BASE_URL}/profile/me`, payload);
-	return response.data;
-};
-

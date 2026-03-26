@@ -1,9 +1,7 @@
 const mongoose = require("mongoose");
 
-const mongoConfig = {
-  uri: process.env.MONGODB_URI,
-  // mongoose 9+ uses sane defaults; explicit options removed
-};
+const mongoConfig = { uri: process.env.MONGODB_URI };
+// mongoose 9+ uses sane defaults; explicit options removed
 
 const connectMongo = async () => {
   try {

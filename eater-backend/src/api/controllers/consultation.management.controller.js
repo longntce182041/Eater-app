@@ -27,10 +27,11 @@ class ConsultationManagementController {
             const { errors, isValid } = validateDietPlan(req.body);
             if (!isValid) return res.status(400).json({ success: false, errors });
 
-            const result = await consultationService.createAndAssignMealPlan(req.user.id, req.body);
+            const io = req.app.io;
+            const result = await consultationService.createAndAssignMealPlan(req.user.id, req.body, io);
             res.status(201).json({ 
                 success: true, 
-                message: "Personalized meal plan assigned successfully!", 
+                message: "Personalized meal plan assigned successfully! Notification sent to patient.", 
                 data: result 
             });
         } catch (error) {

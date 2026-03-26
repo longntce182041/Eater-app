@@ -1747,11 +1747,13 @@ class _RecipeDetailSheetState extends ConsumerState<_RecipeDetailSheet> {
         .where((id) => id.isNotEmpty)
         .toSet();
 
+    // Only check if THIS RECIPE was already added (by recipeId)
+    // Don't check other recipes with same ingredients
     final hasPendingItemsForRecipe = groceryListState.items.any(
       (item) =>
           !item.isPurchased &&
-          ((item.recipeId != null && item.recipeId == recipe.id) ||
-              ingredientIdsOfRecipe.contains(item.ingredientId)),
+          item.recipeId != null &&
+          item.recipeId == recipe.id,
     );
 
     final isDisabled =

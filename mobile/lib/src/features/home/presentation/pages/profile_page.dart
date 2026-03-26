@@ -3,8 +3,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../pro/data/pro_api_client.dart';
 import '../providers/profile_provider.dart';
 import '../../domain/profile_models.dart';
+
+// Validation constants matching backend
+const validationRules = {
+  'nameMax': 50,
+  'phoneMax': 20,
+  'healthGoalsMax': 500,
+  'ageMin': 1,
+  'ageMax': 150,
+  'genders': ['male', 'female', 'other'],
+  'activityLevels': ['sedentary', 'light', 'moderate', 'active', 'very active'],
+  'cookingSkills': ['beginner', 'intermediate', 'advanced'],
+};
+
+final profileProStatusProvider = FutureProvider<ProStatusModel>((ref) async {
+  final api = ref.watch(proApiClientProvider);
+  try {
+    return await api.getStatus();
+  } catch (_) {
+    return const ProStatusModel(isPro: false);
+  }
+});
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -40,7 +62,16 @@ class ProfilePage extends ConsumerWidget {
       ),
       body: state.profile.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Error: $err')),
+        error: (err, _) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Error: $err'),
+            ],
+          ),
+        ),
         data: (data) => _ProfileContent(
           data: data,
           isEditing: state.isEditing,
@@ -53,9 +84,43 @@ class ProfilePage extends ConsumerWidget {
   }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
-    await ref.read(authControllerProvider.notifier).logout();
-    if (context.mounted) {
-      context.go('/sign-in');
+    if (!context.mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(authControllerProvider.notifier).logout();
+      if (context.mounted) {
+        await Future.delayed(const Duration(milliseconds: 50));
+        context.go('/sign-in');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }
@@ -77,294 +142,366 @@ class _ProfileContent extends ConsumerStatefulWidget {
 
 class _ProfileContentState extends ConsumerState<_ProfileContent> {
   final _formKey = GlobalKey<FormState>();
+  late TextEditingController _firstNameCtrl;
+  late TextEditingController _lastNameCtrl;
+  late TextEditingController _phoneCtrl;
+  late TextEditingController _ageCtrl;
+  late TextEditingController _heightCtrl;
+  late TextEditingController _weightCtrl;
+  late TextEditingController _goalWeightCtrl;
+  late TextEditingController _healthGoalsCtrl;
+  late TextEditingController _allergiesCtrl;
+  late TextEditingController _dislikesCtrl;
+  late TextEditingController _cookingTimeCtrl;
+  late TextEditingController _calorieTargetCtrl;
 
-  late String? firstName = widget.data.profile.firstName ?? '';
-  late String? lastName = widget.data.profile.lastName ?? '';
-  late String? phoneNumber = widget.data.profile.phoneNumber ?? '';
-  late int age = widget.data.profile.age;
-  late String gender = widget.data.profile.gender;
-  late double height = widget.data.profile.height;
-  late double weight = widget.data.profile.weight;
-  late double? goalWeight = widget.data.profile.goalWeight;
-  late String? healthGoals = widget.data.profile.healthGoals ?? '';
+  late String gender;
+  late String activityLevel;
+  late String cookingSkillLevel;
+  late String? dietTypeId;
 
-  late String? dietTypeId = widget.data.dietary?.dietType?.id;
-  late String activityLevel = widget.data.dietary?.activityLevel ?? 'sedentary';
-  late String cookingSkillLevel =
-      widget.data.dietary?.cookingSkillLevel ?? 'beginner';
-  late int availableCookingTime =
-      widget.data.dietary?.availableCookingTime ?? 30;
-  late int dailyCalorieTarget = widget.data.dietary?.dailyCalorieTarget ?? 2000;
-  late String allergiesText = (widget.data.dietary?.allergies ?? []).join(', ');
-  late String dislikesText =
-      (widget.data.dietary?.dislikesIngredients ?? []).join(', ');
+  @override
+  void initState() {
+    super.initState();
+    _initializeControllers();
+  }
+
+  void _initializeControllers() {
+    final profile = widget.data.profile;
+    final dietary = widget.data.dietary;
+
+    _firstNameCtrl = TextEditingController(text: profile.firstName ?? '');
+    _lastNameCtrl = TextEditingController(text: profile.lastName ?? '');
+    _phoneCtrl = TextEditingController(text: profile.phoneNumber ?? '');
+    _ageCtrl = TextEditingController(text: profile.age.toString());
+    _heightCtrl = TextEditingController(text: profile.height.toString());
+    _weightCtrl = TextEditingController(text: profile.weight.toString());
+    _goalWeightCtrl =
+        TextEditingController(text: profile.goalWeight?.toString() ?? '');
+    _healthGoalsCtrl = TextEditingController(text: profile.healthGoals ?? '');
+    _allergiesCtrl =
+        TextEditingController(text: (dietary?.allergies ?? []).join(', '));
+    _dislikesCtrl = TextEditingController(
+        text: (dietary?.dislikesIngredients ?? []).join(', '));
+    _cookingTimeCtrl = TextEditingController(
+        text: (dietary?.availableCookingTime ?? 30).toString());
+    _calorieTargetCtrl = TextEditingController(
+        text: (dietary?.dailyCalorieTarget ?? 2000).toString());
+
+    gender = profile.gender;
+    activityLevel = dietary?.activityLevel ?? 'sedentary';
+    cookingSkillLevel = dietary?.cookingSkillLevel ?? 'beginner';
+    dietTypeId = dietary?.dietType?.id;
+  }
+
+  @override
+  void dispose() {
+    _firstNameCtrl.dispose();
+    _lastNameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _ageCtrl.dispose();
+    _heightCtrl.dispose();
+    _weightCtrl.dispose();
+    _goalWeightCtrl.dispose();
+    _healthGoalsCtrl.dispose();
+    _allergiesCtrl.dispose();
+    _dislikesCtrl.dispose();
+    _cookingTimeCtrl.dispose();
+    _calorieTargetCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.isEditing;
+    final proStatusAsync = ref.watch(profileProStatusProvider);
+    final isPro = proStatusAsync.asData?.value.isPro == true;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Basic Profile',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D2D2D),
-              ),
-            ),
-            const SizedBox(height: 16),
-            _textField(
+            // Basic Profile Section
+            _buildSectionHeader('Basic Information'),
+            _buildTextField(
               'First Name',
-              firstName ?? '',
+              _firstNameCtrl,
               enabled: isEditing,
-              onChanged: (v) => setState(() => firstName = v),
+              validator: (val) {
+                if (val != null && val.length > 50) {
+                  return 'First name max 50 characters';
+                }
+                return null;
+              },
             ),
-            _textField(
+            _buildTextField(
               'Last Name',
-              lastName ?? '',
+              _lastNameCtrl,
               enabled: isEditing,
-              onChanged: (v) => setState(() => lastName = v),
+              validator: (val) {
+                if (val != null && val.length > 50) {
+                  return 'Last name max 50 characters';
+                }
+                return null;
+              },
             ),
-            _textField(
+            _buildTextField(
               'Phone Number',
-              phoneNumber ?? '',
+              _phoneCtrl,
               enabled: isEditing,
-              onChanged: (v) => setState(() => phoneNumber = v),
-            ),
-            _numberField(
-              'Age',
-              age.toString(),
-              enabled: isEditing,
-              onChanged: (v) => setState(() => age = int.tryParse(v) ?? age),
-            ),
-            _dropdownField(
-              'Gender',
-              gender,
-              ['male', 'female', 'other'],
-              enabled: isEditing,
-              onChanged: (v) => setState(() => gender = v!),
-            ),
-            _numberField(
-              'Height (cm)',
-              height.toString(),
-              enabled: isEditing,
-              onChanged: (v) =>
-                  setState(() => height = double.tryParse(v) ?? height),
-            ),
-            _numberField(
-              'Weight (kg)',
-              weight.toString(),
-              enabled: isEditing,
-              onChanged: (v) =>
-                  setState(() => weight = double.tryParse(v) ?? weight),
-            ),
-            _numberField(
-              'Goal Weight (kg)',
-              (goalWeight ?? '').toString(),
-              enabled: isEditing,
-              onChanged: (v) => setState(() => goalWeight = double.tryParse(v)),
-            ),
-            _textField(
-              'Health Goals',
-              healthGoals ?? '',
-              enabled: isEditing,
-              onChanged: (v) => setState(() => healthGoals = v),
+              validator: (val) {
+                if (val != null && val.isNotEmpty) {
+                  if (!RegExp(r'^[0-9+\-()\s]*$').hasMatch(val)) {
+                    return 'Invalid phone format';
+                  }
+                  if (val.length > 20) {
+                    return 'Phone max 20 characters';
+                  }
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 24),
+
+            // Health Information Section
+            _buildSectionHeader('Health Information'),
+            _buildTextField(
+              'Age *',
+              _ageCtrl,
+              enabled: isEditing,
+              keyboardType: TextInputType.number,
+              validator: (val) {
+                if (val == null || val.isEmpty) {
+                  return 'Age is required';
+                }
+                final age = int.tryParse(val);
+                if (age == null) {
+                  return 'Age must be a number';
+                }
+                if (age < 1 || age > 150) {
+                  return 'Age must be between 1 and 150';
+                }
+                return null;
+              },
+            ),
+            _buildDropdownField(
+              'Gender *',
+              gender,
+              validationRules['genders'] as List<String>,
+              enabled: isEditing,
+              onChanged: (val) => setState(() => gender = val!),
+            ),
+            _buildTextField(
+              'Height (cm) *',
+              _heightCtrl,
+              enabled: isEditing,
+              keyboardType: TextInputType.number,
+              validator: (val) {
+                if (val == null || val.isEmpty) {
+                  return 'Height is required';
+                }
+                final height = double.tryParse(val);
+                if (height == null || height <= 0) {
+                  return 'Height must be greater than 0';
+                }
+                return null;
+              },
+            ),
+            _buildTextField(
+              'Weight (kg) *',
+              _weightCtrl,
+              enabled: isEditing,
+              keyboardType: TextInputType.number,
+              validator: (val) {
+                if (val == null || val.isEmpty) {
+                  return 'Weight is required';
+                }
+                final weight = double.tryParse(val);
+                if (weight == null || weight <= 0) {
+                  return 'Weight must be greater than 0';
+                }
+                return null;
+              },
+            ),
+            _buildTextField(
+              'Goal Weight (kg)',
+              _goalWeightCtrl,
+              enabled: isEditing,
+              keyboardType: TextInputType.number,
+              validator: (val) {
+                if (val != null && val.isNotEmpty) {
+                  final weight = double.tryParse(val);
+                  if (weight == null || weight <= 0) {
+                    return 'Goal weight must be greater than 0';
+                  }
+                }
+                return null;
+              },
+            ),
+            _buildTextField(
+              'Health Goals',
+              _healthGoalsCtrl,
+              enabled: isEditing,
+              maxLines: 3,
+              validator: (val) {
+                if (val != null && val.length > 500) {
+                  return 'Health goals max 500 characters';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 24),
+
+            // Health Metrics Section
             if (widget.data.healthMetrics != null)
               _HealthMetricsSection(metrics: widget.data.healthMetrics!),
             const SizedBox(height: 24),
-            const Text(
-              'Dietary References',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D2D2D),
-              ),
-            ),
-            const SizedBox(height: 16),
-            _DietTypeDropdown(
-              value: dietTypeId,
-              enabled: widget.isEditing,
-              onChanged: (v) => setState(() => dietTypeId = v),
-              ref: ref,
-            ),
-            _dropdownField(
-              'Activity Level',
-              activityLevel,
-              ['sedentary', 'light', 'moderate', 'active', 'very active'],
-              enabled: isEditing,
-              onChanged: (v) => setState(() => activityLevel = v!),
-            ),
-            _dropdownField(
-              'Cooking Skill',
-              cookingSkillLevel,
-              ['beginner', 'intermediate', 'advanced'],
-              enabled: isEditing,
-              onChanged: (v) => setState(() => cookingSkillLevel = v!),
-            ),
-            _numberField(
-              'Available Cooking Time (min)',
-              availableCookingTime.toString(),
-              enabled: isEditing,
-              onChanged: (v) => availableCookingTime =
-                  int.tryParse(v) ?? availableCookingTime,
-            ),
-            _numberField(
-              'Daily Calorie Target (kcal)',
-              dailyCalorieTarget.toString(),
-              enabled: isEditing,
-              onChanged: (v) =>
-                  dailyCalorieTarget = int.tryParse(v) ?? dailyCalorieTarget,
-            ),
-            _textField(
+
+            // Dietary Preferences Section
+            _buildSectionHeader('Dietary Preferences'),
+            _buildTextField(
               'Allergies (comma-separated)',
-              allergiesText,
+              _allergiesCtrl,
               enabled: isEditing,
-              onChanged: (v) => setState(() => allergiesText = v),
+              maxLines: 2,
             ),
-            _textField(
+            _buildTextField(
               'Dislikes (comma-separated)',
-              dislikesText,
+              _dislikesCtrl,
               enabled: isEditing,
-              onChanged: (v) => setState(() => dislikesText = v),
+              maxLines: 2,
             ),
             const SizedBox(height: 24),
 
-            // Settings section
-            const Text(
-              'Settings',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D2D2D),
-              ),
+            // Activity & Cooking Section
+            _buildSectionHeader('Activity & Cooking'),
+            _buildDropdownField(
+              'Activity Level *',
+              activityLevel,
+              validationRules['activityLevels'] as List<String>,
+              enabled: isEditing,
+              onChanged: (val) => setState(() => activityLevel = val!),
             ),
-            const SizedBox(height: 12),
-            InkWell(
-              borderRadius: BorderRadius.circular(16),
+            _buildDropdownField(
+              'Cooking Skill *',
+              cookingSkillLevel,
+              validationRules['cookingSkills'] as List<String>,
+              enabled: isEditing,
+              onChanged: (val) => setState(() => cookingSkillLevel = val!),
+            ),
+            _buildTextField(
+              'Available Cooking Time (minutes)',
+              _cookingTimeCtrl,
+              enabled: isEditing,
+              keyboardType: TextInputType.number,
+              validator: (val) {
+                if (val != null && val.isNotEmpty) {
+                  final time = int.tryParse(val);
+                  if (time == null || time < 0) {
+                    return 'Cooking time must be 0 or greater';
+                  }
+                }
+                return null;
+              },
+            ),
+            _buildTextField(
+              'Daily Calorie Target',
+              _calorieTargetCtrl,
+              enabled: isEditing,
+              keyboardType: TextInputType.number,
+              validator: (val) {
+                if (val != null && val.isNotEmpty) {
+                  final cal = int.tryParse(val);
+                  if (cal == null || cal < 0) {
+                    return 'Calorie target must be 0 or greater';
+                  }
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 24),
+
+            // Settings Section
+            _buildSectionHeader('Settings'),
+            _buildSettingsTile(
+              icon: Icons.alarm_outlined,
+              iconColor: const Color(0xFFFF9800),
+              iconBgColor: const Color(0xFFFFF3E0),
+              title: 'Meal Reminders',
+              subtitle: 'Set daily meal time notifications',
               onTap: () => context.push('/reminders'),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3E0),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.alarm_outlined,
-                          color: Color(0xFFFF9800), size: 22),
-                    ),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Meal Reminders',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF2D2D2D),
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Set daily meal time notifications',
-                            style: TextStyle(
-                                fontSize: 12, color: Color(0xFF666666)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right, color: Color(0xFF666666)),
-                  ],
-                ),
-              ),
             ),
-            const SizedBox(height: 12),
-            InkWell(
-              borderRadius: BorderRadius.circular(16),
+            _buildSettingsTile(
+              icon:
+                  isPro ? Icons.medical_services_outlined : Icons.lock_outline,
+              iconColor: const Color(0xFF2E7D32),
+              iconBgColor: const Color(0xFFE8F5E9),
+              title: 'Nutritionist Consultation',
+              subtitle: isPro
+                  ? 'Consult with verified nutritionists'
+                  : 'Pro required - tap to upgrade',
+              onTap: () {
+                if (!isPro) {
+                  context.push('/pro-upgrade');
+                } else {
+                  context.push('/nutritionists');
+                }
+              },
+              hasBadge: !isPro,
+            ),
+            _buildSettingsTile(
+              icon: Icons.workspace_premium_outlined,
+              iconColor: const Color(0xFFFFB300),
+              iconBgColor: const Color(0xFFFFF8E1),
+              title: 'Upgrade to Pro',
+              subtitle: 'Unlock premium meal planning features',
               onTap: () => context.push('/pro-upgrade'),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8E1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.workspace_premium_outlined,
-                          color: Color(0xFFFFB300), size: 22),
-                    ),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Upgrade to Pro',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF2D2D2D),
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Unlock premium meal planning features',
-                            style: TextStyle(
-                                fontSize: 12, color: Color(0xFF666666)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right, color: Color(0xFF666666)),
-                  ],
-                ),
-              ),
             ),
             const SizedBox(height: 24),
 
-            if (isEditing)
+            // Action Buttons
+            if (isEditing) ...[
               SizedBox(
                 width: double.infinity,
-                height: 56,
+                height: 48,
                 child: ElevatedButton(
-                  onPressed: _onSave,
+                  onPressed: _handleSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF9800),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 4,
                   ),
                   child: const Text(
                     'Save Changes',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: _handleCancel,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2D2D2D),
+                    side: const BorderSide(color: Color(0xFFDDD)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
           ],
         ),
@@ -372,114 +509,74 @@ class _ProfileContentState extends ConsumerState<_ProfileContent> {
     );
   }
 
-  void _onSave() {
-    if (!_formKey.currentState!.validate()) return;
-    final allergies = allergiesText
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-    final dislikes = dislikesText
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    final updates = <String, dynamic>{
-      'firstName': firstName?.isNotEmpty == true ? firstName : '',
-      'lastName': lastName?.isNotEmpty == true ? lastName : '',
-      'phoneNumber': phoneNumber?.isNotEmpty == true ? phoneNumber : '',
-      'age': age,
-      'gender': gender,
-      'height': height,
-      'weight': weight,
-      'goal_weight': goalWeight,
-      'healthGoals': healthGoals?.isNotEmpty == true ? healthGoals : '',
-      if (dietTypeId != null && dietTypeId!.isNotEmpty)
-        'diet_typeId': dietTypeId,
-      'activityLevel': activityLevel,
-      'cookingSkillLevel': cookingSkillLevel,
-      'available_cooking_time': availableCookingTime,
-      'daily_calorie_target': dailyCalorieTarget,
-      'allergies': allergies,
-      'dislikesIngredients': dislikes,
-    };
-
-    widget.onSave(updates);
-  }
-
-  Widget _textField(
-    String label,
-    String initial, {
-    required bool enabled,
-    required ValueChanged<String> onChanged,
-  }) {
+  Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextFormField(
-        initialValue: initial,
-        enabled: enabled,
-        style: const TextStyle(color: Color(0xFF000000)),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Color(0xFF000000)),
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.transparent),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.transparent),
-          ),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.transparent),
-          ),
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF2D2D2D),
         ),
-        onChanged: onChanged,
       ),
     );
   }
 
-  Widget _numberField(
+  Widget _buildTextField(
     String label,
-    String initial, {
+    TextEditingController controller, {
     required bool enabled,
-    required ValueChanged<String> onChanged,
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+    String? Function(String?)? validator,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
-        initialValue: initial,
+        controller: controller,
         enabled: enabled,
-        keyboardType: TextInputType.number,
-        style: const TextStyle(color: Color(0xFF000000)),
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        validator: validator,
+        style: const TextStyle(color: Color(0xFF000000), fontSize: 14),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Color(0xFF000000)),
+          labelStyle: const TextStyle(color: Color(0xFF666666), fontSize: 12),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: enabled ? Colors.white : const Color(0xFFF5F5F5),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.transparent),
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.transparent),
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFF2D2D2D), width: 2),
           ),
           disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.transparent),
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
           ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         ),
-        onChanged: onChanged,
       ),
     );
   }
 
-  Widget _dropdownField(
+  Widget _buildDropdownField(
     String label,
     String value,
     List<String> options, {
@@ -487,50 +584,176 @@ class _ProfileContentState extends ConsumerState<_ProfileContent> {
     required ValueChanged<String?> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: label,
-            labelStyle: const TextStyle(color: Color(0xFF000000)),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.transparent),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.transparent),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.transparent),
-            ),
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+          filled: true,
+          fillColor: enabled ? Colors.white : const Color(0xFFF5F5F5),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              isExpanded: true,
-              style: const TextStyle(color: Color(0xFF000000)),
-              items: options
-                  .map(
-                    (e) => DropdownMenuItem(
-                      value: e,
-                      child: Text(
-                        e,
-                        style: const TextStyle(color: Color(0xFF000000)),
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: enabled ? onChanged : null,
-            ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: value,
+            isExpanded: true,
+            style: const TextStyle(color: Color(0xFF000000), fontSize: 14),
+            items: options
+                .map(
+                  (e) => DropdownMenuItem(
+                    value: e,
+                    child: Text(e),
+                  ),
+                )
+                .toList(),
+            onChanged: enabled ? onChanged : null,
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildSettingsTile({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool hasBadge = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2D2D2D),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (hasBadge)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'PRO',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                )
+              else
+                const Icon(Icons.chevron_right, color: Color(0xFF999999)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleSave() {
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fix the errors above'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final allergies = _allergiesCtrl.text
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    final dislikes = _dislikesCtrl.text
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    final updates = <String, dynamic>{
+      'firstName': _firstNameCtrl.text.trim(),
+      'lastName': _lastNameCtrl.text.trim(),
+      'phoneNumber': _phoneCtrl.text.trim(),
+      'age': int.parse(_ageCtrl.text),
+      'gender': gender,
+      'height': double.parse(_heightCtrl.text),
+      'weight': double.parse(_weightCtrl.text),
+      if (_goalWeightCtrl.text.isNotEmpty)
+        'goalWeight': double.parse(_goalWeightCtrl.text),
+      'healthGoals': _healthGoalsCtrl.text.trim(),
+      'activityLevel': activityLevel,
+      'cookingSkillLevel': cookingSkillLevel,
+      'availableCookingTime': int.parse(_cookingTimeCtrl.text),
+      'dailyCalorieTarget': int.parse(_calorieTargetCtrl.text),
+      if (allergies.isNotEmpty) 'allergies': allergies,
+      if (dislikes.isNotEmpty) 'dislikesIngredients': dislikes,
+    };
+
+    widget.onSave(updates);
+  }
+
+  void _handleCancel() {
+    _initializeControllers();
+    ref.read(profileNotifierProvider.notifier).toggleEdit(false);
   }
 }
 
@@ -547,30 +770,28 @@ class _HealthMetricsSection extends StatelessWidget {
         const Text(
           'Health Metrics',
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
             color: Color(0xFF2D2D2D),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
             color: const Color(0xFFFFF8F0),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: const Color(0xFFFFE0CC), width: 1),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _MetricRow('BMI', metrics.bmi.toStringAsFixed(1), 'kg/m²'),
-              const SizedBox(height: 12),
+              const Divider(height: 16),
               _MetricRow('BMR', metrics.bmr.toStringAsFixed(0), 'kcal/day'),
-              const SizedBox(height: 12),
+              const Divider(height: 16),
               _MetricRow('TDEE', metrics.tdee.toStringAsFixed(0), 'kcal/day'),
-              const SizedBox(height: 12),
+              const Divider(height: 16),
               _MetricRow('Body Category', metrics.bodyCategory, ''),
-              const SizedBox(height: 12),
             ],
           ),
         ),
@@ -594,7 +815,7 @@ class _MetricRow extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w500,
             color: Color(0xFF666666),
           ),
@@ -604,7 +825,7 @@ class _MetricRow extends StatelessWidget {
             Text(
               value,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF2D2D2D),
               ),
@@ -613,131 +834,15 @@ class _MetricRow extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 unit,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF999999)),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFF999999),
+                ),
               ),
             ],
           ],
         ),
       ],
-    );
-  }
-}
-
-class _DietTypeDropdown extends ConsumerWidget {
-  final String? value;
-  final bool enabled;
-  final ValueChanged<String?> onChanged;
-  final WidgetRef ref;
-
-  const _DietTypeDropdown({
-    required this.value,
-    required this.enabled,
-    required this.onChanged,
-    required this.ref,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dietTypesAsync = ref.watch(dietTypesProvider);
-
-    return dietTypesAsync.when(
-      loading: () => _buildDropdownField(
-        'Diet Type',
-        value,
-        [],
-        enabled: false,
-        onChanged: onChanged,
-      ),
-      error: (err, _) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Text(
-            'Error loading diet types: $err',
-            style: const TextStyle(color: Colors.red),
-          ),
-        ),
-      ),
-      data: (dietTypes) => _buildDropdownField(
-        'Diet Type',
-        value,
-        dietTypes.map((dt) => dt.id).toList(),
-        enabled: enabled,
-        onChanged: onChanged,
-        dietTypeLabels: {for (var dt in dietTypes) dt.id: dt.name},
-      ),
-    );
-  }
-
-  Widget _buildDropdownField(
-    String label,
-    String? value,
-    List<String> options, {
-    required bool enabled,
-    required ValueChanged<String?> onChanged,
-    Map<String, String>? dietTypeLabels,
-  }) {
-    // Validate that value exists in options, otherwise use null
-    final validValue =
-        (value?.isNotEmpty ?? false) && options.contains(value) ? value : null;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: label,
-            labelStyle: const TextStyle(color: Color(0xFF000000)),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.transparent),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.transparent),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.transparent),
-            ),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String?>(
-              value: validValue,
-              isExpanded: true,
-              style: const TextStyle(color: Color(0xFF000000)),
-              items: [
-                const DropdownMenuItem<String?>(
-                  value: null,
-                  child: Text(
-                    'Select Diet Type',
-                    style: TextStyle(color: Color(0xFF000000)),
-                  ),
-                ),
-                ...options.map((id) {
-                  final label = dietTypeLabels?[id] ?? id;
-                  return DropdownMenuItem<String?>(
-                    value: id,
-                    child: Text(
-                      label,
-                      style: const TextStyle(color: Color(0xFF000000)),
-                    ),
-                  );
-                }),
-              ],
-              onChanged: enabled ? onChanged : null,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -7,7 +7,6 @@ import 'profile_page.dart';
 import 'recipes_page.dart';
 import '../../../meal_plan/presentation/pages/meal_plan_page.dart';
 import '../../../grocery/presentation/pages/groceries_page.dart';
-import '../../../chat/presentation/pages/nutritionist_list_page.dart';
 
 class MainNavigationPage extends ConsumerWidget {
   const MainNavigationPage({super.key});
@@ -18,7 +17,6 @@ class MainNavigationPage extends ConsumerWidget {
     RecipesPage(),
     GroceriesPage(),
     ProfilePage(),
-    NutritionistListPage(),
   ];
 
   @override
@@ -63,10 +61,6 @@ class MainNavigationPage extends ConsumerWidget {
             activeIcon: Icon(Icons.person),
             label: 'Profile',
           ),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.medical_services_outlined),
-              activeIcon: Icon(Icons.medical_services),
-              label: 'Nutritionist'),
         ],
       ),
     );

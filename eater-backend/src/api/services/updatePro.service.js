@@ -154,7 +154,7 @@ async function createProCheckout(userId, options = {}) {
     { payos_order_code: orderCode },
     {
       userId,
-      isActive: true,
+      isActive: false,
       startDate: new Date(),
       endDate: new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000),
       plan_type: plan.planType,
@@ -223,9 +223,22 @@ async function handlePayOSWebhook(webhookBody) {
 
   const now = new Date();
   const durationDays = getDurationDaysBySubscription(subscription);
-  subscription.startDate = now;
+
+  const existingActive = await UserPro.findOne({
+    userId: subscription.userId,
+    isActive: true,
+    endDate: { $gte: now },
+    _id: { $ne: subscription._id },
+  }).sort({ endDate: -1 });
+
+  const effectiveStartDate =
+    existingActive?.endDate && existingActive.endDate > now
+      ? existingActive.endDate
+      : now;
+
+  subscription.startDate = effectiveStartDate;
   subscription.endDate = new Date(
-    now.getTime() + durationDays * 24 * 60 * 60 * 1000,
+    effectiveStartDate.getTime() + durationDays * 24 * 60 * 60 * 1000,
   );
   subscription.isActive = true;
   subscription.payos_transaction_id =

@@ -2,39 +2,44 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../../core/constants/storage_keys.dart';
+
 class TokenStorage {
-  static const _kAccessToken = 'access_token';
-  static const _kRefreshToken = 'refresh_token';
-  static const _kAccessTokenExpiry = 'access_token_expiry';
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
   }) async {
-    await _storage.write(key: _kAccessToken, value: accessToken);
-    await _storage.write(key: _kRefreshToken, value: refreshToken);
+    await _storage.write(key: StorageKeys.accessToken, value: accessToken);
+    await _storage.write(key: StorageKeys.refreshToken, value: refreshToken);
     final expiry = _extractExpiry(accessToken);
     if (expiry != null) {
       await _storage.write(
-          key: _kAccessTokenExpiry, value: expiry.toString());
+        key: StorageKeys.accessTokenExpiry,
+        value: expiry.toString(),
+      );
     }
   }
 
-  Future<String?> getAccessToken() => _storage.read(key: _kAccessToken);
-  Future<String?> getRefreshToken() => _storage.read(key: _kRefreshToken);
+  Future<String?> getAccessToken() =>
+      _storage.read(key: StorageKeys.accessToken);
+  Future<String?> getRefreshToken() =>
+      _storage.read(key: StorageKeys.refreshToken);
 
   /// Returns the Unix timestamp (seconds) at which the access token expires,
   /// or null if not stored.
   Future<int?> getAccessTokenExpiry() async {
-    final value = await _storage.read(key: _kAccessTokenExpiry);
+    final value = await _storage.read(key: StorageKeys.accessTokenExpiry);
     return value != null ? int.tryParse(value) : null;
   }
 
   Future<void> clear() async {
-    await _storage.delete(key: _kAccessToken);
-    await _storage.delete(key: _kRefreshToken);
-    await _storage.delete(key: _kAccessTokenExpiry);
+    await _storage.delete(key: StorageKeys.accessToken);
+    await _storage.delete(key: StorageKeys.refreshToken);
+    await _storage.delete(key: StorageKeys.accessTokenExpiry);
   }
 
   /// Extracts the [exp] (Unix timestamp in seconds) from a JWT access token.

@@ -3,14 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/theme/app_colors.dart';
+import '../../../pro/data/pro_api_client.dart';
 import '../../data/chat_models.dart';
 import '../providers/chat_provider.dart';
+
+final nutritionistAccessProvider = FutureProvider<bool>((ref) async {
+  final api = ref.watch(proApiClientProvider);
+  try {
+    final status = await api.getStatus();
+    return status.isPro;
+  } catch (_) {
+    return false;
+  }
+});
 
 class NutritionistListPage extends ConsumerWidget {
   const NutritionistListPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final hasAccessAsync = ref.watch(nutritionistAccessProvider);
     final async = ref.watch(nutritionistsProvider);
 
     return Scaffold(
@@ -25,68 +37,119 @@ class NutritionistListPage extends ConsumerWidget {
         ),
         backgroundColor: AppColors.background,
         elevation: 0,
-        automaticallyImplyLeading: false,
       ),
-      body: async.when(
+      body: hasAccessAsync.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
-        error: (err, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline,
-                    color: AppColors.error, size: 48),
-                const SizedBox(height: 12),
-                Text(err.toString(),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppColors.textSecondary)),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(nutritionistsProvider),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        data: (nutritionists) {
-          if (nutritionists.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.person_search_outlined,
-                      color: Colors.grey[300], size: 72),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No specialists available yet',
-                    style: TextStyle(
-                        color: Colors.grey[500],
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            );
+        error: (error, stackTrace) =>
+            _ProRequiredView(onUpgrade: () => context.push('/pro-upgrade')),
+        data: (hasAccess) {
+          if (!hasAccess) {
+            return _ProRequiredView(
+                onUpgrade: () => context.push('/pro-upgrade'));
           }
 
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: () async => ref.invalidate(nutritionistsProvider),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: nutritionists.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, i) => _NutritionistCard(info: nutritionists[i]),
+          return async.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
             ),
+            error: (err, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        color: AppColors.error, size: 48),
+                    const SizedBox(height: 12),
+                    Text(err.toString(),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: AppColors.textSecondary)),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => ref.invalidate(nutritionistsProvider),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            data: (nutritionists) {
+              if (nutritionists.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.person_search_outlined,
+                          color: Colors.grey[300], size: 72),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No specialists available yet',
+                        style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () async => ref.invalidate(nutritionistsProvider),
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: nutritionists.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) =>
+                      _NutritionistCard(info: nutritionists[i]),
+                ),
+              );
+            },
           );
         },
+      ),
+    );
+  }
+}
+
+class _ProRequiredView extends StatelessWidget {
+  const _ProRequiredView({required this.onUpgrade});
+
+  final VoidCallback onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lock_outline,
+                color: AppColors.textSecondary, size: 56),
+            const SizedBox(height: 12),
+            const Text(
+              'Nutritionist consultation is available for Pro accounts only.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: onUpgrade,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Upgrade to Pro'),
+            ),
+          ],
+        ),
       ),
     );
   }

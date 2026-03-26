@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const { jwtConfig } = require("../../config/jwt");
 const { ChatMessage } = require("../../models/chat_message");
 const { Nutritionist } = require("../../models/nutritionist");
+const UserPro = require("../../models/userPro");
 
 /**
  * Derive a stable room ID from two user IDs (sorted so order doesn't matter).
@@ -9,6 +10,19 @@ const { Nutritionist } = require("../../models/nutritionist");
 function getRoomId(userIdA, userIdB) {
   const sorted = [userIdA.toString(), userIdB.toString()].sort();
   return sorted.join("_");
+}
+
+async function hasActivePro(userId) {
+  if (!userId) return false;
+
+  const now = new Date();
+  const active = await UserPro.findOne({
+    userId,
+    isActive: true,
+    endDate: { $gte: now },
+  }).select("_id");
+
+  return !!active;
 }
 
 function setupChatSocket(io) {
@@ -38,6 +52,16 @@ function setupChatSocket(io) {
      */
     socket.on("join_room", async ({ nutritionistId }) => {
       try {
+        if (socket.userRole !== "nutritionist" && socket.userRole !== "admin") {
+          const isPro = await hasActivePro(socket.userId);
+          if (!isPro) {
+            socket.emit("error", {
+              message: "This feature requires an active Pro subscription",
+            });
+            return;
+          }
+        }
+
         const nutritionist = await Nutritionist.findById(nutritionistId);
         if (!nutritionist) {
           socket.emit("error", { message: "Nutritionist not found" });
@@ -96,6 +120,16 @@ function setupChatSocket(io) {
     socket.on("send_message", async ({ content }) => {
       try {
         if (!socket.currentRoomId || !content?.trim()) return;
+
+        if (socket.userRole !== "nutritionist" && socket.userRole !== "admin") {
+          const isPro = await hasActivePro(socket.userId);
+          if (!isPro) {
+            socket.emit("error", {
+              message: "This feature requires an active Pro subscription",
+            });
+            return;
+          }
+        }
 
         const msg = await ChatMessage.create({
           roomId: socket.currentRoomId,

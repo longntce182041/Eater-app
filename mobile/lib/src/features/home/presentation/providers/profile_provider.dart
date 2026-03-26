@@ -60,37 +60,44 @@ class ProfileState {
 class ProfileNotifier extends StateNotifier<ProfileState> {
   final ProfileApiClient _api;
   ProfileNotifier(this._api)
-    : super(ProfileState(profile: const AsyncValue.loading())) {
+      : super(ProfileState(profile: const AsyncValue.loading())) {
     load();
   }
 
   Future<void> load() async {
     try {
       final data = await _api.getProfile();
+      if (!mounted) return;
       state = state.copyWith(profile: AsyncValue.data(data));
     } catch (e, st) {
+      if (!mounted) return;
       state = state.copyWith(profile: AsyncValue.error(e, st));
     }
   }
 
   void toggleEdit([bool? value]) {
+    if (!mounted) return;
     state = state.copyWith(isEditing: value ?? !state.isEditing);
   }
 
   Future<void> saveUpdates({required Map<String, dynamic> updates}) async {
+    if (!mounted) return;
     state = state.copyWith(profile: const AsyncValue.loading());
     try {
       final updated = await _api.updateProfile(updates);
+      if (!mounted) return;
       state = ProfileState(profile: AsyncValue.data(updated), isEditing: false);
 
       // Auto-analyze health metrics after profile update
       try {
         // Extract userId from JWT token
         final userId = await extractUserIdFromToken();
+        if (!mounted) return;
         if (userId != null && state.profile is AsyncData) {
           final currentData =
               (state.profile as AsyncData<ProfileCombinedData>).value;
           final newMetrics = await _api.analyzeUserProfile(userId);
+          if (!mounted) return;
           final updatedData = ProfileCombinedData(
             profile: currentData.profile,
             dietary: currentData.dietary,
@@ -104,9 +111,11 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       } catch (e) {
         // If analyze fails, just reload profile normally
         debugPrint('Analyze failed: $e');
+        if (!mounted) return;
         await load();
       }
     } catch (e, st) {
+      if (!mounted) return;
       state = state.copyWith(profile: AsyncValue.error(e, st));
     }
   }
@@ -114,6 +123,6 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
 final profileNotifierProvider =
     StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
-      final api = ref.watch(profileApiClientProvider);
-      return ProfileNotifier(api);
-    });
+  final api = ref.watch(profileApiClientProvider);
+  return ProfileNotifier(api);
+});

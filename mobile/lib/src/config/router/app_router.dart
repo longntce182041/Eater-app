@@ -6,6 +6,7 @@ import '../../features/home/presentation/pages/main_navigation_page.dart';
 import '../../features/pro/presentation/pages/pro_upgrade_page.dart';
 import '../../features/reminders/presentation/pages/reminders_page.dart';
 import '../../features/chat/presentation/pages/chat_page.dart';
+import '../../features/chat/presentation/pages/nutritionist_list_page.dart';
 import '../../features/userHeath/presentation/pages/set_age.dart';
 import '../../features/userHeath/presentation/pages/set_height.dart';
 import '../../features/userHeath/presentation/pages/set_weight.dart';
@@ -147,6 +148,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/pro-upgrade',
         builder: (context, state) => const ProUpgradePage(),
+      ),
+      GoRoute(
+        path: '/nutritionists',
+        builder: (context, state) => const NutritionistListPage(),
       ),
       GoRoute(
         path: '/chat/:nutritionistId',

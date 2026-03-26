@@ -4,6 +4,93 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/recipe_api_client.dart';
 import '../../domain/recipe_models.dart';
 
+class RecipeFilter {
+  final int? maxCookingTime;
+  final double? minCalories;
+  final double? maxCalories;
+  final double? minProtein;
+  final double? maxProtein;
+  final double? minFat;
+  final double? maxFat;
+  final double? minCarbohydrates;
+  final double? maxCarbohydrates;
+  final List<String> dietTypes;
+  final List<String> ingredientNames;
+
+  const RecipeFilter({
+    this.maxCookingTime,
+    this.minCalories,
+    this.maxCalories,
+    this.minProtein,
+    this.maxProtein,
+    this.minFat,
+    this.maxFat,
+    this.minCarbohydrates,
+    this.maxCarbohydrates,
+    this.dietTypes = const [],
+    this.ingredientNames = const [],
+  });
+
+  RecipeFilter copyWith({
+    int? maxCookingTime,
+    double? minCalories,
+    double? maxCalories,
+    double? minProtein,
+    double? maxProtein,
+    double? minFat,
+    double? maxFat,
+    double? minCarbohydrates,
+    double? maxCarbohydrates,
+    List<String>? dietTypes,
+    List<String>? ingredientNames,
+    bool clearMaxCookingTime = false,
+    bool clearMinCalories = false,
+    bool clearMaxCalories = false,
+    bool clearMinProtein = false,
+    bool clearMaxProtein = false,
+    bool clearMinFat = false,
+    bool clearMaxFat = false,
+    bool clearMinCarbohydrates = false,
+    bool clearMaxCarbohydrates = false,
+    bool clearDietTypes = false,
+    bool clearIngredientNames = false,
+  }) {
+    return RecipeFilter(
+      maxCookingTime:
+          clearMaxCookingTime ? null : (maxCookingTime ?? this.maxCookingTime),
+      minCalories: clearMinCalories ? null : (minCalories ?? this.minCalories),
+      maxCalories: clearMaxCalories ? null : (maxCalories ?? this.maxCalories),
+      minProtein: clearMinProtein ? null : (minProtein ?? this.minProtein),
+      maxProtein: clearMaxProtein ? null : (maxProtein ?? this.maxProtein),
+      minFat: clearMinFat ? null : (minFat ?? this.minFat),
+      maxFat: clearMaxFat ? null : (maxFat ?? this.maxFat),
+      minCarbohydrates: clearMinCarbohydrates
+          ? null
+          : (minCarbohydrates ?? this.minCarbohydrates),
+      maxCarbohydrates: clearMaxCarbohydrates
+          ? null
+          : (maxCarbohydrates ?? this.maxCarbohydrates),
+      dietTypes: clearDietTypes ? const [] : (dietTypes ?? this.dietTypes),
+      ingredientNames: clearIngredientNames
+          ? const []
+          : (ingredientNames ?? this.ingredientNames),
+    );
+  }
+
+  bool get hasAnyFilter =>
+      maxCookingTime != null ||
+      minCalories != null ||
+      maxCalories != null ||
+      minProtein != null ||
+      maxProtein != null ||
+      minFat != null ||
+      maxFat != null ||
+      minCarbohydrates != null ||
+      maxCarbohydrates != null ||
+      dietTypes.isNotEmpty ||
+      ingredientNames.isNotEmpty;
+}
+
 // Recipe List State
 class RecipeListState {
   final List<Recipe> recipes;
@@ -13,6 +100,7 @@ class RecipeListState {
   final int totalPages;
   final bool hasMore;
   final String? searchKeyword;
+  final RecipeFilter activeFilter;
 
   RecipeListState({
     this.recipes = const [],
@@ -22,6 +110,7 @@ class RecipeListState {
     this.totalPages = 1,
     this.hasMore = false,
     this.searchKeyword,
+    this.activeFilter = const RecipeFilter(),
   });
 
   RecipeListState copyWith({
@@ -32,6 +121,7 @@ class RecipeListState {
     int? totalPages,
     bool? hasMore,
     String? searchKeyword,
+    RecipeFilter? activeFilter,
   }) {
     return RecipeListState(
       recipes: recipes ?? this.recipes,
@@ -41,6 +131,7 @@ class RecipeListState {
       totalPages: totalPages ?? this.totalPages,
       hasMore: hasMore ?? this.hasMore,
       searchKeyword: searchKeyword ?? this.searchKeyword,
+      activeFilter: activeFilter ?? this.activeFilter,
     );
   }
 
@@ -57,13 +148,31 @@ class RecipeListNotifier extends StateNotifier<RecipeListState> {
   // Load initial recipes
   Future<void> loadRecipes({bool refresh = false}) async {
     if (refresh) {
-      state = RecipeListState(isLoading: true);
+      state = RecipeListState(
+        isLoading: true,
+        activeFilter: state.activeFilter,
+      );
     } else {
       state = state.copyWith(isLoading: true, error: null);
     }
 
     try {
-      final response = await _apiClient.getAllRecipes(page: 1, limit: 20);
+      final filter = state.activeFilter;
+      final response = await _apiClient.getAllRecipes(
+        page: 1,
+        limit: 20,
+        maxCookingTime: filter.maxCookingTime,
+        minCalories: filter.minCalories,
+        maxCalories: filter.maxCalories,
+        minProtein: filter.minProtein,
+        maxProtein: filter.maxProtein,
+        minFat: filter.minFat,
+        maxFat: filter.maxFat,
+        minCarbohydrates: filter.minCarbohydrates,
+        maxCarbohydrates: filter.maxCarbohydrates,
+        dietTypes: filter.dietTypes,
+        ingredients: filter.ingredientNames,
+      );
 
       state = state.copyWith(
         recipes: response.recipes,
@@ -103,6 +212,17 @@ class RecipeListNotifier extends StateNotifier<RecipeListState> {
         keyword: keyword,
         page: 1,
         limit: 20,
+        maxCookingTime: state.activeFilter.maxCookingTime,
+        minCalories: state.activeFilter.minCalories,
+        maxCalories: state.activeFilter.maxCalories,
+        minProtein: state.activeFilter.minProtein,
+        maxProtein: state.activeFilter.maxProtein,
+        minFat: state.activeFilter.minFat,
+        maxFat: state.activeFilter.maxFat,
+        minCarbohydrates: state.activeFilter.minCarbohydrates,
+        maxCarbohydrates: state.activeFilter.maxCarbohydrates,
+        dietTypes: state.activeFilter.dietTypes,
+        ingredients: state.activeFilter.ingredientNames,
       );
 
       state = state.copyWith(
@@ -137,8 +257,33 @@ class RecipeListNotifier extends StateNotifier<RecipeListState> {
               keyword: state.searchKeyword!,
               page: nextPage,
               limit: 20,
+              maxCookingTime: state.activeFilter.maxCookingTime,
+              minCalories: state.activeFilter.minCalories,
+              maxCalories: state.activeFilter.maxCalories,
+              minProtein: state.activeFilter.minProtein,
+              maxProtein: state.activeFilter.maxProtein,
+              minFat: state.activeFilter.minFat,
+              maxFat: state.activeFilter.maxFat,
+              minCarbohydrates: state.activeFilter.minCarbohydrates,
+              maxCarbohydrates: state.activeFilter.maxCarbohydrates,
+              dietTypes: state.activeFilter.dietTypes,
+              ingredients: state.activeFilter.ingredientNames,
             )
-          : await _apiClient.getAllRecipes(page: nextPage, limit: 20);
+          : await _apiClient.getAllRecipes(
+              page: nextPage,
+              limit: 20,
+              maxCookingTime: state.activeFilter.maxCookingTime,
+              minCalories: state.activeFilter.minCalories,
+              maxCalories: state.activeFilter.maxCalories,
+              minProtein: state.activeFilter.minProtein,
+              maxProtein: state.activeFilter.maxProtein,
+              minFat: state.activeFilter.minFat,
+              maxFat: state.activeFilter.maxFat,
+              minCarbohydrates: state.activeFilter.minCarbohydrates,
+              maxCarbohydrates: state.activeFilter.maxCarbohydrates,
+              dietTypes: state.activeFilter.dietTypes,
+              ingredients: state.activeFilter.ingredientNames,
+            );
 
       state = state.copyWith(
         recipes: [...state.recipes, ...response.recipes],
@@ -153,21 +298,32 @@ class RecipeListNotifier extends StateNotifier<RecipeListState> {
     }
   }
 
-  // Filter by cooking time
-  Future<void> filterByTime(int? maxMinutes) async {
+  // Apply full recipe filters (nutrition + diet + cooking time)
+  Future<void> applyFilters(RecipeFilter filter) async {
+    state = state.copyWith(activeFilter: filter);
+
+    if (state.isSearching && state.searchKeyword != null) {
+      await searchRecipes(state.searchKeyword!);
+      return;
+    }
+
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      if (maxMinutes == null) {
-        // Clear filter
-        await loadRecipes(refresh: true);
-        return;
-      }
-
-      final response = await _apiClient.getQuickMeals(
-        maxMinutes: maxMinutes,
+      final response = await _apiClient.getAllRecipes(
         page: 1,
         limit: 20,
+        maxCookingTime: filter.maxCookingTime,
+        minCalories: filter.minCalories,
+        maxCalories: filter.maxCalories,
+        minProtein: filter.minProtein,
+        maxProtein: filter.maxProtein,
+        minFat: filter.minFat,
+        maxFat: filter.maxFat,
+        minCarbohydrates: filter.minCarbohydrates,
+        maxCarbohydrates: filter.maxCarbohydrates,
+        dietTypes: filter.dietTypes,
+        ingredients: filter.ingredientNames,
       );
 
       state = state.copyWith(
@@ -179,9 +335,7 @@ class RecipeListNotifier extends StateNotifier<RecipeListState> {
         error: null,
       );
 
-      debugPrint(
-        'Filtered: ${response.recipes.length} recipes under $maxMinutes min',
-      );
+      debugPrint('Filtered recipes: ${response.recipes.length}');
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -189,6 +343,14 @@ class RecipeListNotifier extends StateNotifier<RecipeListState> {
       );
       debugPrint('Error filtering recipes: $e');
     }
+  }
+
+  // Backward-compatible shortcut for time-only filter
+  Future<void> filterByTime(int? maxMinutes) async {
+    final nextFilter = maxMinutes == null
+        ? state.activeFilter.copyWith(clearMaxCookingTime: true)
+        : state.activeFilter.copyWith(maxCookingTime: maxMinutes);
+    await applyFilters(nextFilter);
   }
 
   // Clear search
@@ -232,9 +394,15 @@ class RecipeListNotifier extends StateNotifier<RecipeListState> {
 // Provider
 final recipeListProvider =
     StateNotifierProvider<RecipeListNotifier, RecipeListState>((ref) {
-      final apiClient = ref.watch(recipeApiClientProvider);
-      return RecipeListNotifier(apiClient);
-    });
+  final apiClient = ref.watch(recipeApiClientProvider);
+  return RecipeListNotifier(apiClient);
+});
+
+final recipeFilterOptionsProvider =
+    FutureProvider<RecipeFilterOptions>((ref) async {
+  final apiClient = ref.watch(recipeApiClientProvider);
+  return apiClient.getRecipeFilterOptions();
+});
 
 // === FAVORITE RECIPES ===
 
@@ -334,9 +502,8 @@ class FavoriteRecipesNotifier extends StateNotifier<FavoriteRecipesState> {
 
   // Remove from favorites (update local state)
   void removeLocal(String recipeId) {
-    final updatedFavorites = state.favorites
-        .where((fav) => fav.recipe.id != recipeId)
-        .toList();
+    final updatedFavorites =
+        state.favorites.where((fav) => fav.recipe.id != recipeId).toList();
 
     state = state.copyWith(favorites: updatedFavorites);
   }
@@ -345,9 +512,9 @@ class FavoriteRecipesNotifier extends StateNotifier<FavoriteRecipesState> {
 // Favorite Recipes Provider
 final favoriteRecipesProvider =
     StateNotifierProvider<FavoriteRecipesNotifier, FavoriteRecipesState>((ref) {
-      final apiClient = ref.watch(recipeApiClientProvider);
-      return FavoriteRecipesNotifier(apiClient);
-    });
+  final apiClient = ref.watch(recipeApiClientProvider);
+  return FavoriteRecipesNotifier(apiClient);
+});
 
 // Favorite count provider
 final favoriteCountProvider = FutureProvider<int>((ref) async {

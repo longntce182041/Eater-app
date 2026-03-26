@@ -14,25 +14,24 @@ import {
 import "./ScheduleChangeRequests.css";
 
 const ScheduleChangeRequests = () => {
-  const [requests, setRequests] = useState([]);
-  const [filteredRequests, setFilteredRequests] = useState([]);
+  const [allRequests, setAllRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("pending");
+  const [statusFilter, setStatusFilter] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [reviewingRequest, setReviewingRequest] = useState(null);
   const [adminNotes, setAdminNotes] = useState("");
 
   useEffect(() => {
     fetchChangeRequests();
-  }, [statusFilter]);
+  }, []);
 
   const fetchChangeRequests = async () => {
     try {
       setLoading(true);
-      const data = await getAllChangeRequests(statusFilter);
-      setRequests(data || []);
-      setFilteredRequests(data || []);
+      // Always fetch all requests so tab counts remain accurate across filters.
+      const data = await getAllChangeRequests();
+      setAllRequests(data || []);
       setError(null);
     } catch (err) {
       setError(err.message || "Failed to load change requests");
@@ -41,6 +40,12 @@ const ScheduleChangeRequests = () => {
       setLoading(false);
     }
   };
+
+  const normalizedFilter = (statusFilter || "").toLowerCase();
+  const filteredRequests = allRequests.filter((request) => {
+    if (!normalizedFilter) return true;
+    return (request?.status || "").toLowerCase() === normalizedFilter;
+  });
 
   const handleApprove = async (requestId) => {
     try {
@@ -70,9 +75,15 @@ const ScheduleChangeRequests = () => {
     return <div className="loading">Loading schedule change requests...</div>;
   }
 
-  const pendingCount = requests.filter((r) => r.status === "pending").length;
-  const approvedCount = requests.filter((r) => r.status === "approved").length;
-  const rejectedCount = requests.filter((r) => r.status === "rejected").length;
+  const pendingCount = allRequests.filter(
+    (r) => (r?.status || "").toLowerCase() === "pending"
+  ).length;
+  const approvedCount = allRequests.filter(
+    (r) => (r?.status || "").toLowerCase() === "approved"
+  ).length;
+  const rejectedCount = allRequests.filter(
+    (r) => (r?.status || "").toLowerCase() === "rejected"
+  ).length;
 
   return (
     <div className="schedule-change-requests">
@@ -253,6 +264,16 @@ const RequestCard = ({ request, onView, onReview }) => {
                   {request.proposedChanges.endTime}
                 </p>
               )}
+              {request.proposedChanges.offHours > 0 && (
+                <p>
+                  <strong>Hours Off:</strong> {request.proposedChanges.offHours} hour(s)
+                </p>
+              )}
+              {request.proposedChanges.offDays > 0 && (
+                <p>
+                  <strong>Days Off:</strong> {request.proposedChanges.offDays} day(s)
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -369,6 +390,16 @@ const RequestDetailModal = ({ request, onClose, onReview }) => {
                     <strong>Proposed Time:</strong>{" "}
                     {request.proposedChanges.startTime} -{" "}
                     {request.proposedChanges.endTime}
+                  </p>
+                )}
+                {request.proposedChanges.offHours > 0 && (
+                  <p>
+                    <strong>Hours Off:</strong> {request.proposedChanges.offHours} hour(s)
+                  </p>
+                )}
+                {request.proposedChanges.offDays > 0 && (
+                  <p>
+                    <strong>Days Off:</strong> {request.proposedChanges.offDays} day(s)
                   </p>
                 )}
               </div>

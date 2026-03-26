@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Calendar,
@@ -15,6 +15,34 @@ import {
   getNutritionistChangeRequests,
 } from "@/services/nutritionistScheduleApi";
 import "./MySchedule.css";
+
+const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MIN_WORK_TIME = "09:00";
+const MAX_WORK_TIME = "17:00";
+
+const toDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const parseDateKey = (dateKey) => {
+  if (!dateKey) return null;
+  const parsed = new Date(`${dateKey}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const addDaysToDateString = (dateStr, days) => {
+  if (!dateStr) return null;
+  const parsed = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  parsed.setDate(parsed.getDate() + days);
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const MySchedule = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -137,14 +165,89 @@ const MySchedule = () => {
 };
 
 const ScheduleView = ({ schedule }) => {
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const firstDate = schedule?.workDays?.[0]?.date || schedule?.specialDays?.[0]?.date;
+    const parsed = parseDateKey(firstDate);
+    const base = parsed || new Date();
+    return new Date(base.getFullYear(), base.getMonth(), 1);
+  });
+
+  const workDaysMap = useMemo(() => {
+    const map = new Map();
+    (schedule.workDays || []).forEach((day) => {
+      if (day?.date) map.set(day.date, day);
+    });
+    return map;
+  }, [schedule.workDays]);
+
+  const specialDaysMap = useMemo(() => {
+    const map = new Map();
+    (schedule.specialDays || []).forEach((day) => {
+      if (day?.date && !map.has(day.date)) map.set(day.date, day);
+    });
+    return map;
+  }, [schedule.specialDays]);
+
+  const monthData = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const start = new Date(year, month, 1);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startOffset = (start.getDay() + 6) % 7;
+
+    const days = [];
+    for (let i = 0; i < startOffset; i += 1) {
+      days.push(null);
+    }
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      days.push(new Date(year, month, day));
+    }
+
+    const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+    const monthWorkDays = (schedule.workDays || []).filter((d) =>
+      String(d?.date || "").startsWith(monthPrefix)
+    ).length;
+    const monthSpecialDays = (schedule.specialDays || []).filter((d) =>
+      String(d?.date || "").startsWith(monthPrefix)
+    ).length;
+
+    return { days, monthWorkDays, monthSpecialDays };
+  }, [currentMonth, schedule.workDays, schedule.specialDays]);
+
+  const goToPrevMonth = () => {
+    setCurrentMonth(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+    );
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+    );
+  };
+
+  const monthLabel = currentMonth.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const todayKey = toDateKey(new Date());
+
   return (
     <div className="schedule-view">
       <div className="schedule-info-box">
         <div className="info-item">
           <Clock size={18} />
           <div>
-            <p className="label">Total Work Days</p>
-            <p className="value">{schedule.workDays?.length || 0}</p>
+            <p className="label">Work Days This Month</p>
+            <p className="value">{monthData.monthWorkDays}</p>
+          </div>
+        </div>
+        <div className="info-item">
+          <Calendar size={18} />
+          <div>
+            <p className="label">Special Days This Month</p>
+            <p className="value">{monthData.monthSpecialDays}</p>
           </div>
         </div>
         <div className="info-item">
@@ -158,28 +261,67 @@ const ScheduleView = ({ schedule }) => {
         </div>
       </div>
 
-      <div className="section-title">Work Days</div>
-      <div className="weekly-schedule">
-        {(schedule.workDays || []).map((day) => (
-          <div key={day.date} className="day-card">
-            <div className="day-name">{day.date}</div>
-            <div className="day-content">
-              {day.isAvailable ? (
-                <>
-                  <div className="time">
-                    <Clock size={16} />
-                    <span>
-                      {day.startTime} - {day.endTime}
-                    </span>
-                  </div>
-                  <span className="available-badge">Available</span>
-                </>
-              ) : (
-                <span className="not-available">Not Available</span>
-              )}
-            </div>
+      <div className="calendar-month-header">
+        <button className="month-nav-btn" onClick={goToPrevMonth}>
+          Previous
+        </button>
+        <h3>{monthLabel}</h3>
+        <button className="month-nav-btn" onClick={goToNextMonth}>
+          Next
+        </button>
+      </div>
+
+      <div className="month-calendar-grid">
+        {WEEKDAY_LABELS.map((label) => (
+          <div key={label} className="weekday-header-cell">
+            {label}
           </div>
         ))}
+
+        {monthData.days.map((dateObj, index) => {
+          if (!dateObj) {
+            return <div key={`empty-${index}`} className="calendar-day-cell empty" />;
+          }
+
+          const dateKey = toDateKey(dateObj);
+          const workDay = workDaysMap.get(dateKey);
+          const specialDay = specialDaysMap.get(dateKey);
+          const isToday = dateKey === todayKey;
+          const isScheduled = Boolean(workDay);
+          const isSpecial = Boolean(specialDay);
+
+          return (
+            <div
+              key={dateKey}
+              className={`calendar-day-cell ${
+                isScheduled ? "scheduled" : ""
+              } ${isSpecial ? "special" : ""} ${isToday ? "today" : ""}`.trim()}
+            >
+              <div className="day-number">{dateObj.getDate()}</div>
+
+              {isScheduled ? (
+                <div className="day-schedule-content">
+                  {workDay.isAvailable ? (
+                    <>
+                      <div className="day-time">{workDay.startTime} - {workDay.endTime}</div>
+                      <span className="available-badge">Available</span>
+                    </>
+                  ) : (
+                    <span className="not-available">Not Available</span>
+                  )}
+                </div>
+              ) : (
+                <div className="day-schedule-content no-shift">No shift</div>
+              )}
+
+              {isSpecial && (
+                <span className={`special-tag type-${specialDay.type || "off"}`}>
+                  {(specialDay.type || "off").replace(/_/g, " ")}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {schedule.specialDays?.length > 0 && (
@@ -296,6 +438,12 @@ const RequestSection = ({ title, requests }) => {
                       {request.proposedChanges.endTime}
                     </p>
                   )}
+                  {request.proposedChanges.offHours > 0 && (
+                    <p>Hours Off: {request.proposedChanges.offHours} hour(s)</p>
+                  )}
+                  {request.proposedChanges.offDays > 0 && (
+                    <p>Days Off: {request.proposedChanges.offDays} day(s)</p>
+                  )}
                 </div>
               )}
             </div>
@@ -326,7 +474,7 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
 
   const [formData, setFormData] = useState({
     scheduleId: schedule._id,
-    requestType: "take_day_off",
+    requestType: "vacation",
     reason: "",
     affectedDates: {
       startDate: minDate,
@@ -336,6 +484,7 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
       date: "",
       startTime: "",
       endTime: "",
+      offDays: "",
     },
   });
 
@@ -346,7 +495,54 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
     e.preventDefault();
     try {
       setLoading(true);
-      await requestScheduleChange(formData);
+
+      const payload = {
+        ...formData,
+        proposedChanges: {
+          ...formData.proposedChanges,
+        },
+      };
+
+      if (formData.requestType === "vacation") {
+        const offDays = Number(formData.proposedChanges.offDays || 0);
+        if (offDays > 1) {
+          payload.proposedChanges.offDays = offDays;
+          payload.affectedDates.endDate = addDaysToDateString(
+            formData.affectedDates.startDate,
+            offDays - 1
+          );
+        }
+      }
+
+      if (formData.requestType === "modify_hours") {
+        const startTime = String(formData.proposedChanges.startTime || "");
+        const endTime = String(formData.proposedChanges.endTime || "");
+        if (!startTime || !endTime) {
+          setError("Please select both start time and end time.");
+          setLoading(false);
+          return;
+        }
+
+        if (startTime < MIN_WORK_TIME || startTime > MAX_WORK_TIME) {
+          setError(`Start time must be between ${MIN_WORK_TIME} and ${MAX_WORK_TIME}.`);
+          setLoading(false);
+          return;
+        }
+
+        if (endTime < MIN_WORK_TIME || endTime > MAX_WORK_TIME) {
+          setError(`End time must be between ${MIN_WORK_TIME} and ${MAX_WORK_TIME}.`);
+          setLoading(false);
+          return;
+        }
+
+        if (startTime >= endTime) {
+          setError("End time must be later than start time.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      await requestScheduleChange(payload);
       onSuccess();
     } catch (err) {
       setError(err.message || "Failed to submit request");
@@ -384,12 +580,38 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
               }
               required
             >
-              <option value="take_day_off">Take Day Off</option>
               <option value="vacation">Vacation</option>
               <option value="modify_hours">Modify Working Hours</option>
               <option value="special_request">Special Request</option>
             </select>
           </div>
+
+          {formData.requestType === "vacation" && (
+            <div className="form-group">
+              <label htmlFor="vacationDays">Number of Vacation Days</label>
+              <input
+                id="vacationDays"
+                type="number"
+                min="1"
+                max="31"
+                step="1"
+                value={formData.proposedChanges.offDays}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    proposedChanges: {
+                      ...formData.proposedChanges,
+                      offDays: e.target.value,
+                    },
+                  })
+                }
+                placeholder="e.g. 3"
+              />
+              <small>
+                If provided, end date will be auto-calculated from start date.
+              </small>
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="reason">Reason *</label>
@@ -480,6 +702,8 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
                   <input
                     id="startTime"
                     type="time"
+                    min={MIN_WORK_TIME}
+                    max={MAX_WORK_TIME}
                     value={formData.proposedChanges.startTime}
                     onChange={(e) =>
                       setFormData({
@@ -499,6 +723,8 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
                   <input
                     id="endTime"
                     type="time"
+                    min={MIN_WORK_TIME}
+                    max={MAX_WORK_TIME}
                     value={formData.proposedChanges.endTime}
                     onChange={(e) =>
                       setFormData({
@@ -513,6 +739,7 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
                   />
                 </div>
               </div>
+              <small>Working hours are limited to {MIN_WORK_TIME} - {MAX_WORK_TIME}.</small>
             </>
           )}
 

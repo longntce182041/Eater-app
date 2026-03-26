@@ -17,18 +17,33 @@ class ViewRecipeDetailsPage extends ConsumerWidget {
     this.recipeImageUrl,
   });
 
+  static const _bgColor = Color(0xFFF5F1E8);
+  static const _primary = Color(0xFFFF9800);
+  static const _textPrimary = Color.fromARGB(255, 236, 163, 163);
+  static const _textSecondary = Color(0xFF666666);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recipeDetail = ref.watch(viewRecipeDetailProvider(recipeId));
 
     return Scaffold(
+      backgroundColor: _bgColor,
       appBar: AppBar(
-        title: Text(recipeName ?? 'Recipe Details'),
+        backgroundColor: _bgColor,
+        elevation: 0,
         centerTitle: true,
+        title: Text(
+          recipeName ?? 'Recipe details',
+          style: const TextStyle(
+            color: _textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: _textPrimary),
       ),
       body: recipeDetail.when(
         loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFFF9800)),
+          child: CircularProgressIndicator(color: _primary),
         ),
         error: (error, stack) => Center(
           child: Column(
@@ -36,94 +51,183 @@ class ViewRecipeDetailsPage extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 16),
-              Text('Error loading recipe'),
+              const Text(
+                'Error loading recipe',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: _textPrimary,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
                 error.toString(),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                style: const TextStyle(color: _textSecondary, fontSize: 12),
               ),
             ],
           ),
         ),
-        data: (recipe) => SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Recipe Image
-              _buildRecipeImage(),
-              
-              // Recipe Info Header
-              _buildRecipeInfoHeader(context, recipe),
-              
-              // Nutrition Card
-              _buildNutritionCard(context, recipe),
-              
-              // Ingredients
-              _buildIngredientsSection(context, recipe),
-              
-              // Micronutrients
-              _buildMicronutrientsSection(context, recipe),
-              
-              // Cooking Steps
-              _buildStepsSection(context, recipe),
-              
-              const SizedBox(height: 24),
-            ],
-          ),
+        data: (recipe) => CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: _contentWrap(child: _buildHero(context, recipe)),
+            ),
+            SliverToBoxAdapter(
+              child: _contentWrap(child: _buildNutritionCard(context, recipe)),
+            ),
+            SliverToBoxAdapter(
+              child: _contentWrap(
+                  child: _buildIngredientsSection(context, recipe)),
+            ),
+            SliverToBoxAdapter(
+              child: _contentWrap(
+                child: _buildMicronutrientsSection(context, recipe),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: _contentWrap(child: _buildStepsSection(context, recipe)),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildRecipeImage() {
-    return Container(
-      width: double.infinity,
-      height: 250,
-      color: Colors.grey[200],
-      child: recipeImageUrl != null && recipeImageUrl!.isNotEmpty
-          ? Image.network(
-              recipeImageUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const Center(
-                  child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
-                );
-              },
-            )
-          : const Center(
-              child: Icon(Icons.restaurant, size: 64, color: Colors.grey),
-            ),
+  Widget _contentWrap({required Widget child}) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 860),
+        child: child,
+      ),
     );
   }
 
-  Widget _buildRecipeInfoHeader(BuildContext context, Map<String, dynamic> recipe) {
+  Widget _buildHero(BuildContext context, Map<String, dynamic> recipe) {
+    final name = (recipe['name'] ?? recipeName ?? 'Recipe').toString();
+    final description = (recipe['description'] ?? '').toString();
+    final cookTime = _toDisplayString(
+      recipe['cookingTimeMinutes'] ?? recipe['cookingTime'],
+      fallback: '--',
+    );
+    final servings = _toDisplayString(
+      recipe['servings'] ?? recipe['baseServings'],
+      fallback: '--',
+    );
+
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            recipe['name'] ?? 'Recipe',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+          Container(
+            height: 230,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.grey[200],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (recipeImageUrl != null && recipeImageUrl!.isNotEmpty)
+                    Image.network(
+                      recipeImageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.grey[300],
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          size: 52,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      color: Colors.grey[300],
+                      child: const Icon(
+                        Icons.restaurant,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.05),
+                          Colors.black.withValues(alpha: 0.5),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: 16,
+                    child: Text(
+                      name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _buildInfoChip('⏱️ ${recipe['cookingTimeMinutes'] ?? 30} min'),
-              const SizedBox(width: 8),
-              _buildInfoChip('🍽️ ${recipe['servings'] ?? 1} servings'),
-              const SizedBox(width: 8),
-              _buildInfoChip('⭐ ${recipe['rating'] ?? 4.5}'),
+              Expanded(
+                child: _buildMetaPill(
+                  icon: Icons.schedule,
+                  value: '$cookTime min',
+                  label: 'Cook time',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildMetaPill(
+                  icon: Icons.people_alt_outlined,
+                  value: servings,
+                  label: 'Servings',
+                ),
+              ),
             ],
           ),
-          if (recipe['description'] != null && (recipe['description'] as String).isNotEmpty) ...[
+          if (description.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text(
-              recipe['description'] ?? '',
-              style: const TextStyle(color: Colors.grey, fontSize: 13),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                description,
+                style: const TextStyle(
+                  color: _textSecondary,
+                  height: 1.45,
+                ),
+              ),
             ),
           ],
         ],
@@ -131,76 +235,97 @@ class ViewRecipeDetailsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoChip(String text) {
+  Widget _buildMetaPill({
+    required IconData icon,
+    required String value,
+    required String label,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF9800).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _primary.withValues(alpha: 0.2)),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFFFF9800),
-        ),
+      child: Row(
+        children: [
+          Icon(icon, color: _primary, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: _textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: _textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildNutritionCard(BuildContext context, Map<String, dynamic> recipe) {
+  Widget _buildNutritionCard(
+      BuildContext context, Map<String, dynamic> recipe) {
     final nutrition = recipe['nutrition'] as Map<String, dynamic>? ?? {};
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Nutrition Information',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 4,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: _buildSectionCard(
+        title: 'Nutrition Information',
+        icon: Icons.pie_chart_outline,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 340;
+            final crossAxisCount = isNarrow ? 2 : 4;
+
+            return GridView.count(
+              crossAxisCount: crossAxisCount,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: isNarrow ? 2.2 : 1.65,
               children: [
                 _buildNutrientItem(
                   'Calories',
-                  nutrition['calories']?.toString() ?? '0',
+                  _toDisplayString(nutrition['calories']),
                   'kcal',
                 ),
                 _buildNutrientItem(
                   'Protein',
-                  nutrition['protein']?.toStringAsFixed(1) ?? '0.0',
+                  _toDisplayString(nutrition['protein'], decimals: 1),
                   'g',
                 ),
                 _buildNutrientItem(
                   'Carbs',
-                  nutrition['carbohydrates']?.toStringAsFixed(1) ?? '0.0',
+                  _toDisplayString(nutrition['carbohydrates'], decimals: 1),
                   'g',
                 ),
                 _buildNutrientItem(
                   'Fat',
-                  nutrition['fats']?.toStringAsFixed(1) ?? '0.0',
+                  _toDisplayString(
+                    nutrition['fat'] ?? nutrition['fats'],
+                    decimals: 1,
+                  ),
                   'g',
                 ),
               ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -215,23 +340,28 @@ class ViewRecipeDetailsPage extends ConsumerWidget {
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFFFF9800),
+            color: _primary,
           ),
         ),
         Text(
           unit,
-          style: const TextStyle(fontSize: 10, color: Colors.grey),
+          style: const TextStyle(fontSize: 10, color: _textSecondary),
         ),
         Text(
           label,
-          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: _textPrimary,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  Widget _buildIngredientsSection(BuildContext context, Map<String, dynamic> recipe) {
+  Widget _buildIngredientsSection(
+      BuildContext context, Map<String, dynamic> recipe) {
     final ingredients = (recipe['ingredients'] as List<dynamic>?) ?? [];
 
     if (ingredients.isEmpty) {
@@ -239,35 +369,42 @@ class ViewRecipeDetailsPage extends ConsumerWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Ingredients',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: _buildSectionCard(
+        title: 'Ingredients',
+        icon: Icons.shopping_basket_outlined,
+        child: ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: ingredients.length,
+          separatorBuilder: (_, __) => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Divider(height: 1),
           ),
-          const SizedBox(height: 12),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: ingredients.length,
-            separatorBuilder: (_, __) => const Divider(),
-            itemBuilder: (context, index) {
-              final ing = ingredients[index] as Map<String, dynamic>?;
-              final ingredientData = ing?['ingredientId'] as Map<String, dynamic>? ?? {};
-              final quantity = ing?['base_quantity']?.toString() ?? '0';
-              final unit = ing?['unit']?.toString() ?? 'g';
-              final name = ingredientData['name']?.toString() ?? 'Ingredient';
-              final micronutrients = (ing?['micronutrients'] as List<dynamic>?) ?? [];
+          itemBuilder: (context, index) {
+            final ing = ingredients[index] as Map<String, dynamic>? ?? {};
+            final ingredientData =
+                ing['ingredientId'] as Map<String, dynamic>? ?? {};
+            final quantity = _toDisplayString(
+              ing['base_quantity'] ?? ing['baseQuantity'] ?? ing['quantity'],
+              fallback: '0',
+            );
+            final unit = (ing['unit'] ?? 'g').toString();
+            final name = (ingredientData['name'] ?? 'Ingredient').toString();
+            final micronutrients =
+                (ing['micronutrients'] as List<dynamic>?) ?? [];
 
-              return Column(
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: _bgColor,
+              ),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Column(
@@ -275,27 +412,39 @@ class ViewRecipeDetailsPage extends ConsumerWidget {
                           children: [
                             Text(
                               name,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: _textPrimary,
+                              ),
                             ),
+                            const SizedBox(height: 3),
                             Text(
                               '$quantity $unit',
                               style: const TextStyle(
-                                color: Colors.grey,
+                                color: _textSecondary,
                                 fontSize: 12,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      // Unit converter for ingredient quantity
                       IconButton(
-                        icon: const Icon(Icons.straighten, size: 20),
+                        tooltip: 'Convert quantity',
+                        icon: const Icon(
+                          Icons.straighten,
+                          size: 20,
+                          color: _primary,
+                        ),
                         onPressed: () {
                           showDialog(
                             context: context,
                             builder: (_) => UnitConverterWidget(
                               ingredientName: name,
-                              baseQuantity: double.tryParse(quantity) ?? 0,
+                              baseQuantity: _toDouble(
+                                ing['base_quantity'] ??
+                                    ing['baseQuantity'] ??
+                                    ing['quantity'],
+                              ),
                               baseUnit: unit,
                             ),
                           );
@@ -303,104 +452,113 @@ class ViewRecipeDetailsPage extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  
-                  // Micronutrients section for this ingredient
                   if (micronutrients.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        const Icon(Icons.science_outlined,
+                            size: 16, color: _textSecondary),
+                        const SizedBox(width: 6),
                         const Text(
-                          'Micronutrients:',
+                          'Micronutrients',
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey,
+                            fontWeight: FontWeight.w700,
+                            color: _textSecondary,
                           ),
                         ),
+                        const Spacer(),
                         TextButton.icon(
                           onPressed: () {
                             showDialog(
                               context: context,
                               builder: (_) => MicronutrientUnitConverterWidget(
                                 ingredientName: name,
-                                micronutrients: micronutrients.cast<Map<String, dynamic>>(),
+                                micronutrients:
+                                    micronutrients.cast<Map<String, dynamic>>(),
                               ),
                             );
                           },
                           icon: const Icon(Icons.scale, size: 16),
-                          label: const Text('Convert Units'),
+                          label: const Text('Convert'),
                           style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFFFF9800),
+                            foregroundColor: _primary,
+                            visualDensity: VisualDensity.compact,
                           ),
                         ),
                       ],
                     ),
-                    // Display micronutrients in grid
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
-                        childAspectRatio: 2.5,
-                      ),
-                      itemCount: micronutrients.length,
-                      itemBuilder: (context, microIndex) {
-                        final micro = micronutrients[microIndex] as Map<String, dynamic>?;
-                        final nutrientData = micro?['micronutrientId'] as Map<String, dynamic>? ?? {};
-                        final nutrientName = nutrientData['name']?.toString() ?? 'Nutrient';
-                        final amount = micro?['amount']?.toString() ?? '0';
-                        final microUnit = 'mg';
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: micronutrients.map((item) {
+                        final micro = item as Map<String, dynamic>? ?? {};
+                        final nutrientData =
+                            micro['micronutrientId'] as Map<String, dynamic>? ??
+                                {};
+                        final nutrientName =
+                            (nutrientData['name'] ?? 'Nutrient').toString();
+                        final amount = _toDisplayString(
+                          micro['amount'],
+                          fallback: '0',
+                          decimals: 2,
+                        );
+                        final microUnit =
+                            (nutrientData['unit'] ?? micro['unit'] ?? 'mg')
+                                .toString();
 
                         return Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFF9800).withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(6),
+                            color: _primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: const Color(0xFFFF9800).withOpacity(0.2),
+                                color: _primary.withValues(alpha: 0.2)),
+                          ),
+                          child: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                color: _textPrimary,
+                                fontSize: 11,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '$nutrientName: ',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: '$amount $microUnit',
+                                  style: const TextStyle(
+                                    color: _primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                nutrientName,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '$amount $microUnit',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFFF9800),
-                                ),
-                              ),
-                            ],
-                          ),
                         );
-                      },
+                      }).toList(),
                     ),
                   ],
                 ],
-              );
-            },
-          ),
-        ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildMicronutrientsSection(BuildContext context, Map<String, dynamic> recipe) {
+  Widget _buildMicronutrientsSection(
+    BuildContext context,
+    Map<String, dynamic> recipe,
+  ) {
     final micronutrients = (recipe['micronutrients'] as List<dynamic>?) ?? [];
 
     if (micronutrients.isEmpty) {
@@ -408,69 +566,65 @@ class ViewRecipeDetailsPage extends ConsumerWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Micronutrients',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: _buildSectionCard(
+        title: 'Micronutrients',
+        icon: Icons.biotech_outlined,
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 1.6,
           ),
-          const SizedBox(height: 12),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.5,
-            ),
-            itemCount: micronutrients.length,
-            itemBuilder: (context, index) {
-              final micro = micronutrients[index] as Map<String, dynamic>?;
-              final nutrientData = micro?['micronutrientId'] as Map<String, dynamic>? ?? {};
-              final name = nutrientData['name']?.toString() ?? 'Nutrient';
-              final amount = micro?['amount']?.toString() ?? '0';
-              final unit = micro?['unit']?.toString() ?? 'mg';
+          itemCount: micronutrients.length,
+          itemBuilder: (context, index) {
+            final micro = micronutrients[index] as Map<String, dynamic>? ?? {};
+            final nutrientData =
+                micro['micronutrientId'] as Map<String, dynamic>? ?? {};
+            final name = (nutrientData['name'] ?? 'Nutrient').toString();
+            final amount =
+                _toDisplayString(micro['amount'], fallback: '0', decimals: 2);
+            final unit =
+                (nutrientData['unit'] ?? micro['unit'] ?? 'mg').toString();
 
-              return Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF9800).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: const Color(0xFFFF9800).withOpacity(0.3),
+            return Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _primary.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      color: _textPrimary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                      textAlign: TextAlign.center,
+                  const SizedBox(height: 8),
+                  Text(
+                    '$amount $unit',
+                    style: const TextStyle(
+                      color: _primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$amount $unit',
-                      style: const TextStyle(
-                        color: Color(0xFFFF9800),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -483,63 +637,124 @@ class ViewRecipeDetailsPage extends ConsumerWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Cooking Steps',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 12),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: steps.length,
-            itemBuilder: (context, index) {
-              final step = steps[index] as Map<String, dynamic>?;
-              final stepNum = (step?['stepNumber'] ?? index + 1).toString();
-              final instruction = step?['instruction']?.toString() ?? '';
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: _buildSectionCard(
+        title: 'Cooking Steps',
+        icon: Icons.list_alt_outlined,
+        child: ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: steps.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final step = steps[index] as Map<String, dynamic>? ?? {};
+            final stepNum =
+                (step['stepNumber'] ?? step['step'] ?? index + 1).toString();
+            final instruction = (step['instruction'] ?? '').toString();
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF9800),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          stepNum,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _bgColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: const BoxDecoration(
+                      color: _primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        stepNum,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        instruction,
-                        style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      instruction,
+                      style: const TextStyle(
+                        color: _textPrimary,
+                        height: 1.4,
                       ),
                     ),
-                  ],
-                ),
-              );
-            },
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required Widget child,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: _primary, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  color: _textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
     );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0;
+  }
+
+  static String _toDisplayString(
+    dynamic value, {
+    String fallback = '0',
+    int decimals = 0,
+  }) {
+    if (value == null) return fallback;
+    if (value is num) return value.toStringAsFixed(decimals);
+    final parsed = double.tryParse(value.toString());
+    if (parsed == null) return value.toString();
+    return parsed.toStringAsFixed(decimals);
   }
 }

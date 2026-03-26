@@ -5,8 +5,63 @@ const API_BASE_URL = "/nutritionist-schedules";
 // ===== Admin Schedule Management =====
 
 export const createNutritionistSchedule = async (data) => {
-  const response = await apiClient.post(`${API_BASE_URL}`, data);
-  return response.data.data;
+  const payload = {
+    ...data,
+    // Backward compatibility: old backend expects single nutritionistId
+    nutritionistId:
+      data?.nutritionistId ||
+      (Array.isArray(data?.nutritionistIds) && data.nutritionistIds.length > 0
+        ? data.nutritionistIds[0]
+        : undefined),
+  };
+
+  try {
+    const response = await apiClient.post(`${API_BASE_URL}`, payload);
+    return response.data;
+  } catch (error) {
+    const message = error?.response?.data?.message || "";
+    const isLegacyValidation = message.includes(
+      "nutritionistId and workDays array are required"
+    );
+    const ids = Array.isArray(data?.nutritionistIds) ? data.nutritionistIds : [];
+
+    // Fallback for older backend: create one by one
+    if (isLegacyValidation && ids.length > 0) {
+      const created = [];
+      const skipped = [];
+
+      for (const id of ids) {
+        try {
+          const res = await apiClient.post(`${API_BASE_URL}`, {
+            nutritionistId: id,
+            workDays: data.workDays,
+            specialDays: data.specialDays || [],
+          });
+          created.push(res.data?.data || res.data);
+        } catch (singleErr) {
+          skipped.push({
+            nutritionistId: id,
+            reason: singleErr?.response?.data?.message || "Failed to create schedule",
+          });
+        }
+      }
+
+      if (created.length === 0) {
+        throw error;
+      }
+
+      return {
+        success: true,
+        message: `Created ${created.length} schedule(s)`,
+        data: created,
+        createdCount: created.length,
+        skippedCount: skipped.length,
+        skipped,
+      };
+    }
+
+    throw error;
+  }
 };
 
 export const getAllNutritionistSchedules = async () => {
@@ -62,8 +117,10 @@ export const getAllChangeRequests = async (status) => {
 
 // ===== Get Nutritionists =====
 
-export const getAllNutritionists = async () => {
-  const response = await apiClient.get(`${API_BASE_URL}/nutritionists`);
+export const getAllNutritionists = async ({ availableOnly = false } = {}) => {
+  const response = await apiClient.get(`${API_BASE_URL}/nutritionists`, {
+    params: { availableOnly },
+  });
   return response.data.data || [];
 };
 

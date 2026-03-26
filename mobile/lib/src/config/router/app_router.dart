@@ -5,7 +5,6 @@ import '../../features/auth/presentation/routes/auth_routes.dart';
 import '../../features/home/presentation/pages/main_navigation_page.dart';
 import '../../features/reminders/presentation/pages/reminders_page.dart';
 import '../../features/chat/presentation/pages/chat_page.dart';
-import '../../features/meal_plan/presentation/pages/view_recipe_detail_page.dart';
 import '../../features/meal_plan/presentation/pages/view_recipe_details_page.dart';
 import '../../features/userHeath/presentation/pages/set_age.dart';
 import '../../features/userHeath/presentation/pages/set_height.dart';
@@ -161,7 +160,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final recipeId = state.pathParameters['recipeId']!;
           final recipeName = state.uri.queryParameters['name'] ?? 'Recipe';
           final imageUrl = state.uri.queryParameters['image'];
-          return ViewRecipeDetailPage(
+          return ViewRecipeDetailsPage(
             recipeId: recipeId,
             recipeName: recipeName,
             recipeImageUrl: imageUrl,

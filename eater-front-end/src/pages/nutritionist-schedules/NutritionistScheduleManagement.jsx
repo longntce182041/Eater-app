@@ -16,37 +16,106 @@ import {
 } from "@/services/nutritionistScheduleApi";
 import "./NutritionistScheduleManagement.css";
 
-// Generate next 7 days starting from tomorrow
-const generateNextDays = () => {
-  const dates = [];
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
+const MIN_WORK_TIME = "09:00";
+const MAX_WORK_TIME = "17:00";
 
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(tomorrow);
-    date.setDate(date.getDate() + i);
-    const dateStr = date.toISOString().split("T")[0];
-    dates.push({
-      date: dateStr,
-      startTime: "09:00",
-      endTime: "17:00",
+const formatDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getCurrentMonthValue = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+};
+
+const getMonthFromWorkDays = (workDays) => {
+  if (!Array.isArray(workDays) || workDays.length === 0 || !workDays[0]?.date) {
+    return getCurrentMonthValue();
+  }
+  return String(workDays[0].date).slice(0, 7);
+};
+
+const generateWorkDaysForMonth = (monthValue, { includePastDays = false } = {}) => {
+  if (!monthValue || !monthValue.includes("-")) {
+    return [];
+  }
+
+  const [yearStr, monthStr] = monthValue.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return [];
+  }
+
+  const totalDays = new Date(year, month, 0).getDate();
+  const workDays = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (let day = 1; day <= totalDays; day += 1) {
+    const date = new Date(year, month - 1, day);
+    if (date.getDay() === 0) {
+      continue;
+    }
+
+    if (!includePastDays && date < today) {
+      continue;
+    }
+
+    workDays.push({
+      date: formatDateKey(date),
+      startTime: MIN_WORK_TIME,
+      endTime: MAX_WORK_TIME,
       isAvailable: true,
     });
   }
-  return dates;
+
+  return workDays;
+};
+
+const clampTime = (timeValue) => {
+  if (!timeValue) return MIN_WORK_TIME;
+  if (timeValue < MIN_WORK_TIME) return MIN_WORK_TIME;
+  if (timeValue > MAX_WORK_TIME) return MAX_WORK_TIME;
+  return timeValue;
+};
+
+const normalizeWorkDays = (workDays) => {
+  if (!Array.isArray(workDays)) return [];
+
+  return workDays
+    .filter((day) => {
+      if (!day?.date) return false;
+      const weekday = new Date(`${day.date}T00:00:00`).getDay();
+      return weekday !== 0;
+    })
+    .map((day) => ({
+      ...day,
+      startTime: clampTime(day.startTime),
+      endTime: clampTime(day.endTime),
+    }));
 };
 
 const NutritionistScheduleManagement = () => {
   const [schedules, setSchedules] = useState([]);
   const [nutritionists, setNutritionists] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [formData, setFormData] = useState({
-    nutritionistId: "",
-    workDays: generateNextDays(),
+    nutritionistIds: [],
+    workDays: generateWorkDaysForMonth(getCurrentMonthValue(), {
+      includePastDays: false,
+    }),
     specialDays: [],
   });
 
@@ -57,7 +126,7 @@ const NutritionistScheduleManagement = () => {
 
   const fetchNutritionists = async () => {
     try {
-      const data = await getAllNutritionists();
+      const data = await getAllNutritionists({ availableOnly: false });
       setNutritionists(data || []);
     } catch (err) {
       console.error("Error fetching nutritionists:", err);
@@ -81,8 +150,23 @@ const NutritionistScheduleManagement = () => {
   const handleCreateSchedule = async (e) => {
     e.preventDefault();
     try {
-      if (!Array.isArray(formData.workDays) || formData.workDays.length === 0) {
+      const normalizedWorkDays = normalizeWorkDays(formData.workDays);
+
+      if (!Array.isArray(normalizedWorkDays) || normalizedWorkDays.length === 0) {
         setError("Work days are required");
+        return;
+      }
+
+      const invalidRangeDay = normalizedWorkDays.find(
+        (day) => day.startTime >= day.endTime
+      );
+      if (invalidRangeDay) {
+        setError(`Invalid time range on ${invalidRangeDay.date}. End time must be after start time.`);
+        return;
+      }
+
+      if (!Array.isArray(formData.nutritionistIds) || formData.nutritionistIds.length === 0) {
+        setError("Please select at least one nutritionist");
         return;
       }
 
@@ -99,12 +183,22 @@ const NutritionistScheduleManagement = () => {
         return;
       }
 
-      await createNutritionistSchedule(formData);
+      const payload = {
+        ...formData,
+        workDays: normalizedWorkDays,
+      };
+
+      const result = await createNutritionistSchedule(payload);
+      if (result?.skippedCount > 0) {
+        const firstReason = result?.skipped?.[0]?.reason || "Some schedules were skipped";
+        setError(`Created ${result.createdCount} schedule(s), skipped ${result.skippedCount}: ${firstReason}`);
+      }
       fetchSchedules();
+      fetchNutritionists();
       resetForm();
       setShowForm(false);
     } catch (err) {
-      setError(err.message || "Failed to create schedule");
+      setError(err.response?.data?.message || err.message || "Failed to create schedule");
       console.error("Error creating schedule:", err);
     }
   };
@@ -114,8 +208,26 @@ const NutritionistScheduleManagement = () => {
     if (!editingSchedule) return;
 
     try {
-      await updateNutritionistSchedule(editingSchedule._id, formData);
+      const normalizedWorkDays = normalizeWorkDays(formData.workDays);
+      if (!normalizedWorkDays.length) {
+        setError("Work days are required");
+        return;
+      }
+
+      const invalidRangeDay = normalizedWorkDays.find(
+        (day) => day.startTime >= day.endTime
+      );
+      if (invalidRangeDay) {
+        setError(`Invalid time range on ${invalidRangeDay.date}. End time must be after start time.`);
+        return;
+      }
+
+      await updateNutritionistSchedule(editingSchedule._id, {
+        ...formData,
+        workDays: normalizedWorkDays,
+      });
       fetchSchedules();
+      fetchNutritionists();
       resetForm();
       setEditingSchedule(null);
       setShowForm(false);
@@ -131,6 +243,7 @@ const NutritionistScheduleManagement = () => {
     try {
       await deleteNutritionistSchedule(scheduleId);
       fetchSchedules();
+      fetchNutritionists();
       setSelectedSchedule(null);
     } catch (err) {
       setError(err.message || "Failed to delete schedule");
@@ -139,19 +252,25 @@ const NutritionistScheduleManagement = () => {
   };
 
   const resetForm = () => {
+    const monthValue = getCurrentMonthValue();
+    setSelectedMonth(monthValue);
     setFormData({
-      nutritionistId: "",
-      workDays: generateNextDays(),
+      nutritionistIds: [],
+      workDays: generateWorkDaysForMonth(monthValue, {
+        includePastDays: false,
+      }),
       specialDays: [],
     });
     setEditingSchedule(null);
   };
 
   const handleEditClick = (schedule) => {
+    const monthValue = getMonthFromWorkDays(schedule.workDays);
+    setSelectedMonth(monthValue);
     setEditingSchedule(schedule);
     setFormData({
-      nutritionistId: schedule.nutritionistId._id,
-      workDays: schedule.workDays,
+      nutritionistIds: [schedule.nutritionistId._id],
+      workDays: normalizeWorkDays(schedule.workDays),
       specialDays: schedule.specialDays,
     });
     setShowForm(true);
@@ -159,9 +278,42 @@ const NutritionistScheduleManagement = () => {
 
   const handleScheduleDetailChange = (dayIndex, field, value) => {
     const updatedWorkDays = [...formData.workDays];
-    updatedWorkDays[dayIndex][field] = value;
+    if (field === "startTime" || field === "endTime") {
+      updatedWorkDays[dayIndex][field] = clampTime(value);
+    } else {
+      updatedWorkDays[dayIndex][field] = value;
+    }
     setFormData({ ...formData, workDays: updatedWorkDays });
   };
+
+  const handleMonthChange = (monthValue) => {
+    setSelectedMonth(monthValue);
+    setFormData((prev) => ({
+      ...prev,
+      workDays: generateWorkDaysForMonth(monthValue, {
+        includePastDays: Boolean(editingSchedule),
+      }),
+    }));
+  };
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredSchedules = schedules.filter((schedule) => {
+    if (!normalizedSearch) return true;
+
+    const email = schedule.nutritionistId?.email?.toLowerCase() || "";
+    const role = schedule.nutritionistId?.role?.toLowerCase() || "";
+    const status = schedule.status?.toLowerCase() || "";
+    const dates = Array.isArray(schedule.workDays)
+      ? schedule.workDays.map((d) => String(d.date || "").toLowerCase()).join(" ")
+      : "";
+
+    return (
+      email.includes(normalizedSearch) ||
+      role.includes(normalizedSearch) ||
+      status.includes(normalizedSearch) ||
+      dates.includes(normalizedSearch)
+    );
+  });
 
   if (loading) {
     return <div className="loading">Loading schedules...</div>;
@@ -180,6 +332,19 @@ const NutritionistScheduleManagement = () => {
         >
           <Plus size={20} /> Create New Schedule
         </button>
+      </div>
+
+      <div className="schedule-toolbar">
+        <input
+          type="text"
+          className="schedule-search-input"
+          placeholder="Search by email, status, role, or date (YYYY-MM-DD)..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <span className="schedule-search-count">
+          Showing {filteredSchedules.length}/{schedules.length}
+        </span>
       </div>
 
       {error && (
@@ -204,6 +369,8 @@ const NutritionistScheduleManagement = () => {
           }}
           onScheduleDetailChange={handleScheduleDetailChange}
           setFormData={setFormData}
+          selectedMonth={selectedMonth}
+          onMonthChange={handleMonthChange}
         />
       )}
 
@@ -221,8 +388,12 @@ const NutritionistScheduleManagement = () => {
               Create First Schedule
             </button>
           </div>
+        ) : filteredSchedules.length === 0 ? (
+          <div className="empty-state">
+            <p>No schedules match your search</p>
+          </div>
         ) : (
-          schedules.map((schedule) => (
+          filteredSchedules.map((schedule) => (
             <div key={schedule._id} className="schedule-card">
               <div className="schedule-card-header">
                 <div>
@@ -285,6 +456,8 @@ const ScheduleForm = ({
   onCancel,
   onScheduleDetailChange,
   setFormData,
+  selectedMonth,
+  onMonthChange,
 }) => {
   return (
     <div className="modal-overlay" onClick={onCancel}>
@@ -299,26 +472,45 @@ const ScheduleForm = ({
         <form onSubmit={onSubmit} className="schedule-form">
           {!editingSchedule && (
             <div className="form-group">
-              <label htmlFor="nutritionistId">Nutritionist *</label>
+              <label htmlFor="nutritionistIds">Nutritionists *</label>
               <select
-                id="nutritionistId"
-                value={formData.nutritionistId}
+                id="nutritionistIds"
+                multiple
+                size={Math.min(8, Math.max(4, nutritionists.length || 4))}
+                value={formData.nutritionistIds}
                 onChange={(e) =>
-                  setFormData({ ...formData, nutritionistId: e.target.value })
+                  setFormData({
+                    ...formData,
+                    nutritionistIds: Array.from(e.target.selectedOptions, (opt) => opt.value),
+                  })
                 }
                 required
               >
-                <option value="">-- Select a Nutritionist --</option>
                 {nutritionists.map((nut) => (
                   <option key={nut.id} value={nut.id}>
                     {nut.fullName} ({nut.email})
                   </option>
                 ))}
               </select>
+              <small style={{ color: "#666" }}>Hold Ctrl/Cmd to select multiple nutritionists.</small>
             </div>
           )}
 
-          <div className="section-title">Work Days Schedule</div>
+          <div className="form-group month-picker-group">
+            <label htmlFor="scheduleMonth">Schedule Month *</label>
+            <input
+              id="scheduleMonth"
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => onMonthChange(e.target.value)}
+              required
+            />
+            <small className="month-picker-note">
+              Auto-generates all dates in selected month and excludes Sundays.
+            </small>
+          </div>
+
+          <div className="section-title">Work Days Schedule ({formData.workDays.length} days)</div>
           <div className="schedule-details">
             {formData.workDays.map((day, index) => {
               const dateObj = new Date(day.date);
@@ -330,6 +522,8 @@ const ScheduleForm = ({
                     <input
                       type="time"
                       value={day.startTime}
+                      min={MIN_WORK_TIME}
+                      max={MAX_WORK_TIME}
                       onChange={(e) =>
                         onScheduleDetailChange(index, "startTime", e.target.value)
                       }
@@ -338,6 +532,8 @@ const ScheduleForm = ({
                     <input
                       type="time"
                       value={day.endTime}
+                      min={MIN_WORK_TIME}
+                      max={MAX_WORK_TIME}
                       onChange={(e) =>
                         onScheduleDetailChange(index, "endTime", e.target.value)
                       }
@@ -357,6 +553,9 @@ const ScheduleForm = ({
             );
             })}
           </div>
+          <p className="time-range-note">
+            Allowed time range: {MIN_WORK_TIME} - {MAX_WORK_TIME}. Sundays are excluded automatically.
+          </p>
 
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={onCancel}>

@@ -36,6 +36,8 @@ const ScheduleChangeRequestSchema = new mongoose.Schema(
       dayOfWeek: String,
       startTime: String,
       endTime: String,
+      offHours: Number,
+      offDays: Number,
       reason: String,
     },
     status: {

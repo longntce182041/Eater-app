@@ -23,6 +23,7 @@ const consultationRoutes = require("./consultation.management.routes");
 const mealLogRoutes = require("./meal.log.routes");
 const viewRecipeDetailRoutes = require("./viewrecipedetail.routes");
 const nutritionistScheduleRoutes = require("./nutritionist.schedule.routes");
+const nutritionistProfileRoutes = require("./nutritionist.profile.routes");
 
 const router = express.Router();
 router.use("/auth/user", authUserRoutes);
@@ -47,5 +48,6 @@ router.use("/consultations", consultationRoutes);
 router.use("/meal-logs", mealLogRoutes);
 router.use("/view-recipe-details", viewRecipeDetailRoutes);
 router.use("/nutritionist-schedules", nutritionistScheduleRoutes);
+router.use("/nutritionists", nutritionistProfileRoutes);
 
 module.exports = router;

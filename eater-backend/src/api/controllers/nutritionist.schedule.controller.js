@@ -5,17 +5,34 @@ const User = require("../../models/User");
 // Admin: list nutritionists for schedule assignment
 exports.getNutritionistsForScheduling = async (req, res) => {
   try {
+    const availableOnly = String(req.query?.availableOnly || "false") === "true";
+
     const nutritionists = await User.find({ role: "nutritionist", isActive: true })
       .select("email _id")
       .sort({ email: 1 });
 
-    const data = nutritionists.map((u) => ({
+    const activeSchedules = await NutritionistSchedule.find({ status: "active" })
+      .select("userId nutritionistId");
+
+    const scheduledUserIds = new Set(
+      activeSchedules
+        .map((s) => s.userId || s.nutritionistId)
+        .filter(Boolean)
+        .map((id) => String(id))
+    );
+
+    let data = nutritionists.map((u) => ({
       id: u._id,
       fullName: u.email,
       specialization: "Nutritionist",
       email: u.email,
       userId: u._id,
+      hasActiveSchedule: scheduledUserIds.has(String(u._id)),
     }));
+
+    if (availableOnly) {
+      data = data.filter((u) => !u.hasActiveSchedule);
+    }
 
     return res.status(200).json({ success: true, data });
   } catch (err) {
@@ -27,53 +44,132 @@ exports.getNutritionistsForScheduling = async (req, res) => {
 // Admin: Create a new schedule for nutritionist
 exports.createSchedule = async (req, res) => {
   try {
-    const { nutritionistId, workDays, specialDays } = req.body;
+    const { nutritionistId, nutritionistIds, workDays, specialDays } = req.body;
 
-    console.log("📅 Creating schedule - Req body:", JSON.stringify({ nutritionistId, workDaysCount: workDays?.length, specialDaysCount: specialDays?.length }, null, 2));
+    const targetIds = Array.isArray(nutritionistIds) && nutritionistIds.length > 0
+      ? nutritionistIds
+      : nutritionistId
+        ? [nutritionistId]
+        : [];
+
+    console.log(
+      "📅 Creating schedule(s) - Req body:",
+      JSON.stringify(
+        {
+          targetCount: targetIds.length,
+          workDaysCount: workDays?.length,
+          specialDaysCount: specialDays?.length,
+        },
+        null,
+        2
+      )
+    );
 
     // Validate input
-    if (!nutritionistId || !workDays || workDays.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "nutritionistId and workDays array are required" 
-      });
-    }
-
-    // Verify user exists and is a nutritionist
-    const nutritionistUser = await User.findById(nutritionistId).select("_id role email");
-    if (!nutritionistUser || nutritionistUser.role !== "nutritionist") {
-      return res.status(404).json({ success: false, message: "Nutritionist user not found" });
-    }
-
-    // Check if schedule already exists for this nutritionist
-    const existingSchedule = await NutritionistSchedule.findOne({
-      userId: nutritionistId,
-      status: "active",
-    });
-
-    if (existingSchedule) {
+    if (targetIds.length === 0 || !workDays || workDays.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Active schedule already exists for this nutritionist",
+        message: "nutritionistIds (or nutritionistId) and workDays array are required",
       });
     }
 
-    const newSchedule = new NutritionistSchedule({
-      nutritionistId,
-      userId: nutritionistId,
-      workDays: workDays || [],
-      specialDays: specialDays || [],
-      status: "active",
-    });
+    // Verify users exist and are nutritionists
+    const nutritionistUsers = await User.find({
+      _id: { $in: targetIds },
+      role: "nutritionist",
+    }).select("_id role email");
 
-    await newSchedule.save();
+    const validIdSet = new Set(nutritionistUsers.map((u) => String(u._id)));
+    const invalidIds = targetIds.filter((id) => !validIdSet.has(String(id)));
 
-    console.log("✅ Schedule created:", newSchedule._id);
+    const created = [];
+    const updated = [];
+    const skipped = [];
 
-    res.status(201).json({
+    for (const id of targetIds) {
+      const userId = String(id);
+
+      if (!validIdSet.has(userId)) {
+        skipped.push({ nutritionistId: userId, reason: "Nutritionist user not found" });
+        continue;
+      }
+
+      const existingSchedule = await NutritionistSchedule.findOne({
+        userId,
+        status: "active",
+      });
+
+      if (existingSchedule) {
+        const existingWorkDayDates = new Set(
+          (existingSchedule.workDays || []).map((day) => day.date)
+        );
+
+        const incomingWorkDays = Array.isArray(workDays) ? workDays : [];
+        const newWorkDays = incomingWorkDays.filter(
+          (day) => day?.date && !existingWorkDayDates.has(day.date)
+        );
+
+        if (newWorkDays.length === 0) {
+          skipped.push({
+            nutritionistId: userId,
+            reason: "All provided work days already exist in active schedule",
+          });
+          continue;
+        }
+
+        const mergedWorkDays = [...(existingSchedule.workDays || []), ...newWorkDays].sort(
+          (a, b) => String(a.date).localeCompare(String(b.date))
+        );
+
+        const existingSpecialDayDates = new Set(
+          (existingSchedule.specialDays || []).map((day) => day.date)
+        );
+
+        const incomingSpecialDays = Array.isArray(specialDays) ? specialDays : [];
+        const newSpecialDays = incomingSpecialDays.filter(
+          (day) => day?.date && !existingSpecialDayDates.has(day.date)
+        );
+
+        existingSchedule.workDays = mergedWorkDays;
+        existingSchedule.specialDays = [
+          ...(existingSchedule.specialDays || []),
+          ...newSpecialDays,
+        ];
+
+        await existingSchedule.save();
+        updated.push(existingSchedule);
+        continue;
+      }
+
+      const newSchedule = await NutritionistSchedule.create({
+        nutritionistId: userId,
+        userId,
+        workDays: workDays || [],
+        specialDays: specialDays || [],
+        status: "active",
+      });
+
+      created.push(newSchedule);
+    }
+
+    if (created.length === 0 && updated.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No schedules were created",
+        invalidIds,
+        skipped,
+      });
+    }
+
+    return res.status(201).json({
       success: true,
-      message: "Schedule created successfully",
-      data: newSchedule,
+      message: `Created ${created.length} schedule(s), updated ${updated.length} schedule(s)`,
+      data: [...created, ...updated],
+      createdCount: created.length,
+      updatedCount: updated.length,
+      skippedCount: skipped.length,
+      skipped,
+      invalidIds,
     });
   } catch (err) {
     console.error("❌ Error creating schedule:", err);
@@ -228,6 +324,8 @@ exports.requestScheduleChange = async (req, res) => {
   try {
     const userId = req.user?.id; // From auth middleware
     const { scheduleId, requestType, affectedDates, proposedChanges, reason } = req.body;
+    const MIN_WORK_TIME = "09:00";
+    const MAX_WORK_TIME = "17:00";
 
     // Verify the schedule exists
     const schedule = await NutritionistSchedule.findById(scheduleId);
@@ -244,6 +342,37 @@ exports.requestScheduleChange = async (req, res) => {
         success: false,
         message: "Unauthorized: You can only request changes for your own schedule",
       });
+    }
+
+    if (requestType === "modify_hours") {
+      const startTime = String(proposedChanges?.startTime || "");
+      const endTime = String(proposedChanges?.endTime || "");
+
+      if (!startTime || !endTime) {
+        return res.status(400).json({
+          success: false,
+          message: "modify_hours requires startTime and endTime",
+        });
+      }
+
+      if (
+        startTime < MIN_WORK_TIME ||
+        startTime > MAX_WORK_TIME ||
+        endTime < MIN_WORK_TIME ||
+        endTime > MAX_WORK_TIME
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: `modify_hours must be within ${MIN_WORK_TIME}-${MAX_WORK_TIME}`,
+        });
+      }
+
+      if (startTime >= endTime) {
+        return res.status(400).json({
+          success: false,
+          message: "endTime must be later than startTime",
+        });
+      }
     }
 
     const changeRequest = new ScheduleChangeRequest({
@@ -341,6 +470,36 @@ exports.approveChangeRequest = async (req, res) => {
     }
 
     const toDateStr = (d) => new Date(d).toISOString().split("T")[0];
+    const timeToMinutes = (timeStr) => {
+      if (!timeStr || !String(timeStr).includes(":")) return null;
+      const [hourStr, minuteStr] = String(timeStr).split(":");
+      const hours = Number(hourStr);
+      const minutes = Number(minuteStr);
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+      return hours * 60 + minutes;
+    };
+    const minutesToTime = (totalMinutes) => {
+      const safeMinutes = Math.max(0, Math.floor(totalMinutes));
+      const hours = String(Math.floor(safeMinutes / 60)).padStart(2, "0");
+      const minutes = String(safeMinutes % 60).padStart(2, "0");
+      return `${hours}:${minutes}`;
+    };
+    const addDaysToDateStr = (dateStr, days) => {
+      const date = new Date(`${dateStr}T00:00:00`);
+      date.setDate(date.getDate() + days);
+      return toDateStr(date);
+    };
+    const upsertSpecialDay = ({ date, type, reason, isAvailable = false }) => {
+      schedule.specialDays = schedule.specialDays || [];
+      const existingIndex = schedule.specialDays.findIndex((d) => d.date === date);
+      if (existingIndex !== -1) {
+        schedule.specialDays[existingIndex].type = type;
+        schedule.specialDays[existingIndex].reason = reason;
+        schedule.specialDays[existingIndex].isAvailable = isAvailable;
+      } else {
+        schedule.specialDays.push({ date, type, reason, isAvailable });
+      }
+    };
 
     if (changeRequest.requestType === "modify_hours" && changeRequest.proposedChanges) {
       const targetDate = changeRequest.proposedChanges.date || toDateStr(changeRequest.affectedDates.startDate);
@@ -354,21 +513,83 @@ exports.approveChangeRequest = async (req, res) => {
         }
       }
     } else if (changeRequest.requestType === "take_day_off") {
-      schedule.specialDays = schedule.specialDays || [];
-      schedule.specialDays.push({
-        date: toDateStr(changeRequest.affectedDates.startDate),
-        type: "off",
-        reason: changeRequest.reason,
-        isAvailable: false,
-      });
+      const targetStartDate = toDateStr(changeRequest.affectedDates.startDate);
+      const requestedOffHours = Number(changeRequest.proposedChanges?.offHours || 0);
+      const requestedOffDays = Number(changeRequest.proposedChanges?.offDays || 0);
+
+      // Partial leave: subtract requested hours directly from the target workday.
+      if (requestedOffHours > 0) {
+        const dayIndex = (schedule.workDays || []).findIndex(
+          (d) => d.date === targetStartDate
+        );
+
+        if (dayIndex !== -1) {
+          const workDay = schedule.workDays[dayIndex];
+          const startMinutes = timeToMinutes(workDay.startTime);
+          const endMinutes = timeToMinutes(workDay.endTime);
+
+          if (startMinutes !== null && endMinutes !== null && endMinutes > startMinutes) {
+            const deductedMinutes = endMinutes - requestedOffHours * 60;
+
+            if (deductedMinutes <= startMinutes) {
+              workDay.isAvailable = false;
+              upsertSpecialDay({
+                date: targetStartDate,
+                type: "off",
+                reason: `${changeRequest.reason} (Approved ${requestedOffHours} hours off)`,
+                isAvailable: false,
+              });
+            } else {
+              workDay.endTime = minutesToTime(deductedMinutes);
+              upsertSpecialDay({
+                date: targetStartDate,
+                type: "special_event",
+                reason: `${changeRequest.reason} (Approved ${requestedOffHours} hours off)`,
+                isAvailable: true,
+              });
+            }
+          }
+        }
+      } else {
+        const rangeEndDate = changeRequest.affectedDates?.endDate
+          ? toDateStr(changeRequest.affectedDates.endDate)
+          : requestedOffDays > 1
+            ? addDaysToDateStr(targetStartDate, requestedOffDays - 1)
+            : targetStartDate;
+
+        const cursor = new Date(`${targetStartDate}T00:00:00`);
+        const end = new Date(`${rangeEndDate}T00:00:00`);
+
+        while (cursor <= end) {
+          const currentDate = toDateStr(cursor);
+          const dayIndex = (schedule.workDays || []).findIndex((d) => d.date === currentDate);
+          if (dayIndex !== -1) {
+            schedule.workDays[dayIndex].isAvailable = false;
+          }
+
+          upsertSpecialDay({
+            date: currentDate,
+            type: "off",
+            reason: changeRequest.reason,
+            isAvailable: false,
+          });
+
+          cursor.setDate(cursor.getDate() + 1);
+        }
+      }
     } else if (changeRequest.requestType === "vacation") {
-      schedule.specialDays = schedule.specialDays || [];
       const startDate = new Date(changeRequest.affectedDates.startDate);
       const endDate = new Date(changeRequest.affectedDates.endDate || startDate);
 
       while (startDate <= endDate) {
-        schedule.specialDays.push({
-          date: startDate.toISOString().split("T")[0],
+        const currentDate = startDate.toISOString().split("T")[0];
+        const dayIndex = (schedule.workDays || []).findIndex((d) => d.date === currentDate);
+        if (dayIndex !== -1) {
+          schedule.workDays[dayIndex].isAvailable = false;
+        }
+
+        upsertSpecialDay({
+          date: currentDate,
           type: "vacation",
           reason: changeRequest.reason,
           isAvailable: false,

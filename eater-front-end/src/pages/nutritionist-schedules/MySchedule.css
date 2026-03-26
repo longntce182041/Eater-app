@@ -294,6 +294,126 @@
   color: #999;
 }
 
+/* Monthly Calendar */
+.calendar-month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 24px 0 12px;
+}
+
+.calendar-month-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2d2d2d;
+}
+
+.month-nav-btn {
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #555;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.month-nav-btn:hover {
+  border-color: #ff9800;
+  color: #ff9800;
+}
+
+.month-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.weekday-header-cell {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 0;
+}
+
+.calendar-day-cell {
+  min-height: 120px;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.calendar-day-cell.empty {
+  background: transparent;
+  border: none;
+}
+
+.calendar-day-cell.today {
+  border-color: #ff9800;
+  box-shadow: 0 0 0 1px rgba(255, 152, 0, 0.2);
+}
+
+.calendar-day-cell.scheduled {
+  background: #fffdf8;
+}
+
+.calendar-day-cell.special {
+  border-color: #ffd54f;
+}
+
+.day-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2d2d2d;
+}
+
+.day-schedule-content {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day-time {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2d2d2d;
+}
+
+.day-schedule-content.no-shift {
+  font-size: 12px;
+  color: #bbb;
+}
+
+.special-tag {
+  align-self: flex-start;
+  padding: 3px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 999px;
+  text-transform: capitalize;
+}
+
+.special-tag.type-vacation,
+.special-tag.type-holiday,
+.special-tag.type-off,
+.special-tag.type-special_event {
+  background: #fff3e0;
+  color: #e65100;
+}
+
 /* Special Dates Section */
 .special-dates-section {
   margin-top: 32px;
@@ -628,6 +748,43 @@
 
   .weekly-schedule {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .calendar-month-header h3 {
+    font-size: 16px;
+  }
+
+  .month-nav-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .month-calendar-grid {
+    gap: 6px;
+  }
+
+  .weekday-header-cell {
+    font-size: 10px;
+    padding: 6px 0;
+  }
+
+  .calendar-day-cell {
+    min-height: 90px;
+    padding: 6px;
+  }
+
+  .day-number {
+    font-size: 12px;
+  }
+
+  .day-time,
+  .day-schedule-content.no-shift {
+    font-size: 11px;
+  }
+
+  .special-tag {
+    font-size: 9px;
+    padding: 2px 5px;
   }
 
   .requests-grid {

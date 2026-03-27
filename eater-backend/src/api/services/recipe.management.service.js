@@ -5,6 +5,7 @@ const { RecipesStep } = require('../../models/recipes_step');
 const { RecipeDietType } = require('../../models/recipe_diet_type');
 const { RecipeNutrition } = require('../../models/recipe_nutrion');
 const { RecipeMicronutrientValues } = require('../../models/recipe_micronutrient_values');
+const { IngredientMicronutrientValues } = require('../../models/ingredient_micronutrient_values');
 const { DietType } = require('../../models/diet_types');
 const { Ingredient } = require('../../models/ingredients');
 
@@ -71,6 +72,57 @@ class RecipeService {
         }
 
         return validDefaults;
+    }
+
+    async syncRecipeMicronutrientsFromIngredients(recipeId, ingredients = []) {
+        await RecipeMicronutrientValues.deleteMany({ recipeId });
+
+        if (!Array.isArray(ingredients) || ingredients.length === 0) return;
+
+        const ingredientQuantityMap = ingredients.reduce((acc, item) => {
+            const ingredientId = String(item?.ingredientId || '');
+            if (!mongoose.Types.ObjectId.isValid(ingredientId)) return acc;
+
+            const quantity = this.parseNumber(item?.base_quantity);
+            const multiplier = quantity !== null && quantity > 0 ? quantity : 1;
+
+            acc.set(ingredientId, (acc.get(ingredientId) || 0) + multiplier);
+            return acc;
+        }, new Map());
+
+        if (ingredientQuantityMap.size === 0) return;
+
+        const ingredientIds = [...ingredientQuantityMap.keys()].map(
+            (id) => new mongoose.Types.ObjectId(id),
+        );
+
+        const ingredientMicronutrients = await IngredientMicronutrientValues.find({
+            ingredientId: { $in: ingredientIds },
+        }).select('ingredientId micronutrientId amount');
+
+        if (ingredientMicronutrients.length === 0) return;
+
+        const micronutrientTotals = ingredientMicronutrients.reduce((acc, item) => {
+            const ingredientId = String(item.ingredientId);
+            const micronutrientId = String(item.micronutrientId);
+            const multiplier = ingredientQuantityMap.get(ingredientId) || 1;
+            const amount = (Number(item.amount) || 0) * multiplier;
+
+            if (amount <= 0) return acc;
+
+            acc.set(micronutrientId, (acc.get(micronutrientId) || 0) + amount);
+            return acc;
+        }, new Map());
+
+        if (micronutrientTotals.size === 0) return;
+
+        const recipeMicronutrientDocs = [...micronutrientTotals.entries()].map(([micronutrientId, amount]) => ({
+            recipeId,
+            micronutrientId,
+            amount,
+        }));
+
+        await RecipeMicronutrientValues.insertMany(recipeMicronutrientDocs);
     }
 
     async getRecipeFilterOptions(query = {}) {
@@ -407,6 +459,8 @@ class RecipeService {
                 await RecipesIngredient.insertMany(ingredientsData);
             }
 
+            await this.syncRecipeMicronutrientsFromIngredients(recipeId, data.ingredients || []);
+
             // 3.3 Lưu Steps
             if (data.steps && data.steps.length > 0) {
                 const stepsData = data.steps.map((step, index) => ({
@@ -472,6 +526,8 @@ class RecipeService {
                 unit: ing.unit
             }));
             await RecipesIngredient.insertMany(ingredientsData);
+
+            await this.syncRecipeMicronutrientsFromIngredients(id, data.ingredients);
         }
 
         // 4.3 Xử lý Steps
@@ -554,6 +610,7 @@ class RecipeService {
             RecipesStep.deleteMany({ recipeId: id }),
             RecipeDietType.deleteMany({ recipeId: id }),
             RecipeNutrition.deleteMany({ recipeId: id }),
+            RecipeMicronutrientValues.deleteMany({ recipeId: id }),
         ]);
 
         return { message: "Recipe and all related data deleted" };

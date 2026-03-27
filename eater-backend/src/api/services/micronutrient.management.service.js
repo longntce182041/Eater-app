@@ -1,4 +1,6 @@
 const { Micronutrient } = require("../../models/micronutrients");
+const { IngredientMicronutrientValues } = require("../../models/ingredient_micronutrient_values");
+const { RecipeMicronutrientValues } = require("../../models/recipe_micronutrient_values");
 
 class MicronutrientManagementService {
     // GET All Micronutrients with Search & Pagination
@@ -114,8 +116,26 @@ class MicronutrientManagementService {
             throw new Error("Micronutrient not found");
         }
 
-        // Note: You may want to check if this micronutrient is used in ingredients or recipes
-        // before deleting to prevent data integrity issues
+        const [ingredientUsageCount, recipeUsageCount] = await Promise.all([
+            IngredientMicronutrientValues.countDocuments({ micronutrientId: id }),
+            RecipeMicronutrientValues.countDocuments({ micronutrientId: id }),
+        ]);
+
+        const totalUsageCount = ingredientUsageCount + recipeUsageCount;
+
+        if (totalUsageCount > 0) {
+            const error = new Error(
+                `Cannot delete micronutrient \"${micronutrient.name}\" because it is already used in ${ingredientUsageCount} ingredient value(s) and ${recipeUsageCount} recipe value(s). Please remove related references first.`,
+            );
+            error.statusCode = 409;
+            error.code = "MICRONUTRIENT_IN_USE";
+            error.details = {
+                ingredientUsageCount,
+                recipeUsageCount,
+                totalUsageCount,
+            };
+            throw error;
+        }
         
         await Micronutrient.findByIdAndDelete(id);
         return { message: "Micronutrient deleted successfully" };

@@ -1,10 +1,16 @@
 const aiService = require("../services/ai.services");
 const recipeService = require("../services/recipe.service");
 const aiClient = require("../../integrations/ai/aiClient");
+const { randomUUID } = require("crypto");
+const mealImageScanService = require("../services/meal.image.scan.service");
 const {
   healthCheck,
   getServiceStatus,
 } = require("../../integrations/ai/aiClient");
+
+function resolveRequestId(req) {
+  return req.headers["x-request-id"] || randomUUID();
+}
 
 /**
  * Generate meal plan for user
@@ -13,7 +19,7 @@ const {
 async function generateMealPlan(req, res) {
   try {
     const userId = req.user?.id || req.body.userId;
-    const { days = 7, useML = false } = req.body;
+    const { days = 7 } = req.body;
 
     if (!userId) {
       return res.status(400).json({
@@ -31,12 +37,11 @@ async function generateMealPlan(req, res) {
     }
 
     console.log(
-      `Generating meal plan for user ${userId}, days: ${days}, useML: ${useML}`,
+      `Generating meal plan for user ${userId}, days: ${days} (Gemini only)`,
     );
 
     const result = await aiService.generateAndSaveMealPlan(userId, {
       days,
-      useML,
     });
 
     if (result.success) {
@@ -732,7 +737,11 @@ async function generateMealPlanPreview(req, res) {
 async function saveMealPlanFromPreview(req, res) {
   try {
     const userId = req.user?.id || req.body.userId;
-    const { originalAIMealPlan, mealPlanOptions, modifiedMeals = {} } = req.body;
+    const {
+      originalAIMealPlan,
+      mealPlanOptions,
+      modifiedMeals = {},
+    } = req.body;
 
     if (!userId) {
       return res.status(400).json({
@@ -749,7 +758,9 @@ async function saveMealPlanFromPreview(req, res) {
     }
 
     console.log(`💾 Saving modified meals for user ${userId}`);
-    console.log(`📝 Modified meals count: ${Object.keys(modifiedMeals).length}`);
+    console.log(
+      `📝 Modified meals count: ${Object.keys(modifiedMeals).length}`,
+    );
 
     const result = await aiService.saveModifiedMealsFromPreview(
       userId,
@@ -780,6 +791,59 @@ async function saveMealPlanFromPreview(req, res) {
   }
 }
 
+/**
+ * Scan meal image and estimate nutrition from local ingredients
+ * @route POST /api/ai/scan-meal
+ */
+async function scanMealImage(req, res) {
+  const requestId = resolveRequestId(req);
+  const startedAt = Date.now();
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Missing image file. Use multipart/form-data with field 'image'.",
+        requestId,
+      });
+    }
+
+    const result = await mealImageScanService.scanMealImageFromBuffer(
+      req.file,
+      {
+        requestId,
+      },
+    );
+
+    console.info(
+      `[ai.scan-meal][${requestId}] completed in ${Date.now() - startedAt}ms`,
+    );
+
+    res.set("x-request-id", String(requestId));
+    return res.status(200).json(result);
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+
+    if (
+      error.type === "gemini_quota_exceeded" &&
+      Number.isFinite(error.retryAfterSeconds)
+    ) {
+      res.set("retry-after", String(error.retryAfterSeconds));
+    }
+
+    console.error(
+      `[ai.scan-meal][${requestId}] failed in ${Date.now() - startedAt}ms: ${error.message}`,
+    );
+
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to scan meal image",
+      requestId,
+    });
+  }
+}
+
 module.exports = {
   generateMealPlan,
   getUserMealPlans,
@@ -796,4 +860,5 @@ module.exports = {
   generateCompleteMealPlan,
   generateMealPlanPreview,
   saveMealPlanFromPreview,
+  scanMealImage,
 };

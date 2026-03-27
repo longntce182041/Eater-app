@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/meal_plan_provider.dart';
 import '../../domain/meal_plan_models.dart';
+import '../../data/meal_plan_to_grocery_converter.dart';
 import '../widgets/macro_distribution_donut.dart';
 import '../widgets/detailed_macro_modal.dart';
 import '../pages/meal_plan_preview_page.dart';
@@ -13,6 +14,8 @@ import '../../../nutrition/domain/entities/meal_log.dart';
 import '../../../nutrition/presentation/providers/meal_log_provider.dart';
 import '../../../nutrition/presentation/providers/navigation_provider.dart';
 import '../../../nutrition/data/providers/meal_log_service_provider.dart';
+import '../../../home/data/recipe_ingredients_api.dart';
+import '../../../grocery/presentation/providers/grocery_list_provider.dart';
 
 class MealPlanPage extends ConsumerStatefulWidget {
   const MealPlanPage({super.key});
@@ -1284,12 +1287,99 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
           );
 
       final state = ref.read(mealPlanNotifierProvider);
-      return state.error == null && state.result != null;
+      if (state.error != null || state.result == null) {
+        return false;
+      }
+
+      // Sync meal plan with grocery list
+      await _syncMealPlanToGroceryList(state.result!);
+      return true;
     } catch (e) {
       if (mounted) {
         NotificationService.showError(context, message: 'Save failed: $e');
       }
       return false;
+    }
+  }
+
+  /// Syncs the current meal plan to grocery list
+  /// Extracts ingredients from all recipes and adds them to grocery list
+  Future<void> _syncMealPlanToGroceryList(
+    MealPlanGenerationResult mealPlan,
+  ) async {
+    try {
+      if (mealPlan.items.isEmpty) return;
+
+      // Get unique recipe IDs from meal plan
+      final recipeIds = mealPlan.items
+          .where((item) => item.recipeId != null && item.recipeId!.isNotEmpty)
+          .map((item) => item.recipeId!)
+          .toSet()
+          .toList();
+
+      if (recipeIds.isEmpty) {
+        if (mounted) {
+          NotificationService.showInfo(
+            context,
+            message: 'No recipes found in meal plan',
+          );
+        }
+        return;
+      }
+
+      // Fetch ingredients for all recipes
+      final api = ref.read(recipeIngredientsApiProvider);
+      final recipeIngredientsMap = <String, List<dynamic>>{};
+
+      for (final recipeId in recipeIds) {
+        try {
+          final ingredients = await api.getRecipeIngredients(recipeId);
+          recipeIngredientsMap[recipeId] = ingredients;
+        } catch (e) {
+          debugPrintStack(
+            label: '⚠️ Failed to fetch ingredients for recipe $recipeId: $e',
+          );
+          // Continue with other recipes even if one fails
+        }
+      }
+
+      // Convert meal plan to grocery items
+      final groceryItems =
+          MealPlanToGroceryConverter.convertMealPlanToGroceryItems(
+        mealPlan,
+        recipeIngredientsMap.cast<String, List>(),
+      );
+
+      if (groceryItems.isEmpty) {
+        if (mounted) {
+          NotificationService.showInfo(
+            context,
+            message: 'No ingredients found to add',
+          );
+        }
+        return;
+      }
+
+      // Add items to grocery list
+      final groceryNotifier = ref.read(groceryListProvider.notifier);
+      await groceryNotifier.addItems(groceryItems);
+
+      if (mounted) {
+        NotificationService.showSuccess(
+          context,
+          message:
+              'Grocery list updated with ${groceryItems.length} ingredient(s)',
+        );
+      }
+    } catch (e, st) {
+      debugPrintStack(
+          label: '❌ Error syncing to grocery list: $e', stackTrace: st);
+      if (mounted) {
+        NotificationService.showWarning(
+          context,
+          message: 'Could not update grocery list: $e',
+        );
+      }
     }
   }
 
@@ -1337,6 +1427,11 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
         this.context,
         message: 'Meal plan optimized successfully!',
       );
+
+      // Sync updated meal plan to grocery list
+      if (state.result != null) {
+        await _syncMealPlanToGroceryList(state.result!);
+      }
     }
   }
 

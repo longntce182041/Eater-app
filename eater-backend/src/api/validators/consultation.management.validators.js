@@ -9,9 +9,18 @@ const validateDiagnosis = (data) => {
 
 const validateDietPlan = (data) => {
     const errors = {};
+    const MIN_TARGET_CALORIES = 800;
+    const MAX_TARGET_CALORIES = 10000;
+
     if (!data.userId) errors.userId = "Patient (User ID) is required";
     if (!data.date) errors.date = "Date is required";
-    if (!data.targetCalories || isNaN(data.targetCalories)) errors.targetCalories = "Valid target calories required";
+
+    const targetCalories = Number(data.targetCalories);
+    if (!Number.isInteger(targetCalories)) {
+        errors.targetCalories = "Target calories must be a whole number";
+    } else if (targetCalories < MIN_TARGET_CALORIES || targetCalories > MAX_TARGET_CALORIES) {
+        errors.targetCalories = `Target calories must be between ${MIN_TARGET_CALORIES} and ${MAX_TARGET_CALORIES}`;
+    }
 
     return { errors, isValid: Object.keys(errors).length === 0 };
 };

@@ -1,14 +1,47 @@
 const express = require("express");
+const multer = require("multer");
 const router = express.Router();
 const aiController = require("../controllers/ai.controller");
 const aiValidators = require("../validators/ai.validators");
 const { protect } = require("../../middleware/authMiddleware");
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype || !file.mimetype.startsWith("image/")) {
+      return cb(new Error("Only image files are allowed"));
+    }
+    return cb(null, true);
+  },
+});
+
+function uploadMealImage(req, res, next) {
+  const middleware = upload.single("image");
+  middleware(req, res, (err) => {
+    if (!err) return next();
+
+    if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        success: false,
+        message: "Image exceeds 8MB limit",
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: err.message || "Invalid image upload",
+    });
+  });
+}
 
 /**
  * @route   POST /api/ai/meal-plan/generate
  * @desc    Generate AI meal plan for user
  * @access  Private (requires authentication)
  */
+router.post("/scan-meal", protect, uploadMealImage, aiController.scanMealImage);
+
 router.post(
   "/meal-plan/generate",
   protect,

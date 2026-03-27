@@ -21,27 +21,10 @@ const buildMonthlyRegistrationData = (users = [], months = 6) => {
         monthLabelMap.set(key, d.toLocaleDateString('en-US', { month: 'short' }));
     }
 
-    const counts = monthKeys.reduce((acc, key) => {
-        acc[key] = 0;
-        return acc;
-    }, {});
-
-    users.forEach((user) => {
-        if (!user?.createdAt) return;
-        const createdAt = new Date(user.createdAt);
-        if (Number.isNaN(createdAt.getTime())) return;
-
-        const key = `${createdAt.getFullYear()}-${createdAt.getMonth()}`;
-        if (counts[key] !== undefined) {
-            counts[key] += 1;
-        }
-    });
-
-    return monthKeys.map((key) => ({
-        name: monthLabelMap.get(key),
-        registrations: counts[key],
-    }));
-};
+const formatCurrency = (value) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
+        Number(value || 0),
+    );
 
 const DashboardPage = () => {
     const navigate = useNavigate();
@@ -107,8 +90,22 @@ const DashboardPage = () => {
             setMacroLoading(false);
         };
 
-        fetchDashboardData();
+                const data = await getAnalyticsOverview();
+                if (isMounted) {
+                    setOverview(data);
+                }
+            } catch (fetchError) {
+                if (isMounted) {
+                    setError(fetchError?.response?.data?.message || "Failed to load analytics overview");
+                }
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
+            }
+        };
 
+        fetchOverview();
         return () => {
             isMounted = false;
         };
@@ -154,8 +151,8 @@ const DashboardPage = () => {
 
     return (
         <div>
-            <h2 style={{ fontSize: '24px', marginBottom: '25px', color: '#30a5ff', fontWeight: '600' }}>
-                Eater Dashboard Overview
+            <h2 style={{ fontSize: "24px", marginBottom: "25px", color: "#30a5ff", fontWeight: 600 }}>
+                Admin Analytics Overview
             </h2>
 
             <p style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>
@@ -168,7 +165,7 @@ const DashboardPage = () => {
                     <StatsWidget
                         key={card.title}
                         title={card.title}
-                        count={statsLoading ? '...' : card.count}
+                        count={loading ? "..." : card.count}
                         color={card.color}
                         icon={card.icon}
                     />
@@ -216,7 +213,7 @@ const DashboardPage = () => {
             <div style={{ background: 'white', padding: '25px', borderRadius: '8px' }}>
                 <h3>User Registrations (Last 6 Months)</h3>
 
-                <div style={{ width: '100%', height: 400 }}>
+                <div style={{ width: "100%", height: 360 }}>
                     <ResponsiveContainer>
                         <AreaChart data={registrationTrend}>
                             <CartesianGrid strokeDasharray="3 3" />
@@ -229,8 +226,48 @@ const DashboardPage = () => {
                 </div>
             </div>
 
-            <div style={{ marginTop: '30px' }}>
-                <MacroDistributionCard data={macroSummary} loading={macroLoading} />
+            <div
+                style={{
+                    background: "white",
+                    padding: "25px",
+                    borderRadius: "8px",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+                }}
+            >
+                <h3 style={{ margin: "0 0 16px 0", color: "#5f6468", fontSize: "18px" }}>
+                    Top Recipes by Popularity
+                </h3>
+
+                <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                            <tr style={{ textAlign: "left", borderBottom: "1px solid #eee", color: "#667085" }}>
+                                <th style={{ padding: "10px 8px" }}>Recipe</th>
+                                <th style={{ padding: "10px 8px" }}>Favorites</th>
+                                <th style={{ padding: "10px 8px" }}>Reviews</th>
+                                <th style={{ padding: "10px 8px" }}>Avg Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {(recipePopularity.topRecipes || []).length === 0 && !loading ? (
+                                <tr>
+                                    <td style={{ padding: "14px 8px", color: "#667085" }} colSpan={4}>
+                                        No popularity data available yet.
+                                    </td>
+                                </tr>
+                            ) : (
+                                (recipePopularity.topRecipes || []).map((item) => (
+                                    <tr key={item.recipeId} style={{ borderBottom: "1px solid #f2f4f7" }}>
+                                        <td style={{ padding: "12px 8px", color: "#344054" }}>{item.name}</td>
+                                        <td style={{ padding: "12px 8px", color: "#344054" }}>{item.favorites}</td>
+                                        <td style={{ padding: "12px 8px", color: "#344054" }}>{item.reviewCount}</td>
+                                        <td style={{ padding: "12px 8px", color: "#344054" }}>{item.avgRating}</td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

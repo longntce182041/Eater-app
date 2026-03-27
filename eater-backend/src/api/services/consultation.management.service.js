@@ -6,6 +6,8 @@ const Consultation = require("../../models/Consultation");
 const User = require("../../models/User");
 const UserPro = require("../../models/userPro");
 const { User_Profile } = require("../../models/User_Profile");
+const { DietaryReferences } = require("../../models/dietary_references");
+const { UserHealthMetrics } = require("../../models/user_heath_metrics");
 const { ChatMessage } = require("../../models/chat_message");
 const { sendConsultationEmail, sendNutritionReportEmail, sendMealPlanAssignedEmail } = require("../../utils/mailer");
 const { getRoomId } = require("../sockets/chat.socket");
@@ -330,6 +332,36 @@ class ConsultationManagementService {
         );
 
         return reportData;
+    }
+
+    // 4. Nutritionist xem dữ liệu sức khỏe user
+    async getUserHealthData(authUserId, patientId) {
+        await this.getNutritionistProfile(authUserId);
+        const patient = await this.validateProPatient(patientId);
+
+        const [profile, dietaryReferences, latestHealthMetrics, recentHealthMetrics, latestConsultation, latestMealPlan] = await Promise.all([
+            User_Profile.findOne({ userId: patientId }),
+            DietaryReferences.findOne({ userId: patientId }).populate("diet_typeId", "name description carb_ratio protein_ratio fat_ratio"),
+            UserHealthMetrics.findOne({ userId: patientId }).sort({ calculatedAt: -1 }),
+            UserHealthMetrics.find({ userId: patientId }).sort({ calculatedAt: -1 }).limit(10),
+            Consultation.findOne({ userId: patientId }).sort({ createdAt: -1 }),
+            MealPlan.findOne({ userId: patientId }).sort({ date: -1 }),
+        ]);
+
+        return {
+            patientInfo: {
+                userId: patient._id,
+                email: patient.email,
+                isActive: patient.isActive,
+            },
+            profile,
+            dietaryReferences,
+            latestHealthMetrics,
+            recentHealthMetrics,
+            latestConsultation,
+            latestMealPlan,
+            generatedAt: new Date(),
+        };
     }
 }
 

@@ -523,13 +523,13 @@ class ProUpgradePage extends ConsumerWidget {
   Future<void> _waitForProActivation(WidgetRef ref) async {
     final notifier = ref.read(proNotifierProvider.notifier);
 
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < 10; i++) {
       await notifier.loadStatus();
       final latest = ref.read(proNotifierProvider).status;
       if (latest?.isPro == true) {
         return;
       }
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 3));
     }
   }
 

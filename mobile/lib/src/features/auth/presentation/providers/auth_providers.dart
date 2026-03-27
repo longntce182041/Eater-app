@@ -1,9 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/env/app_config.dart';
 import '../../../../config/env/env_loader.dart';
+import '../../../../config/router/auth_notifier.dart';
 import '../../../../shared/providers/auth_token_provider.dart';
+import '../../../../shared/providers/dio_provider.dart';
 import '../../../grocery/presentation/providers/grocery_list_provider.dart';
 import '../../../home/presentation/providers/profile_provider.dart';
 import '../../../home/presentation/providers/recipe_provider.dart';
@@ -14,37 +17,6 @@ import '../../data/token_storage.dart';
 
 final appConfigProvider = Provider<AppConfig>((ref) {
   return EnvLoader.load();
-});
-
-final dioProvider = Provider<Dio>((ref) {
-  final config = ref.watch(appConfigProvider);
-
-  final dio = Dio(
-    BaseOptions(
-      baseUrl: config.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: {'Content-Type': 'application/json'},
-    ),
-  );
-
-  // Add auth token interceptor
-  dio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final authToken = ref.read(authTokenProvider);
-        if (authToken.accessToken != null) {
-          options.headers['Authorization'] = 'Bearer ${authToken.accessToken}';
-        }
-        return handler.next(options);
-      },
-      onError: (error, handler) async {
-        return handler.next(error);
-      },
-    ),
-  );
-
-  return dio;
 });
 
 final authApiClientProvider = Provider<AuthApiClient>((ref) {
@@ -157,15 +129,21 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    await _repo.logout();
-    // Clear the auth token provider
-    _ref.read(authTokenProvider.notifier).state = const AuthTokenProvider(
-      accessToken: null,
-      refreshToken: null,
-      userId: null,
-    );
+    try {
+      // Try to logout from backend first
+      await _repo.logout();
+    } catch (e) {
+      // Even if backend logout fails, continue with local cleanup
+      debugPrint(
+          '⚠️ Backend logout failed (will proceed with local cleanup): $e');
+    }
 
-    // Invalidate all user-specific providers to prevent data leaks between users
+    // 1. Update the GoRouter's AuthNotifier first
+    // This ensures GoRouter receives the redirect trigger immediately
+    _ref.read(authNotifierProvider).setAuthenticated(false);
+
+    // 2. Invalidate all user-specific providers FIRST (mark as invalid, don't rebuild yet)
+    // This ensures dependent providers will rebuild cleanly with new auth state
     try {
       _ref.invalidate(groceryListProvider);
     } catch (_) {}
@@ -182,6 +160,16 @@ class AuthController extends StateNotifier<AuthState> {
       _ref.invalidate(mealPlanNotifierProvider);
     } catch (_) {}
 
+    // 3. Clear the auth token provider
+    _ref.read(authTokenProvider.notifier).state = const AuthTokenProvider(
+      accessToken: null,
+      refreshToken: null,
+      userId: null,
+    );
+
+    // 4. Clear auth state
+    // When dependent providers that watch authControllerProvider rebuild,
+    // they will see the cleared auth state after invalidation
     state = const AuthState();
   }
 

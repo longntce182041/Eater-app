@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/navigation_provider.dart';
 import 'home_page.dart';
 import 'profile_page.dart';
 import 'recipes_page.dart';
@@ -55,13 +56,16 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentIndex = ref.watch(mainNavigationIndexProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
-      body: _pages[_currentIndex],
+      body: _pages[currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        currentIndex: currentIndex,
+        onTap: (index) =>
+            ref.read(mainNavigationIndexProvider.notifier).state = index,
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         selectedItemColor: const Color(0xFFFF9800),
@@ -98,10 +102,6 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
             activeIcon: Icon(Icons.person),
             label: 'Profile',
           ),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.medical_services_outlined),
-              activeIcon: Icon(Icons.medical_services),
-              label: 'Nutritionist'),
         ],
       ),
     );

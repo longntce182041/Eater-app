@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 
 /// Provider for target meal date when navigating to meal logging from meal plan
 /// Used to auto-select the date of newly logged meal
@@ -12,7 +13,8 @@ class TargetMealDateNotifier extends StateNotifier<DateTime?> {
 
   void setTargetDate(DateTime date) {
     state = date;
-    print('[navigation_provider] Target meal date set to: ${date.toString().split(' ')[0]}');
+    debugPrint(
+        '[navigation_provider] Target meal date set to: ${date.toString().split(' ')[0]}');
   }
 
   void clearTargetDate() {
@@ -32,7 +34,7 @@ class TargetTabIndexNotifier extends StateNotifier<int?> {
 
   void setTargetTab(int index) {
     state = index;
-    print('[navigation_provider] Target tab index set to: $index');
+    debugPrint('[navigation_provider] Target tab index set to: $index');
   }
 
   void clearTargetTab() {

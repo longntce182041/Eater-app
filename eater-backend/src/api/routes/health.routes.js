@@ -13,5 +13,6 @@ router.get("/diet-types", healthController.getDietTypes);
 // Protected route - save user profile to database
 router.post("/user-profile", protect, healthController.setUserProfile);
 
-router.post("/dietary-references", healthController.setDietaryReference);
+// Protected route - save user dietary references to database
+router.post("/dietary-references", protect, healthController.setDietaryReference);
 module.exports = router;

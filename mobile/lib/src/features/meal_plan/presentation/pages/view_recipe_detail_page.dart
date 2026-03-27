@@ -64,7 +64,7 @@ class ViewRecipeDetailPage extends ConsumerWidget {
                     image: DecorationImage(
                       image: NetworkImage(recipeImageUrl!),
                       fit: BoxFit.cover,
-                      onError: (_, __) => null,
+                      onError: (_, __) {},
                     ),
                   ),
                 )
@@ -118,7 +118,8 @@ class ViewRecipeDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecipeInfoHeader(BuildContext context, Map<String, dynamic> recipe) {
+  Widget _buildRecipeInfoHeader(
+      BuildContext context, Map<String, dynamic> recipe) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -158,7 +159,8 @@ class ViewRecipeDetailPage extends ConsumerWidget {
               ),
           ],
         ),
-        if (recipe['description'] != null && (recipe['description'] as String).isNotEmpty)
+        if (recipe['description'] != null &&
+            (recipe['description'] as String).isNotEmpty)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -181,10 +183,10 @@ class ViewRecipeDetailPage extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF9800).withOpacity(0.1),
+        color: const Color(0xFFFF9800).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFFFF9800).withOpacity(0.3),
+          color: const Color(0xFFFF9800).withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -210,7 +212,8 @@ class ViewRecipeDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildNutritionCard(BuildContext context, Map<String, dynamic> nutrition) {
+  Widget _buildNutritionCard(
+      BuildContext context, Map<String, dynamic> nutrition) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -218,7 +221,7 @@ class ViewRecipeDetailPage extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
           ),
         ],
@@ -305,7 +308,8 @@ class ViewRecipeDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildIngredientsSection(BuildContext context, Map<String, dynamic> recipe) {
+  Widget _buildIngredientsSection(
+      BuildContext context, Map<String, dynamic> recipe) {
     final ingredients = recipe['ingredients'] as List;
 
     return Column(
@@ -326,7 +330,7 @@ class ViewRecipeDetailPage extends ConsumerWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
               ),
             ],
@@ -338,7 +342,8 @@ class ViewRecipeDetailPage extends ConsumerWidget {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final ingredient = ingredients[index] as Map<String, dynamic>;
-              final ingredientData = ingredient['ingredientId'] as Map<String, dynamic>?;
+              final ingredientData =
+                  ingredient['ingredientId'] as Map<String, dynamic>?;
               final name = ingredientData?['name'] ?? 'Unknown';
               final quantity = ingredient['base_quantity'] ?? '0';
               final unit = ingredient['unit'] ?? '';
@@ -381,7 +386,8 @@ class ViewRecipeDetailPage extends ConsumerWidget {
                           context: context,
                           builder: (context) => UnitConverterWidget(
                             ingredientName: name.toString(),
-                            baseQuantity: double.tryParse(quantity.toString()) ?? 0,
+                            baseQuantity:
+                                double.tryParse(quantity.toString()) ?? 0,
                             baseUnit: unit.toString(),
                           ),
                         );
@@ -398,7 +404,8 @@ class ViewRecipeDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildMicronutrientsSection(BuildContext context, Map<String, dynamic> recipe) {
+  Widget _buildMicronutrientsSection(
+      BuildContext context, Map<String, dynamic> recipe) {
     final micronutrients = recipe['micronutrients'] as List;
 
     return Column(
@@ -420,7 +427,7 @@ class ViewRecipeDetailPage extends ConsumerWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
               ),
             ],
@@ -436,8 +443,10 @@ class ViewRecipeDetailPage extends ConsumerWidget {
             ),
             itemCount: micronutrients.length,
             itemBuilder: (context, index) {
-              final micronutrient = micronutrients[index] as Map<String, dynamic>;
-              final nutriData = micronutrient['micronutrientId'] as Map<String, dynamic>?;
+              final micronutrient =
+                  micronutrients[index] as Map<String, dynamic>;
+              final nutriData =
+                  micronutrient['micronutrientId'] as Map<String, dynamic>?;
               final name = nutriData?['name'] ?? 'Unknown';
               final amount = micronutrient['amount'] ?? 0;
               final unit = nutriData?['unit'] ?? '';
@@ -445,10 +454,10 @@ class ViewRecipeDetailPage extends ConsumerWidget {
               return Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF9800).withOpacity(0.1),
+                  color: const Color(0xFFFF9800).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: const Color(0xFFFF9800).withOpacity(0.3),
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -513,7 +522,7 @@ class ViewRecipeDetailPage extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                   ),
                 ],

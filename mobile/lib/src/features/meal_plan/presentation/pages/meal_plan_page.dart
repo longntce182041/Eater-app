@@ -1643,7 +1643,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     final recipeUrl =
         '/recipe-details/${meal.recipeId}?name=${Uri.encodeComponent(meal.recipeName ?? "Recipe")}&image=${Uri.encodeComponent(meal.recipeImageUrl ?? "")}';
 
-    print(
+    debugPrint(
         '[_viewRecipeDetails] Navigating to recipe: ${meal.recipeName} (recipeId: ${meal.recipeId})');
 
     if (context.mounted) {
@@ -1825,6 +1825,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     if (consumedServings == null) {
       return;
     }
+    if (!context.mounted) return;
 
     // Log meal against its actual meal-plan day.
     final mealDate = _resolveMealDateForItem(meal);
@@ -1834,7 +1835,8 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     print('[_onMealChecked] DateTime.now(): ${DateTime.now().toString()}');
     print(
         '[_onMealChecked] Meal date (year/month/day): ${mealDate.toString()}');
-    print('[_onMealChecked] Meal date ISO8601: ${mealDate.toIso8601String()}');
+    debugPrint(
+        '[_onMealChecked] Meal date ISO8601: ${mealDate.toIso8601String()}');
 
     // Convert meal type to lowercase for backend compatibility
     final mealTypeInput = meal.mealType.toLowerCase();
@@ -1879,23 +1881,23 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
         final service = ref.read(mealLogServiceProvider);
         final savedMealLog = await service.saveMealLog(mealLog);
 
-        print(
+        debugPrint(
             '[_onMealChecked] Saved meal - ID: ${savedMealLog.id}, name: ${savedMealLog.mealName}, loggedAt: ${savedMealLog.loggedAt}');
 
         // Update local state with the real ID from the server
         // First remove the temporary ID version
-        print('[_onMealChecked] Deleting temp ID: ${mealLog.id}');
+        debugPrint('[_onMealChecked] Deleting temp ID: ${mealLog.id}');
         ref.read(mealLogsProvider.notifier).deleteMealLog(mealLog.id);
 
         // Then add the version with the real server ID
-        print('[_onMealChecked] Adding real ID: ${savedMealLog.id}');
+        debugPrint('[_onMealChecked] Adding real ID: ${savedMealLog.id}');
         ref.read(mealLogsProvider.notifier).addMealLog(savedMealLog);
 
-        print(
+        debugPrint(
             '[_onMealChecked] State updated - local mealLogsProvider should now have the saved meal');
 
         // Set target date and tab for auto-navigation to meal logging
-        print(
+        debugPrint(
             '[_onMealChecked] Setting target date: ${mealDate.toString().split(' ')[0]} and tab index: 1');
         ref.read(targetMealDateProvider.notifier).setTargetDate(mealDate);
         ref
@@ -1932,7 +1934,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                           .markMealAsUneaten(meal.id);
                     }
                   }).catchError((e) {
-                    print('Error deleting from backend: $e');
+                    debugPrint('Error deleting from backend: $e');
                   });
                 },
               ),
@@ -1951,7 +1953,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
             ),
           );
         }
-        print('Error saving meal log to backend: $e');
+        debugPrint('Error saving meal log to backend: $e');
       }
     });
   }
@@ -1990,7 +1992,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
           await service.deleteMealLog(mealLogId);
           // Backend deletion complete, local state already updated
         } catch (e) {
-          print('Error deleting meal log from backend: $e');
+          debugPrint('Error deleting meal log from backend: $e');
         }
       });
     }

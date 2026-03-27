@@ -263,53 +263,9 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
       color: const Color(0xFFFF9800),
       child: CustomScrollView(
         slivers: [
-          // Import recipe card
-          SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey[300]!, width: 2),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'Import recipe',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2D2D2D),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF5F5F5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.add,
-                      size: 32,
-                      color: Color(0xFF999999),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'From link, text, or photos',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
           // Recipe grid
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,

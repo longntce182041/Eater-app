@@ -25,7 +25,15 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
   String _selectedUnit = 'servings';
 
   final List<String> _mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
-  final List<String> _units = ['grams', 'ml', 'pieces', 'oz', 'cups', 'tbsp', 'servings'];
+  final List<String> _units = [
+    'grams',
+    'ml',
+    'pieces',
+    'oz',
+    'cups',
+    'tbsp',
+    'servings'
+  ];
 
   @override
   void initState() {
@@ -103,7 +111,9 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
                       hintText: 'Quantity',
                       keyboardType: TextInputType.number,
                       icon: Icons.scale,
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
+                      ],
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -187,10 +197,12 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(color: Colors.grey[400]),
-        prefixIcon: icon != null ? Icon(icon, color: const Color(0xFFFF9800)) : null,
+        prefixIcon:
+            icon != null ? Icon(icon, color: const Color(0xFFFF9800)) : null,
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -223,7 +235,9 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
                 },
                 selectedColor: const Color(0xFFFF9800),
                 labelStyle: TextStyle(
-                  color: _selectedMealType == mealType ? Colors.white : const Color(0xFF2D2D2D),
+                  color: _selectedMealType == mealType
+                      ? Colors.white
+                      : const Color(0xFF2D2D2D),
                   fontWeight: FontWeight.w600,
                 ),
                 backgroundColor: Colors.white,
@@ -284,7 +298,9 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
                     hintText: '0',
                     keyboardType: TextInputType.number,
                     icon: Icons.local_fire_department,
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
+                    ],
                   ),
                 ],
               ),
@@ -304,7 +320,9 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
                     hintText: '0',
                     keyboardType: TextInputType.number,
                     icon: Icons.egg,
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
+                    ],
                   ),
                 ],
               ),
@@ -328,7 +346,9 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
                     hintText: '0',
                     keyboardType: TextInputType.number,
                     icon: Icons.grain,
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
+                    ],
                   ),
                 ],
               ),
@@ -348,7 +368,9 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
                     hintText: '0',
                     keyboardType: TextInputType.number,
                     icon: Icons.opacity,
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
+                    ],
                   ),
                 ],
               ),
@@ -388,7 +410,8 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
       notes: _notesController.text.isEmpty ? null : _notesController.text,
     );
 
-    print('[log_meal_page] Creating temp meal - ID: ${tempMealLog.id}, name: ${tempMealLog.mealName}, loggedAt: ${tempMealLog.loggedAt}');
+    debugPrint(
+        '[log_meal_page] Creating temp meal - ID: ${tempMealLog.id}, name: ${tempMealLog.mealName}, loggedAt: ${tempMealLog.loggedAt}');
 
     // Add to local state immediately for responsive UI
     ref.read(mealLogsProvider.notifier).addMealLog(tempMealLog);
@@ -409,18 +432,20 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
         final service = ref.read(mealLogServiceProvider);
         final savedMealLog = await service.saveMealLog(tempMealLog);
 
-        print('[log_meal_page] Saved meal - ID: ${savedMealLog.id}, name: ${savedMealLog.mealName}, loggedAt: ${savedMealLog.loggedAt}');
+        debugPrint(
+            '[log_meal_page] Saved meal - ID: ${savedMealLog.id}, name: ${savedMealLog.mealName}, loggedAt: ${savedMealLog.loggedAt}');
 
         // Replace temporary ID version with real backend ID
-        print('[log_meal_page] Deleting temp ID: ${tempMealLog.id}');
+        debugPrint('[log_meal_page] Deleting temp ID: ${tempMealLog.id}');
         ref.read(mealLogsProvider.notifier).deleteMealLog(tempMealLog.id);
-        
-        print('[log_meal_page] Adding real ID: ${savedMealLog.id}');
+
+        debugPrint('[log_meal_page] Adding real ID: ${savedMealLog.id}');
         ref.read(mealLogsProvider.notifier).addMealLog(savedMealLog);
 
-        print('[log_meal_page] State updated successfully');
+        debugPrint('[log_meal_page] State updated successfully');
 
         // Show success message
+        if (!mounted) return;
         if (context.mounted) {
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -438,6 +463,7 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
         ref.read(mealLogsProvider.notifier).deleteMealLog(tempMealLog.id);
 
         // Show error message
+        if (!mounted) return;
         if (context.mounted) {
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -449,7 +475,7 @@ class _LogMealPageState extends ConsumerState<LogMealPage> {
           );
         }
 
-        print('Error saving meal log: $e');
+        debugPrint('Error saving meal log: $e');
       }
     });
   }

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 class ViewRecipeDetailService {
   final Dio dio;
@@ -11,26 +12,30 @@ class ViewRecipeDetailService {
   /// Dedicated service for meal plan recipe viewing
   Future<Map<String, dynamic>> getFullRecipeDetails(String recipeId) async {
     try {
-      print('[ViewRecipeDetailService] Fetching recipe details for ID: $recipeId');
-      
+      debugPrint(
+          '[ViewRecipeDetailService] Fetching recipe details for ID: $recipeId');
+
       final response = await dio.get(
         '$baseUrl/$recipeId/full-details',
       );
 
       if (response.statusCode == 200) {
         final data = response.data['data'] ?? response.data;
-        print('[ViewRecipeDetailService] Recipe details fetched successfully');
-        print('[ViewRecipeDetailService] Recipe: ${data['name']}, Ingredients: ${(data['ingredients'] as List?)?.length ?? 0}');
-        
+        debugPrint(
+            '[ViewRecipeDetailService] Recipe details fetched successfully');
+        debugPrint(
+            '[ViewRecipeDetailService] Recipe: ${data['name']}, Ingredients: ${(data['ingredients'] as List?)?.length ?? 0}');
+
         return data as Map<String, dynamic>;
       } else {
-        throw Exception('Failed to fetch recipe details: ${response.statusCode}');
+        throw Exception(
+            'Failed to fetch recipe details: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      print('[ViewRecipeDetailService] DioException: ${e.message}');
+      debugPrint('[ViewRecipeDetailService] DioException: ${e.message}');
       throw Exception('Error fetching recipe details: ${e.message}');
     } catch (e) {
-      print('[ViewRecipeDetailService] Exception: $e');
+      debugPrint('[ViewRecipeDetailService] Exception: $e');
       throw Exception('Unexpected error fetching recipe details: $e');
     }
   }

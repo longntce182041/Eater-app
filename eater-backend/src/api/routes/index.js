@@ -19,6 +19,10 @@ const reminderRoutes = require("./reminder.routes");
 const chatRoutes = require("./chat.routes");
 const paymentRoutes = require("./payment.routes");
 const consultationRoutes = require("./consultation.management.routes");
+const mealLogRoutes = require("./meal.log.routes");
+const viewRecipeDetailRoutes = require("./viewrecipedetail.routes");
+const nutritionistScheduleRoutes = require("./nutritionist.schedule.routes");
+const nutritionistProfileRoutes = require("./nutritionist.profile.routes");
 const analyticsRoutes = require("./analytics.routes");
 const homeDashboardRoutes = require("./home.dashboard.routes");
 
@@ -42,6 +46,10 @@ router.use("/reminders", reminderRoutes);
 router.use("/chat", chatRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/consultations", consultationRoutes);
+router.use("/meal-logs", mealLogRoutes);
+router.use("/view-recipe-details", viewRecipeDetailRoutes);
+router.use("/nutritionist-schedules", nutritionistScheduleRoutes);
+router.use("/nutritionists", nutritionistProfileRoutes);
 router.use("/analytics", analyticsRoutes);
 router.use("/home", homeDashboardRoutes);
 

@@ -6,6 +6,7 @@ import '../../features/home/presentation/pages/main_navigation_page.dart';
 import '../../features/pro/presentation/pages/pro_upgrade_page.dart';
 import '../../features/reminders/presentation/pages/reminders_page.dart';
 import '../../features/chat/presentation/pages/chat_page.dart';
+import '../../features/meal_plan/presentation/pages/view_recipe_details_page.dart';
 import '../../features/meal_plan/presentation/pages/meal_image_scan_page.dart';
 import '../../features/chat/presentation/pages/nutritionist_list_page.dart';
 import '../../features/userHeath/presentation/pages/set_age.dart';
@@ -166,6 +167,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             nutritionistId: state.pathParameters['nutritionistId']!,
             nutritionistName:
                 extra['nutritionistName'] as String? ?? 'Nutritionist',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/recipe/:recipeId',
+        builder: (context, state) {
+          final recipeId = state.pathParameters['recipeId']!;
+          final recipeName = state.uri.queryParameters['name'] ?? 'Recipe';
+          final imageUrl = state.uri.queryParameters['image'];
+          return ViewRecipeDetailsPage(
+            recipeId: recipeId,
+            recipeName: recipeName,
+            recipeImageUrl: imageUrl,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/recipe-details/:recipeId',
+        builder: (context, state) {
+          final recipeId = state.pathParameters['recipeId']!;
+          final recipeName = state.uri.queryParameters['name'] ?? 'Recipe';
+          final imageUrl = state.uri.queryParameters['image'];
+          return ViewRecipeDetailsPage(
+            recipeId: recipeId,
+            recipeName: recipeName,
+            recipeImageUrl: imageUrl,
           );
         },
       ),

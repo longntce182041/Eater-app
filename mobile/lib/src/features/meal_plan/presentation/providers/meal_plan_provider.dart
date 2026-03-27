@@ -136,7 +136,7 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
     }
   }
 
-  /// Generate meal plan preview (step 1 of new flow)
+  /// Generate meal plan preview (no database save yet)
   Future<Map<String, dynamic>?> generateMealPlanPreview({
     required String userId,
     required int age,
@@ -178,7 +178,7 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
     }
   }
 
-  /// Save modified meals from preview (step 2 of new flow)
+  /// Save modified meals from preview to database
   Future<void> saveMealPlanFromPreview({
     required String userId,
     required Map<String, dynamic> originalAIMealPlan,
@@ -187,20 +187,54 @@ class MealPlanNotifier extends StateNotifier<MealPlanState> {
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await _apiClient.saveMealPlanFromPreview(
+      final result = await _apiClient.saveMealPlanFromPreview(
         userId: userId,
         originalAIMealPlan: originalAIMealPlan,
         mealPlanOptions: mealPlanOptions,
         modifiedMeals: modifiedMeals,
       );
-      // Reload full data to ensure UI is accurate
-      final result = await _apiClient.fetchLatestMealPlan();
       state = state.copyWith(isLoading: false, result: result);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to save meal plan: ${e.toString()}',
       );
+    }
+  }
+
+  /// Mark a meal as eaten
+  void markMealAsEaten(String itemId, DateTime eatenDate) {
+    if (state.result != null) {
+      final updatedItems = state.result!.items
+          .map((item) =>
+              item.id == itemId
+                  ? item.copyWith(isEaten: true, eatenDate: eatenDate)
+                  : item)
+          .toList();
+      final newResult = MealPlanGenerationResult(
+        mealPlan: state.result!.mealPlan,
+        items: updatedItems,
+        summary: state.result!.summary,
+      );
+      state = state.copyWith(result: newResult);
+    }
+  }
+
+  /// Mark a meal as not eaten
+  void markMealAsUneaten(String itemId) {
+    if (state.result != null) {
+      final updatedItems = state.result!.items
+          .map((item) =>
+              item.id == itemId
+                  ? item.copyWith(isEaten: false, eatenDate: null)
+                  : item)
+          .toList();
+      final newResult = MealPlanGenerationResult(
+        mealPlan: state.result!.mealPlan,
+        items: updatedItems,
+        summary: state.result!.summary,
+      );
+      state = state.copyWith(result: newResult);
     }
   }
 }

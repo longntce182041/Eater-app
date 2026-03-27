@@ -379,36 +379,68 @@ class MealPlanGenerator:
         diet_constraints: DietConstraints
     ) -> List[Dict[str, Any]]:
         """
-        Filter recipes based on diet constraints.
+        Filter recipes based on diet constraints and normalize nutrition data.
         
         Strictly respects:
         - Diet types
         - Excluded ingredients
         
+        Transforms MongoDB nutrition format to AI service format:
+        - nutritionInfo.protein -> protein_g
+        - nutritionInfo.carbs -> carbs_g
+        - nutritionInfo.fat -> fat_g
+        
         Args:
-            recipes: Full recipe list
+            recipes: Full recipe list (from MongoDB or transformed)
             diet_constraints: Diet constraints
             
         Returns:
-            Filtered recipe list
+            Filtered recipe list with normalized nutrition data
         """
+        logger.info(f"Starting recipe filtering: {len(recipes)} recipes received")
+        if recipes and len(recipes) > 0:
+            logger.info(f"Sample recipe keys: {recipes[0].keys()}")
+        
         filtered = []
         
         for recipe in recipes:
             # Check excluded ingredients
             recipe_ingredients = recipe.get('ingredients', [])
             if self._has_excluded_ingredient(recipe_ingredients, diet_constraints.excluded_ingredients):
+                logger.debug(f"Recipe {recipe.get('name')} excluded: contains excluded ingredient")
                 continue
             
             # Check diet types (if specified)
             if diet_constraints.diet_types:
                 recipe_diets = recipe.get('diet_types', [])
                 if not any(diet in recipe_diets for diet in diet_constraints.diet_types):
+                    logger.debug(f"Recipe {recipe.get('name')} excluded: diet type mismatch")
                     continue
+            
+            # Normalize nutrition data from MongoDB or transformed format
+            nutrition_info = recipe.get('nutritionInfo', {})
+            if nutrition_info:
+                # Map MongoDB nutrition fields to AI service fields
+                recipe['protein_g'] = nutrition_info.get('protein', 0)
+                recipe['carbs_g'] = nutrition_info.get('carbs', 0)
+                recipe['fat_g'] = nutrition_info.get('fat', 0)
+                recipe['calories_per_serving'] = nutrition_info.get('calories', 0)
+            else:
+                # Already transformed - use direct fields
+                recipe['protein_g'] = recipe.get('protein_g', 0)
+                recipe['carbs_g'] = recipe.get('carbs_g', 0)
+                recipe['fat_g'] = recipe.get('fat_g', 0)
+                recipe['calories_per_serving'] = recipe.get('calories_per_serving', recipe.get('calories', 400))
             
             filtered.append(recipe)
         
         logger.info(f"Filtered {len(filtered)} recipes from {len(recipes)} total")
+        if filtered and len(filtered) > 0:
+            sample = filtered[0]
+            logger.info(f"Sample filtered recipe: {sample.get('name')}, "
+                       f"protein={sample.get('protein_g')}, carbs={sample.get('carbs_g')}, "
+                       f"fat={sample.get('fat_g')}, cals={sample.get('calories_per_serving')}")
+        
         return filtered
     
     def _has_excluded_ingredient(

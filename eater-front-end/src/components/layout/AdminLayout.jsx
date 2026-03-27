@@ -1,3 +1,7 @@
+import React from 'react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Users, Utensils, Pill, LogOut, CloudUpload, BookOpen, MessageCircle, Star, Stethoscope, CalendarDays, RefreshCcw, UserCog } from 'lucide-react';
+import './AdminLayout.css';
 import React from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
@@ -24,6 +28,25 @@ const AdminLayout = () => {
     navigate("/login");
   };
 
+    const adminMenuItems = [
+        { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+        { name: 'Manage Users', path: '/users', icon: <Users size={20} /> },
+        { name: 'Manage Ingredients', path: '/ingredients', icon: <Utensils size={20} /> },
+        { name: 'Manage Micronutrients', path: '/micronutrients', icon: <Pill size={20} /> },
+        { name: 'Manage Recipes', path: '/recipes', icon: <BookOpen size={20} /> },
+        { name: 'Manage Reviews', path: '/reviews', icon: <Star size={20} /> },
+        { name: 'System Backups', path: '/backups', icon: <CloudUpload size={20} /> },
+        { name: 'Manage Nutritionists', path: '/admin/nutritionists', icon: <UserCog size={20} /> },
+        
+    ];
+
+    const nutritionistMenuItems = [
+        { name: 'Live Chat', path: '/chat', icon: <MessageCircle size={20} /> },
+        { name: 'Consultations', path: '/consultations', icon: <Stethoscope size={20}/>, roles: ['nutritionist'] },
+        { name: 'Professional Profile', path: '/nutritionist/profile', icon: <UserCog size={20} /> },
+        { name: 'View Work Schedule', path: '/nutritionist/my-schedule?tab=schedule', icon: <CalendarDays size={20} /> },
+        
+    ];
   const adminMenuItems = [
     {
       name: "Dashboard",

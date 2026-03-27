@@ -4,6 +4,7 @@ const { RecipesIngredient } = require('../../models/recipes_ingredient');
 const { RecipesStep } = require('../../models/recipes_step');
 const { RecipeDietType } = require('../../models/recipe_diet_type');
 const { RecipeNutrition } = require('../../models/recipe_nutrion');
+const { RecipeMicronutrientValues } = require('../../models/recipe_micronutrient_values');
 const { DietType } = require('../../models/diet_types');
 const { Ingredient } = require('../../models/ingredients');
 
@@ -519,7 +520,30 @@ class RecipeService {
         return nutrition;
     }
 
-    // 6. Delete Recipe
+    // 6. Get Full Recipe Details (with micronutrients)
+    async getFullRecipeDetails(id) {
+        const recipe = await Recipe.findById(id);
+        if (!recipe) throw new Error("Recipe not found");
+
+        const [ingredients, steps, nutrition, dietTypes, micronutrients] = await Promise.all([
+            RecipesIngredient.find({ recipeId: id }).populate('ingredientId'),
+            RecipesStep.find({ recipeId: id }).sort({ stepNumber: 1 }),
+            RecipeNutrition.findOne({ recipeId: id }),
+            RecipeDietType.find({ recipeId: id }).populate('dietTypeId'),
+            RecipeMicronutrientValues.find({ recipeId: id }).populate('micronutrientId')
+        ]);
+
+        return {
+            ...recipe.toObject(),
+            ingredients,
+            steps,
+            nutrition,
+            dietTypes,
+            micronutrients
+        };
+    }
+
+    // 7. Delete Recipe
     async deleteRecipe(id) {
         const recipe = await Recipe.findById(id);
         if (!recipe) throw new Error("Recipe not found");

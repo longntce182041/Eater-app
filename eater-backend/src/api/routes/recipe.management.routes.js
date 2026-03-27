@@ -7,60 +7,50 @@ const cookingController = require("../controllers/cooking.controller");
 const { protect, authorize } = require("../../middleware/authMiddleware");
 
 // === FAVORITE ROUTES ===
-// Get user's favorite recipes
 router.get("/favorites", protect, favoriteController.getUserFavorites);
-// Get favorite count
 router.get("/favorites/count", protect, favoriteController.getFavoriteCount);
 
+// === REVIEW (USER) ===
+router.get("/reviews/user/list", protect, reviewController.getUserReviews);
+
 // === RECIPE ROUTES ===
+
 // GET Filter options derived from database
 router.get("/filter-options", protect, recipeController.getRecipeFilterOptions);
 // GET List & Search
 router.get("/", protect, recipeController.getRecipes);
-// GET Detail
-router.get("/:id", protect, recipeController.getRecipeDetail);
-// CREATE
-router.post("/create", protect, recipeController.createRecipe);
-// UPDATE
-router.put(
-  "/update/:id",
-  protect,
-  authorize("admin"),
-  recipeController.updateRecipe,
-);
-// DELETE
-router.delete(
-  "/delete/:id",
-  protect,
-  authorize("admin"),
-  recipeController.deleteRecipe,
-);
 
-// GET Nutrition Values
-router.get("/:id/nutrition", recipeController.getRecipeNutrition);
+// GET Nutrition
+router.get("/:id/nutrition", protect, recipeController.getRecipeNutrition);
 
-// === FAVORITE ACTIONS (must be after /:id routes to avoid conflicts) ===
-// Check favorite status
-router.get("/:recipeId/favorite/status", protect, favoriteController.getFavoriteStatus);
-// Toggle favorite (add/remove)
-router.post("/:recipeId/favorite/toggle", protect, favoriteController.toggleFavorite);
-// Add to favorites
-router.post("/:recipeId/favorite", protect, favoriteController.addFavorite);
-// Remove from favorites
-router.delete("/:recipeId/favorite", protect, favoriteController.removeFavorite);
+// GET Full details
+router.get("/:id/full-details", protect, recipeController.getFullRecipeDetail);
 
-// === REVIEW ROUTES ===
-// Get user's reviews
-router.get("/reviews/user/list", protect, reviewController.getUserReviews);
-// Get reviews for a recipe
+// === REVIEW ROUTES (đặt trước /:id) ===
 router.get("/:recipeId/reviews", protect, reviewController.getRecipeReviews);
-// Get user's review for a specific recipe
 router.get("/:recipeId/reviews/user/mine", protect, reviewController.getUserRecipeReview);
-// Add/update review
 router.post("/:recipeId/reviews", protect, reviewController.addReview);
-// Delete review
 router.delete("/:recipeId/reviews/:reviewId", protect, reviewController.deleteReview);
 
+// === FAVORITE ACTIONS ===
+router.get("/:recipeId/favorite/status", protect, favoriteController.getFavoriteStatus);
+router.post("/:recipeId/favorite/toggle", protect, favoriteController.toggleFavorite);
+router.post("/:recipeId/favorite", protect, favoriteController.addFavorite);
+router.delete("/:recipeId/favorite", protect, favoriteController.removeFavorite);
+
+// GET Detail (để CUỐI)
+router.get("/:id", protect, recipeController.getRecipeDetail);
+
+// CREATE
+router.post("/create", protect, recipeController.createRecipe);
+
+// UPDATE
+router.put("/update/:id", protect, authorize("admin"), recipeController.updateRecipe);
+
+// DELETE
+router.delete("/delete/:id", protect, authorize("admin"), recipeController.deleteRecipe);
+
+module.exports = router;
 // === COOKING SESSION ROUTES ===
 // Start a new cooking session
 router.get("/:recipeId/cook/start", protect, cookingController.startCookingSession);

@@ -10,8 +10,10 @@ import BackupsPage from "../pages/backups/index.jsx";
 import ChatPage from "../pages/chat/index.jsx";
 import LoginPage from "../pages/auth/index.jsx";
 import ReviewsPage from "../pages/reviews/index.jsx";
+import { NutritionistScheduleManagement, ScheduleChangeRequests, MySchedule } from "../pages/nutritionist-schedules";
 import ConsultationsPage from "../pages/consultations/index.jsx";
-import NutritionistsPage from "../pages/nutritionists/index.jsx";
+import NutritionistsManagementPage from "../pages/nutritionists/index.jsx";
+import NutritionistProfessionalProfilePage from "../pages/nutritionists/profile.jsx";
 
 import AdminLayout from "../components/layout/AdminLayout.jsx";
 
@@ -46,26 +48,30 @@ export function AppRoutes() {
 
           <Route path="dashboard" element={<DashboardPage />} />
 
-          <Route element={<RoleProtectedRoute allowedRoles={["admin"]} />}>
-            <Route path="users" element={<UsersPage />} />
-            <Route path="nutritionists" element={<NutritionistsPage />} />
-            <Route path="ingredients" element={<IngredientsPage />} />
-            <Route path="micronutrients" element={<MicronutrientsPage />} />
-            <Route path="recipes" element={<RecipesPage />} />
-            <Route path="reviews" element={<ReviewsPage />} />
-            <Route path="backups" element={<BackupsPage />} />
-          </Route>
+                    {/* --- KHU VỰC 1: CHỈ DÀNH CHO ADMIN --- */}
+                    <Route element={<RoleProtectedRoute allowedRoles={['admin']} />}>
+                        <Route path="users" element={<UsersPage />} />
+                        <Route path="ingredients" element={<IngredientsPage />} />
+                        <Route path="micronutrients" element={<MicronutrientsPage />} />
+                        <Route path="recipes" element={<RecipesPage />} />
+                        <Route path="reviews" element={<ReviewsPage />} />
+                        <Route path="backups" element={<BackupsPage />} />
+                      <Route path="admin/nutritionists" element={<NutritionistsManagementPage />} />
+                        <Route path="admin/nutritionist-schedules" element={<NutritionistScheduleManagement />} />
+                        <Route path="admin/schedule-requests" element={<ScheduleChangeRequests />} />
+                    </Route>
 
-          <Route
-            element={
-              <RoleProtectedRoute allowedRoles={["nutritionist", "admin"]} />
-            }
-          >
-            <Route path="chat" element={<ChatPage />} />
-            <Route path="consultations" element={<ConsultationsPage />} />
-          </Route>
-        </Route>
-      </Route>
+                    {/* --- KHU VỰC 2: CHỈ DÀNH CHO NUTRITIONIST --- */}
+                    {/* 👇 ĐÃ XÓA 'admin' KHỎI MẢNG NÀY */}
+                    <Route element={<RoleProtectedRoute allowedRoles={['nutritionist']} />}>
+                        <Route path="chat" element={<ChatPage />} />
+                        <Route path="consultations" element={<ConsultationsPage />} />
+                      <Route path="nutritionist/profile" element={<NutritionistProfessionalProfilePage />} />
+                        <Route path="nutritionist/my-schedule" element={<MySchedule />} />
+
+                    </Route>
+                </Route>
+            </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

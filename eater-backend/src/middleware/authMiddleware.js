@@ -36,4 +36,24 @@ function authorize(...roles) {
   };
 }
 
-module.exports = { protect, authorize };
+function adminOnly(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Forbidden: Admin access required" });
+  }
+  return next();
+}
+
+function nutritionistOnly(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  if (req.user.role !== "nutritionist") {
+    return res.status(403).json({ message: "Forbidden: Nutritionist access required" });
+  }
+  return next();
+}
+
+module.exports = { protect, authorize, adminOnly, nutritionistOnly };

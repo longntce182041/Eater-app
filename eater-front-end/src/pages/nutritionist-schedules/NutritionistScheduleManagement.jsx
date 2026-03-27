@@ -33,6 +33,13 @@ const getCurrentMonthValue = () => {
   return `${year}-${month}`;
 };
 
+const getTomorrowStart = () => {
+  const tomorrow = new Date();
+  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow;
+};
+
 const getMonthFromWorkDays = (workDays) => {
   if (!Array.isArray(workDays) || workDays.length === 0 || !workDays[0]?.date) {
     return getCurrentMonthValue();
@@ -56,6 +63,7 @@ const generateWorkDaysForMonth = (monthValue, { includePastDays = false } = {}) 
   const workDays = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const tomorrow = getTomorrowStart();
 
   for (let day = 1; day <= totalDays; day += 1) {
     const date = new Date(year, month - 1, day);
@@ -63,7 +71,7 @@ const generateWorkDaysForMonth = (monthValue, { includePastDays = false } = {}) 
       continue;
     }
 
-    if (!includePastDays && date < today) {
+    if (!includePastDays && date < tomorrow) {
       continue;
     }
 
@@ -151,9 +159,19 @@ const NutritionistScheduleManagement = () => {
     e.preventDefault();
     try {
       const normalizedWorkDays = normalizeWorkDays(formData.workDays);
+      const tomorrow = getTomorrowStart();
+      const invalidPastOrTodayDay = normalizedWorkDays.find((day) => {
+        const parsedDate = new Date(`${day.date}T00:00:00`);
+        return Number.isNaN(parsedDate.getTime()) || parsedDate < tomorrow;
+      });
 
       if (!Array.isArray(normalizedWorkDays) || normalizedWorkDays.length === 0) {
         setError("Work days are required");
+        return;
+      }
+
+      if (invalidPastOrTodayDay) {
+        setError("When creating a schedule, work days must start from tomorrow.");
         return;
       }
 
@@ -459,6 +477,8 @@ const ScheduleForm = ({
   selectedMonth,
   onMonthChange,
 }) => {
+  const currentMonth = getCurrentMonthValue();
+
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -502,11 +522,12 @@ const ScheduleForm = ({
               id="scheduleMonth"
               type="month"
               value={selectedMonth}
+              min={!editingSchedule ? currentMonth : undefined}
               onChange={(e) => onMonthChange(e.target.value)}
               required
             />
             <small className="month-picker-note">
-              Auto-generates all dates in selected month and excludes Sundays.
+              Auto-generates dates in selected month, excludes Sundays, and only includes dates from tomorrow when creating.
             </small>
           </div>
 

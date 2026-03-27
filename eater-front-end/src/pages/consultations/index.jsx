@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axiosClient from '../../api/axiosClient';
-import { Search, Stethoscope, Utensils, FileText, X, User as UserIcon, Activity, Plus, Trash2, Calendar, Mail } from 'lucide-react';
+import { Search, Stethoscope, Utensils, FileText, X, User as UserIcon, Activity, Plus, Trash2, Calendar, Mail, HeartPulse } from 'lucide-react';
 import { toast } from 'react-toastify';
+
+const MIN_TARGET_CALORIES = 800;
+const MAX_TARGET_CALORIES = 10000;
+const MAX_CALORIES_DIGITS = 4;
 
 const ConsultationsPage = () => {
     // --- STATES ---
@@ -17,10 +21,13 @@ const ConsultationsPage = () => {
     const[showDiagnoseModal, setShowDiagnoseModal] = useState(false);
     const [showMealPlanModal, setShowMealPlanModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+    const [showHealthDataModal, setShowHealthDataModal] = useState(false);
 
     // --- DATA STATES ---
     const [selectedPatient, setSelectedPatient] = useState(null);
     const[reportData, setReportData] = useState(null);
+    const [healthData, setHealthData] = useState(null);
+    const [healthDataLoading, setHealthDataLoading] = useState(false);
 
     // --- FORM STATES ---
     const [diagForm, setDiagForm] = useState({ diagnosis: '', recommendations: '', notes: '' });
@@ -32,6 +39,23 @@ const ConsultationsPage = () => {
         dietType: '',
         meals: [{ dayIndex: 0, mealType: 'breakfast', recipeId: '', servings: 1 }]
     });
+
+    const validateTargetCalories = (value) => {
+        if (value === '' || value === null || value === undefined) {
+            return `Target calories must be between ${MIN_TARGET_CALORIES} and ${MAX_TARGET_CALORIES} kcal/day`;
+        }
+
+        const calories = Number(value);
+        if (!Number.isInteger(calories)) {
+            return 'Target calories must be a whole number';
+        }
+
+        if (calories < MIN_TARGET_CALORIES || calories > MAX_TARGET_CALORIES) {
+            return `Target calories must be between ${MIN_TARGET_CALORIES} and ${MAX_TARGET_CALORIES} kcal/day`;
+        }
+
+        return null;
+    };
 
     // 1. Lấy danh sách Bệnh nhân (Users có role = 'user')
     const fetchPatients = async () => {
@@ -122,6 +146,25 @@ const ConsultationsPage = () => {
         }
     };
 
+    const openHealthData = async (patient) => {
+        setSelectedPatient(patient);
+        setHealthData(null);
+        setShowHealthDataModal(true);
+
+        try {
+            setHealthDataLoading(true);
+            const res = await axiosClient.get(`/consultations/users/${patient._id}/health-data`);
+            if (res.data.success) {
+                setHealthData(res.data.data);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to load user health data');
+            setShowHealthDataModal(false);
+        } finally {
+            setHealthDataLoading(false);
+        }
+    };
+
     const handleSendReportEmail = async () => {
         if (!selectedPatient?._id) return;
 
@@ -155,6 +198,12 @@ const ConsultationsPage = () => {
     const handleMealPlanSubmit = async (e) => {
         e.preventDefault();
         try {
+            const caloriesError = validateTargetCalories(mealForm.targetCalories);
+            if (caloriesError) {
+                toast.error(caloriesError);
+                return;
+            }
+
             const invalidMeal = mealForm.meals.find((m) => !m.recipeId || !m.mealType);
             if (invalidMeal) {
                 toast.error('Please select recipe and meal type for all rows');
@@ -261,6 +310,9 @@ const ConsultationsPage = () => {
                                         <button onClick={() => openReport(p)} style={{ background:'#eef6ff', color:'#30a5ff', border:'1px solid #30a5ff', padding:'6px 12px', borderRadius:'4px', cursor:'pointer', display:'flex', gap:'5px', alignItems:'center', fontSize:'13px', fontWeight:'bold' }} title="View Nutrition Report">
                                             <FileText size={16} /> Report
                                         </button>
+                                        <button onClick={() => openHealthData(p)} style={{ background:'#fff1f2', color:'#e11d48', border:'1px solid #e11d48', padding:'6px 12px', borderRadius:'4px', cursor:'pointer', display:'flex', gap:'5px', alignItems:'center', fontSize:'13px', fontWeight:'bold' }} title="View User Health Data">
+                                            <HeartPulse size={16} /> Health Data
+                                        </button>
                                     </td>
                                 </tr>
                             )) : <tr><td colSpan="4" style={{textAlign:'center', padding:'20px'}}>No patients found.</td></tr>}
@@ -322,7 +374,21 @@ const ConsultationsPage = () => {
                             </div>
                             <div style={{ marginBottom: '15px' }}>
                                 <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Target Calories (kcal/day)</label>
-                                <input type="number" value={mealForm.targetCalories} onChange={e => setMealForm({...mealForm, targetCalories: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} placeholder="E.g., 2000" required />
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={mealForm.targetCalories}
+                                    onChange={(e) => {
+                                        const numericOnly = e.target.value.replace(/\D/g, '').slice(0, MAX_CALORIES_DIGITS);
+                                        setMealForm({ ...mealForm, targetCalories: numericOnly });
+                                    }}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                    placeholder={`E.g., 2000 (min ${MIN_TARGET_CALORIES}, max ${MAX_TARGET_CALORIES})`}
+                                    required
+                                />
+                                <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: '#666' }}>
+                                    Allowed range: {MIN_TARGET_CALORIES} - {MAX_TARGET_CALORIES} kcal/day
+                                </p>
                             </div>
                             <div style={{ marginBottom: '15px' }}>
                                 <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Health Goal</label>
@@ -469,6 +535,120 @@ const ConsultationsPage = () => {
                                 Print Report
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- 4. MODAL HEALTH DATA --- */}
+            {showHealthDataModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100, overflowY: 'auto', padding: '40px 0' }}>
+                    <div style={{ background: 'white', padding: '28px', borderRadius: '8px', width: '760px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.25)' }}>
+                        <button onClick={() => setShowHealthDataModal(false)} style={{ position: 'absolute', top: '15px', right: '15px', border: 'none', background:'none', cursor:'pointer' }}><X size={24} /></button>
+
+                        <div style={{ textAlign: 'center', borderBottom: '2px solid #eee', paddingBottom: '16px', marginBottom: '18px' }}>
+                            <h2 style={{ margin: 0, color: '#e11d48', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                <HeartPulse size={28} color="#e11d48" /> USER HEALTH DATA
+                            </h2>
+                            <p style={{ margin: '6px 0 0 0', color: '#666', fontSize: '13px' }}>Patient: {selectedPatient?.email}</p>
+                        </div>
+
+                        {healthDataLoading ? (
+                            <p style={{ textAlign: 'center', color: '#777' }}>Loading health data...</p>
+                        ) : !healthData ? (
+                            <p style={{ textAlign: 'center', color: '#999' }}>No health data available for this patient.</p>
+                        ) : (
+                            <>
+                                <h3 style={{ color: '#e11d48', borderBottom: '1px solid #eee', paddingBottom: '6px' }}>1. Basic Profile</h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f9fafb', padding: '14px', borderRadius: '6px', marginBottom: '18px' }}>
+                                    <div><strong>Email:</strong> {healthData.patientInfo?.email || 'N/A'}</div>
+                                    <div><strong>Status:</strong> {healthData.patientInfo?.isActive ? 'Active' : 'Inactive'}</div>
+                                    <div><strong>Age:</strong> {healthData.profile?.age || 'N/A'}</div>
+                                    <div><strong>Gender:</strong> {healthData.profile?.gender || 'N/A'}</div>
+                                    <div><strong>Height:</strong> {healthData.profile?.height ? `${healthData.profile.height} cm` : 'N/A'}</div>
+                                    <div><strong>Weight:</strong> {healthData.profile?.weight ? `${healthData.profile.weight} kg` : 'N/A'}</div>
+                                    <div><strong>Goal Weight:</strong> {healthData.profile?.goal_weight ? `${healthData.profile.goal_weight} kg` : 'N/A'}</div>
+                                    <div><strong>Health Goal:</strong> {healthData.profile?.healthGoals || 'N/A'}</div>
+                                </div>
+
+                                <h3 style={{ color: '#e11d48', borderBottom: '1px solid #eee', paddingBottom: '6px' }}>2. Dietary References</h3>
+                                <div style={{ background: '#fff7ed', padding: '14px', borderRadius: '6px', marginBottom: '18px', borderLeft: '4px solid #fb923c' }}>
+                                    <p style={{ margin: '0 0 8px 0' }}><strong>Diet Type:</strong> {healthData.dietaryReferences?.diet_typeId?.name || 'N/A'}</p>
+                                    <p style={{ margin: '0 0 8px 0' }}><strong>Activity Level:</strong> {healthData.dietaryReferences?.activityLevel || 'N/A'}</p>
+                                    <p style={{ margin: '0 0 8px 0' }}><strong>Cooking Skill:</strong> {healthData.dietaryReferences?.cookingSkillLevel || 'N/A'}</p>
+                                    <p style={{ margin: '0 0 8px 0' }}><strong>Daily Target:</strong> {healthData.dietaryReferences?.daily_calorie_target ? `${healthData.dietaryReferences.daily_calorie_target} kcal` : 'N/A'}</p>
+                                    <p style={{ margin: '0 0 8px 0' }}><strong>Allergies:</strong> {healthData.dietaryReferences?.allergies?.length ? healthData.dietaryReferences.allergies.join(', ') : 'None'}</p>
+                                    <p style={{ margin: 0 }}><strong>Dislikes:</strong> {healthData.dietaryReferences?.dislikesIngredients?.length ? healthData.dietaryReferences.dislikesIngredients.join(', ') : 'None'}</p>
+                                </div>
+
+                                <h3 style={{ color: '#e11d48', borderBottom: '1px solid #eee', paddingBottom: '6px' }}>3. Latest Health Metrics</h3>
+                                {healthData.latestHealthMetrics ? (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '18px' }}>
+                                        <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '6px', padding: '10px' }}>
+                                            <div style={{ color: '#0369a1', fontSize: '12px' }}>BMI</div>
+                                            <div style={{ fontWeight: 'bold', fontSize: '20px' }}>{Number(healthData.latestHealthMetrics.bmi || 0).toFixed(1)}</div>
+                                        </div>
+                                        <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '6px', padding: '10px' }}>
+                                            <div style={{ color: '#047857', fontSize: '12px' }}>BMR</div>
+                                            <div style={{ fontWeight: 'bold', fontSize: '20px' }}>{Math.round(healthData.latestHealthMetrics.bmr || 0)}</div>
+                                        </div>
+                                        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', padding: '10px' }}>
+                                            <div style={{ color: '#b45309', fontSize: '12px' }}>TDEE</div>
+                                            <div style={{ fontWeight: 'bold', fontSize: '20px' }}>{Math.round(healthData.latestHealthMetrics.tdee || 0)}</div>
+                                        </div>
+                                        <div style={{ background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: '6px', padding: '10px' }}>
+                                            <div style={{ color: '#be185d', fontSize: '12px' }}>Category</div>
+                                            <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{healthData.latestHealthMetrics.body_category || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p style={{ color: '#999', fontStyle: 'italic' }}>No health metrics found.</p>
+                                )}
+
+                                <h3 style={{ color: '#e11d48', borderBottom: '1px solid #eee', paddingBottom: '6px' }}>4. Recent Metrics History</h3>
+                                {healthData.recentHealthMetrics && healthData.recentHealthMetrics.length > 0 ? (
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
+                                                <th style={{ padding: '8px' }}>Calculated At</th>
+                                                <th style={{ padding: '8px' }}>BMI</th>
+                                                <th style={{ padding: '8px' }}>BMR</th>
+                                                <th style={{ padding: '8px' }}>TDEE</th>
+                                                <th style={{ padding: '8px' }}>Source</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {healthData.recentHealthMetrics.map((metric) => (
+                                                <tr key={metric._id} style={{ borderTop: '1px solid #eee' }}>
+                                                    <td style={{ padding: '8px' }}>{new Date(metric.calculatedAt).toLocaleString()}</td>
+                                                    <td style={{ padding: '8px' }}>{Number(metric.bmi || 0).toFixed(1)}</td>
+                                                    <td style={{ padding: '8px' }}>{Math.round(metric.bmr || 0)}</td>
+                                                    <td style={{ padding: '8px' }}>{Math.round(metric.tdee || 0)}</td>
+                                                    <td style={{ padding: '8px' }}>{metric.source || 'N/A'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                ) : (
+                                    <p style={{ color: '#999', fontStyle: 'italic' }}>No metrics history found.</p>
+                                )}
+
+                                <h3 style={{ color: '#e11d48', borderBottom: '1px solid #eee', paddingBottom: '6px', marginTop: '18px' }}>5. Latest Clinical Snapshot</h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f8fafc', padding: '14px', borderRadius: '6px' }}>
+                                    <div>
+                                        <strong>Latest Consultation:</strong>
+                                        <div style={{ color: '#555', marginTop: '4px' }}>
+                                            {healthData.latestConsultation ? new Date(healthData.latestConsultation.createdAt).toLocaleString() : 'N/A'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <strong>Latest Meal Plan:</strong>
+                                        <div style={{ color: '#555', marginTop: '4px' }}>
+                                            {healthData.latestMealPlan ? new Date(healthData.latestMealPlan.date).toLocaleDateString() : 'N/A'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

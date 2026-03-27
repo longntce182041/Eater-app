@@ -61,6 +61,25 @@ class ConsultationManagementController {
             res.status(400).json({ success: false, message: error.message });
         }
     }
+
+    // [GET] Nutritionist xem dữ liệu sức khỏe user
+    async getUserHealthData(req, res) {
+        try {
+            const patientId = req.params.patientId;
+            if (!patientId) {
+                return res.status(400).json({ success: false, message: "Patient ID is required" });
+            }
+
+            const healthData = await consultationService.getUserHealthData(req.user.id, patientId);
+            return res.status(200).json({
+                success: true,
+                message: "User health data retrieved successfully",
+                data: healthData,
+            });
+        } catch (error) {
+            return res.status(400).json({ success: false, message: error.message });
+        }
+    }
 }
 
 module.exports = new ConsultationManagementController();

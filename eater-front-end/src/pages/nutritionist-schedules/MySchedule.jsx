@@ -44,6 +44,14 @@ const addDaysToDateString = (dateStr, days) => {
   return `${year}-${month}-${day}`;
 };
 
+const normalizeDateKey = (value) => {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return toDateKey(parsed);
+};
+
 const MySchedule = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") === "requests" ? "requests" : "schedule";
@@ -472,6 +480,18 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const minDate = tomorrow.toISOString().split("T")[0];
 
+  const modifyHoursAvailableDates = useMemo(
+    () =>
+      (schedule.workDays || []).reduce((dates, day) => {
+        const dateKey = normalizeDateKey(day?.date);
+        if (dateKey && dateKey >= minDate) {
+          dates.push(dateKey);
+        }
+        return dates;
+      }, []),
+    [schedule.workDays, minDate]
+  );
+
   const [formData, setFormData] = useState({
     scheduleId: schedule._id,
     requestType: "vacation",
@@ -490,6 +510,27 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (formData.requestType !== "modify_hours") return;
+
+    const selectedDate = formData.proposedChanges.date;
+    const isSelectedDateValid = modifyHoursAvailableDates.includes(selectedDate);
+
+    if (!isSelectedDateValid) {
+      setFormData((prev) => ({
+        ...prev,
+        proposedChanges: {
+          ...prev.proposedChanges,
+          date: modifyHoursAvailableDates[0] || "",
+        },
+      }));
+    }
+  }, [
+    formData.requestType,
+    formData.proposedChanges.date,
+    modifyHoursAvailableDates,
+  ]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -515,8 +556,22 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
       }
 
       if (formData.requestType === "modify_hours") {
+        const selectedDate = String(formData.proposedChanges.date || "");
         const startTime = String(formData.proposedChanges.startTime || "");
         const endTime = String(formData.proposedChanges.endTime || "");
+
+        if (!selectedDate) {
+          setError("Please select a valid future work date.");
+          setLoading(false);
+          return;
+        }
+
+        if (selectedDate < minDate) {
+          setError("Modify working hours only supports future dates.");
+          setLoading(false);
+          return;
+        }
+
         if (!startTime || !endTime) {
           setError("Please select both start time and end time.");
           setLoading(false);
@@ -676,6 +731,7 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
                 <select
                   id="changeDate"
                   value={formData.proposedChanges.date}
+                  disabled={modifyHoursAvailableDates.length === 0}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -687,10 +743,14 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
                   }
                   required
                 >
-                  <option value="">Select a date</option>
-                  {(schedule.workDays || []).map((day) => (
-                    <option key={day.date} value={day.date}>
-                      {day.date}
+                  <option value="">
+                    {modifyHoursAvailableDates.length === 0
+                      ? "No future work days available"
+                      : "Select a date"}
+                  </option>
+                  {modifyHoursAvailableDates.map((date) => (
+                    <option key={date} value={date}>
+                      {date}
                     </option>
                   ))}
                 </select>

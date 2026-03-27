@@ -104,10 +104,33 @@ function normalizeWebhookData(payload) {
 }
 
 function isPaymentSuccessful(data) {
-  const code = String(data.code || "").toUpperCase();
-  const status = String(data.status || data.desc || "").toUpperCase();
-  return code === "00" || status.includes("PAID") || status.includes("SUCCESS");
+  // Accepts both string and number for code/status, checks for all common success values
+  if (!data) return false;
+  const code = (data.code || data.paymentCode || "")
+    .toString()
+    .trim()
+    .toUpperCase();
+  const status = (data.status || data.desc || data.paymentStatus || "")
+    .toString()
+    .trim()
+    .toUpperCase();
+  // Log for debugging
+  console.log("[isPaymentSuccessful] code:", code, "status:", status);
+  return (
+    code === "00" ||
+    code === "0" ||
+    status === "PAID" ||
+    status === "SUCCESS" ||
+    status === "COMPLETED" ||
+    status === "THANH TOAN THANH CONG" ||
+    status === "paid" ||
+    status === "success" ||
+    status === "completed" ||
+    status === "thanh toan thanh cong"
+  );
 }
+
+// Remove duplicate/old handlePayOSWebhook definition above
 
 async function createProCheckout(userId, options = {}) {
   if (!userId) {
@@ -154,7 +177,7 @@ async function createProCheckout(userId, options = {}) {
     { payos_order_code: orderCode },
     {
       userId,
-      isActive: false,
+      isActive: true,
       startDate: new Date(),
       endDate: new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000),
       plan_type: plan.planType,
@@ -182,10 +205,12 @@ async function createProCheckout(userId, options = {}) {
 }
 
 async function handlePayOSWebhook(webhookBody) {
+  console.log("[Webhook] PayOS webhook received");
   const verified =
     typeof payOS.verifyPaymentWebhookData === "function"
       ? payOS.verifyPaymentWebhookData(webhookBody)
       : webhookBody;
+  console.log("[Webhook] Verified data:", JSON.stringify(verified, null, 2));
 
   const data = normalizeWebhookData(verified);
   const orderCode = Number(data.orderCode);
@@ -197,6 +222,7 @@ async function handlePayOSWebhook(webhookBody) {
   }
 
   if (!isPaymentSuccessful(data)) {
+    console.log("[Webhook] Payment is not successful. Data:", data);
     return {
       processed: false,
       orderCode,
@@ -206,6 +232,7 @@ async function handlePayOSWebhook(webhookBody) {
 
   const subscription = await UserPro.findOne({ payos_order_code: orderCode });
   if (!subscription) {
+    console.log("[Webhook] Subscription not found for orderCode:", orderCode);
     return {
       processed: false,
       orderCode,
@@ -214,6 +241,10 @@ async function handlePayOSWebhook(webhookBody) {
   }
 
   if (subscription.isActive) {
+    console.log(
+      "[Webhook] Subscription already active for orderCode:",
+      orderCode,
+    );
     return {
       processed: true,
       orderCode,
@@ -245,7 +276,7 @@ async function handlePayOSWebhook(webhookBody) {
     data.transactionId || data.reference || data.paymentLinkId || null;
   await subscription.save();
 
-  console.log("After update:", subscription);
+  console.log("[Webhook] After update:", subscription);
 
   return {
     processed: true,

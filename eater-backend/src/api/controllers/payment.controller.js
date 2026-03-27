@@ -24,7 +24,12 @@ async function createProCheckout(req, res) {
 
 async function handlePayOSWebhook(req, res) {
   try {
-    const result = await updateProService.handlePayOSWebhook(req.body);
+    let payload = req.body;
+    // If body is a Buffer (from express.raw), parse it
+    if (Buffer.isBuffer(payload)) {
+      payload = JSON.parse(payload.toString("utf8"));
+    }
+    const result = await updateProService.handlePayOSWebhook(payload);
 
     return res.status(200).json({
       success: true,

@@ -54,7 +54,12 @@ class MicronutrientManagementController {
             await micronutrientService.deleteMicronutrient(req.params.id);
             res.json({ success: true, message: "Micronutrient deleted successfully" });
         } catch (error) {
-            res.status(400).json({ success: false, message: error.message });
+            res.status(error.statusCode || 400).json({
+                success: false,
+                code: error.code,
+                message: error.message,
+                details: error.details,
+            });
         }
     }
 }

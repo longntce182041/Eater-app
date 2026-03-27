@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/meal_plan_provider.dart';
+import '../providers/recipe_detail_provider.dart';
 import '../../domain/meal_plan_models.dart';
 import '../../data/meal_plan_to_grocery_converter.dart';
 import '../widgets/macro_distribution_donut.dart';
@@ -367,8 +368,19 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
       );
     }
 
-    // Default to first day
-    final firstDayMacro = dailyMacros[0];
+    // Show aggregate macro distribution across all days.
+    final totalProtein = dailyMacros.fold<double>(
+      0,
+      (sum, day) => sum + day.protein,
+    );
+    final totalCarbohydrates = dailyMacros.fold<double>(
+      0,
+      (sum, day) => sum + day.carbohydrates,
+    );
+    final totalFat = dailyMacros.fold<double>(
+      0,
+      (sum, day) => sum + day.fat,
+    );
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -389,11 +401,11 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
           ),
           const SizedBox(height: 12),
           MacroDistributionDonut(
-            protein: firstDayMacro.protein,
-            carbohydrates: firstDayMacro.carbohydrates,
-            fat: firstDayMacro.fat,
+            protein: totalProtein,
+            carbohydrates: totalCarbohydrates,
+            fat: totalFat,
             onViewAll: () {
-              _showDetailedMacroModal(dailyMacros);
+              _showDetailedMacroModal(dailyMacros, result);
             },
           ),
         ],
@@ -401,7 +413,112 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     );
   }
 
-  void _showDetailedMacroModal(List<_DailyMacro> dailyMacros) {
+  Future<Map<int, List<DailyMicronutrient>>> _buildDailyMicronutrients(
+    MealPlanGenerationResult result,
+    List<_DailyMacro> dailyMacros,
+  ) async {
+    final recipeIds = result.items
+        .map((item) => item.recipeId)
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+
+    if (recipeIds.isEmpty || dailyMacros.isEmpty) {
+      return {};
+    }
+
+    final recipeDetailService = ref.read(recipeDetailServiceProvider);
+    final recipeMicronutrientCache = <String, List<DailyMicronutrient>>{};
+
+    await Future.wait(recipeIds.map((recipeId) async {
+      try {
+        final detail = await recipeDetailService.getRecipeFullDetails(recipeId);
+        final micronutrients =
+            (detail['micronutrients'] as List<dynamic>? ?? [])
+                .whereType<Map<String, dynamic>>()
+                .map((item) {
+                  final micronutrient =
+                      item['micronutrientId'] as Map<String, dynamic>? ?? {};
+
+                  return DailyMicronutrient(
+                    name: micronutrient['name']?.toString() ?? 'Nutrient',
+                    unit: micronutrient['unit']?.toString() ?? '',
+                    amount: (item['amount'] as num?)?.toDouble() ?? 0,
+                  );
+                })
+                .where((item) => item.amount > 0)
+                .toList();
+
+        recipeMicronutrientCache[recipeId] = micronutrients;
+      } catch (_) {
+        recipeMicronutrientCache[recipeId] = const [];
+      }
+    }));
+
+    final dayTotals = <int, Map<String, DailyMicronutrient>>{};
+
+    for (final mealItem in result.items) {
+      final recipeId = mealItem.recipeId;
+      if (recipeId == null || recipeId.isEmpty) continue;
+
+      final dayIndex = mealItem.dayIndex;
+      if (dayIndex < 0 || dayIndex >= dailyMacros.length) continue;
+
+      final mealMicronutrients = recipeMicronutrientCache[recipeId] ?? const [];
+      if (mealMicronutrients.isEmpty) continue;
+
+      final servingMultiplier =
+          mealItem.servings > 0 ? mealItem.servings.toDouble() : 1.0;
+      final dayMap = dayTotals.putIfAbsent(dayIndex, () => {});
+
+      for (final micro in mealMicronutrients) {
+        final key = '${micro.name}|${micro.unit}';
+        final existing = dayMap[key];
+
+        if (existing == null) {
+          dayMap[key] = DailyMicronutrient(
+            name: micro.name,
+            unit: micro.unit,
+            amount: micro.amount * servingMultiplier,
+          );
+          continue;
+        }
+
+        dayMap[key] = existing.copyWith(
+          amount: existing.amount + (micro.amount * servingMultiplier),
+        );
+      }
+    }
+
+    final output = <int, List<DailyMicronutrient>>{};
+    for (final entry in dayTotals.entries) {
+      final micros = entry.value.values.toList()
+        ..sort((a, b) => b.amount.compareTo(a.amount));
+      output[entry.key] = micros;
+    }
+
+    return output;
+  }
+
+  Future<void> _showDetailedMacroModal(
+    List<_DailyMacro> dailyMacros,
+    MealPlanGenerationResult result,
+  ) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFFFF9800)),
+      ),
+    );
+
+    final dailyMicronutrientMap =
+        await _buildDailyMicronutrients(result, dailyMacros);
+
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+
     // Convert internal _DailyMacro to public DailyMacro
     final dailyMacroList = dailyMacros
         .map(
@@ -410,6 +527,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
             protein: m.protein,
             carbohydrates: m.carbohydrates,
             fat: m.fat,
+            micronutrients: dailyMicronutrientMap[m.dayIndex] ?? const [],
           ),
         )
         .toList();
@@ -483,10 +601,8 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     final sortedDays = itemsByDay.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
-    // Filter out days where all meals are eaten (completed days)
-    final visibleDays = sortedDays
-        .where((dayEntry) => !dayEntry.value.every((item) => item.isEaten))
-        .toList();
+    // Keep all days visible; completed days are dimmed instead of being hidden.
+    final visibleDays = sortedDays;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -597,13 +713,6 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                       ],
                     ),
                     const Spacer(),
-                    Text(
-                      '${dayItems.where((item) => item.isEaten).length}/${dayItems.length} meals',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF999999),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -660,10 +769,10 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
                 builder: (context, ref, _) {
                   final mealLogs = ref.watch(mealLogsProvider);
                   final planState = ref.watch(mealPlanNotifierProvider);
-                  final mealPlanStartDate =
-                      planState.result?.mealPlan.date ?? DateTime.now();
-                  final mealDate =
-                      mealPlanStartDate.add(Duration(days: item.dayIndex));
+                  final mealDate = _resolveMealDateForItem(
+                    item,
+                    baseDate: planState.result?.mealPlan.date,
+                  );
 
                   // Check if this meal is logged on the correct date
                   final isLogged = mealLogs.any(
@@ -1550,6 +1659,59 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
   String _buildMealPlanTag(String mealPlanItemId) =>
       '[meal_plan_item:$mealPlanItemId]';
 
+  DateTime _resolveMealDateForItem(
+    MealPlanItemModel meal, {
+    DateTime? baseDate,
+  }) {
+    final rawBaseDate =
+        baseDate ?? ref.read(mealPlanNotifierProvider).result?.mealPlan.date;
+    final normalizedBase = rawBaseDate != null
+        ? DateTime(rawBaseDate.year, rawBaseDate.month, rawBaseDate.day)
+        : DateTime.now();
+
+    final dayDate = normalizedBase.add(Duration(days: meal.dayIndex));
+
+    // Use midday to avoid timezone/date-shift edge cases after serialization.
+    return DateTime(dayDate.year, dayDate.month, dayDate.day, 12);
+  }
+
+  bool _isSameCalendarDate(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  bool _isDayOneCompletedForToday(MealPlanGenerationResult result) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day, 12);
+
+    final baseDate = result.mealPlan.date != null
+        ? DateTime(
+            result.mealPlan.date!.year,
+            result.mealPlan.date!.month,
+            result.mealPlan.date!.day,
+            12,
+          )
+        : today;
+
+    // Only warn in the scenario user is currently on Day 1 date.
+    if (!_isSameCalendarDate(baseDate, today)) {
+      return false;
+    }
+
+    final dayOneItems =
+        result.items.where((item) => item.dayIndex == 0).toList();
+    if (dayOneItems.isEmpty) {
+      return false;
+    }
+
+    final mealLogs = ref.read(mealLogsProvider);
+
+    return dayOneItems.every((item) {
+      final dayOneDate = _resolveMealDateForItem(item, baseDate: baseDate);
+      return mealLogs
+          .any((log) => _matchesMealLogForMeal(log, item, dayOneDate));
+    });
+  }
+
   bool _matchesMealLogForMeal(
     MealLog log,
     MealPlanItemModel meal,
@@ -1637,19 +1799,39 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
   /// Handle meal checked - creates a meal log entry and marks meal as eaten
   Future<void> _onMealChecked(
       BuildContext context, MealPlanItemModel meal) async {
+    final state = ref.read(mealPlanNotifierProvider);
+    final result = state.result;
+    final targetMealDate = _resolveMealDateForItem(
+      meal,
+      baseDate: result?.mealPlan.date,
+    );
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day, 12);
+
+    if (result != null &&
+        _isDayOneCompletedForToday(result) &&
+        !_isSameCalendarDate(targetMealDate, today)) {
+      NotificationService.showWarning(
+        context,
+        message:
+            'You have completed Day 1 for today. Logging meals from Day ${meal.dayIndex + 1} is blocked to protect your nutrition balance.',
+        duration: const Duration(seconds: 4),
+      );
+      return;
+    }
+
     final consumedServings = await _showConsumedPortionDialog(context, meal);
     if (consumedServings == null) {
       return;
     }
 
-    // When user clicks a meal from the meal plan TODAY, log it for TODAY
-    // (not for the old meal plan start date)
-    final now = DateTime.now();
-    final mealDate = DateTime(now.year, now.month, now.day);
+    // Log meal against its actual meal-plan day.
+    final mealDate = _resolveMealDateForItem(meal);
     final plannedServings = meal.servings > 0 ? meal.servings.toDouble() : 1.0;
     final ratio = consumedServings / plannedServings;
 
-    print('[_onMealChecked] DateTime.now(): ${now.toString()}');
+    print('[_onMealChecked] DateTime.now(): ${DateTime.now().toString()}');
     print(
         '[_onMealChecked] Meal date (year/month/day): ${mealDate.toString()}');
     print('[_onMealChecked] Meal date ISO8601: ${mealDate.toIso8601String()}');
@@ -1776,10 +1958,7 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
 
   /// Handle meal unchecked - removes meal from meal log
   void _onMealUnchecked(MealPlanItemModel meal) {
-    // When user unchecks a meal from the meal plan TODAY, delete it from TODAY's log
-    // (not from the old meal plan start date)
-    final now = DateTime.now();
-    final mealDate = DateTime(now.year, now.month, now.day);
+    final mealDate = _resolveMealDateForItem(meal);
 
     // Find the actual meal log by matching its content, not by ID
     final mealLogs = ref.read(mealLogsProvider);

@@ -6,13 +6,12 @@ import MicronutrientForm from './MicronutrientForm';
 import './MicronutrientList.css';
 
 const MicronutrientList = () => {
+    const defaultUnitOptions = ['mcg', 'mg', 'g', 'IU', '%', 'kcal'];
     const [micronutrients, setMicronutrients] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [searchKeyword, setSearchKeyword] = useState('');
     const [unitFilter, setUnitFilter] = useState('');
-    const [createdFrom, setCreatedFrom] = useState('');
-    const [createdTo, setCreatedTo] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
@@ -34,8 +33,6 @@ const MicronutrientList = () => {
                 limit: pageSize,
             };
             if (unitFilter) params.unit = unitFilter;
-            if (createdFrom) params.createdFrom = createdFrom;
-            if (createdTo) params.createdTo = createdTo;
 
             const result = await micronutrientService.getAll(params);
             setMicronutrients(result.data.micronutrients);
@@ -47,7 +44,7 @@ const MicronutrientList = () => {
         } finally {
             setLoading(false);
         }
-    }, [pageSize, unitFilter, createdFrom, createdTo]);
+    }, [pageSize, unitFilter]);
 
     // Initial load
     useEffect(() => {
@@ -64,14 +61,15 @@ const MicronutrientList = () => {
     // Reset filters
     const resetFilters = () => {
         setUnitFilter('');
-        setCreatedFrom('');
-        setCreatedTo('');
         setSearchKeyword('');
         fetchMicronutrients(1, '');
     };
 
-    // derive available units for filter from current list
-    const availableUnits = Array.from(new Set(micronutrients.map(m => m.unit).filter(Boolean)));
+    // derive available units for filter/form from defaults and current list
+    const availableUnits = Array.from(new Set([
+        ...defaultUnitOptions,
+        ...micronutrients.map((m) => m.unit).filter(Boolean),
+    ]));
 
     // Open form for create/edit
     const openForm = (micronutrient = null) => {
@@ -122,6 +120,15 @@ const MicronutrientList = () => {
                 toast.success('Micronutrient deleted successfully');
                 fetchMicronutrients(currentPage, searchKeyword);
             } catch (err) {
+                if (err?.code === 'MICRONUTRIENT_IN_USE') {
+                    const ingredientCount = Number(err?.details?.ingredientUsageCount) || 0;
+                    const recipeCount = Number(err?.details?.recipeUsageCount) || 0;
+                    toast.error(
+                        `Cannot delete micronutrient. It is being used in ${ingredientCount} ingredient record(s) and ${recipeCount} recipe record(s).`,
+                    );
+                    return;
+                }
+
                 const msg = err?.message || 'Failed to delete';
                 toast.error('Error: ' + msg);
             }
@@ -165,8 +172,6 @@ const MicronutrientList = () => {
                             <option key={u} value={u}>{u}</option>
                         ))}
                     </select>
-                    <input type="date" value={createdFrom} onChange={e => setCreatedFrom(e.target.value)} className="search-input" />
-                    <input type="date" value={createdTo} onChange={e => setCreatedTo(e.target.value)} className="search-input" />
                     <button type="submit" className="btn-search">
                         <Search size={18} /> Search
                     </button>
@@ -261,6 +266,7 @@ const MicronutrientList = () => {
             {showForm && (
                 <MicronutrientForm
                     initialData={editingId ? formData : null}
+                    unitOptions={availableUnits}
                     onSubmit={handleFormSubmit}
                     onCancel={closeForm}
                     isEditing={!!editingId}

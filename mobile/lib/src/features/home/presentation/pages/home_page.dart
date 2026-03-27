@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -183,6 +184,14 @@ class HomePage extends StatelessWidget {
                     'Discover healthy and delicious recipes',
                     Icons.restaurant_menu,
                     () {},
+                  ),
+                  const SizedBox(height: 12),
+                  _buildQuickActionCard(
+                    context,
+                    'AI Scan Meal Image',
+                    'Take a meal photo and estimate nutrition instantly',
+                    Icons.camera_alt_outlined,
+                    () => context.push('/ai-scan-meal'),
                   ),
                   const SizedBox(height: 24),
                 ],

@@ -154,7 +154,7 @@ async function createProCheckout(userId, options = {}) {
     { payos_order_code: orderCode },
     {
       userId,
-      isActive: true,
+      isActive: false,
       startDate: new Date(),
       endDate: new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000),
       plan_type: plan.planType,
@@ -231,6 +231,8 @@ async function handlePayOSWebhook(webhookBody) {
   subscription.payos_transaction_id =
     data.transactionId || data.reference || data.paymentLinkId || null;
   await subscription.save();
+
+  console.log("After update:", subscription);
 
   return {
     processed: true,

@@ -89,10 +89,10 @@ async function prepareUserDataForAI(userId) {
       },
       healthMetrics: healthMetrics
         ? {
-          bmi: healthMetrics.bmi,
-          bmr: healthMetrics.bmr,
-          tdee: healthMetrics.tdee,
-        }
+            bmi: healthMetrics.bmi,
+            bmr: healthMetrics.bmr,
+            tdee: healthMetrics.tdee,
+          }
         : null,
     };
   } catch (error) {
@@ -117,69 +117,36 @@ async function generateAIMealPlan(userId, days = 7, useML = false) {
     ]);
 
     // Debug: Log user data
-    console.log("User data for AI:", JSON.stringify(userData, null, 2));
+    console.log("User data for Gemini:", JSON.stringify(userData, null, 2));
 
-    // Transform data to match complete-pipeline endpoint format
-    const payload = {
-      user_id: userId.toString(),
-      days: days,
-
-      // Dietary preferences
-      diet_types: [], // TODO: Map dietTypeId to diet types array
-      allergies: userData.dietaryPreferences?.allergens || [],
-      disliked_ingredients: [
-        ...(userData.dietaryPreferences?.excludedIngredients || []),
-        ...(userData.dietaryPreferences?.restrictions || []),
-      ],
-
-      // Health goal (map from profile.healthGoals to HealthGoalType enum)
-      health_goal: mapHealthGoal(userData.profile?.healthGoals),
-      target_weight: userData.profile?.goalWeight || null,
-      timeline_weeks: null, // Optional
-
-      // Body profile
-      body_profile: userData.healthMetrics
-        ? {
-          age: userData.profile?.age || 30,
-          gender: userData.profile?.gender || "other",
-          bmi: userData.healthMetrics.bmi,
-          bmr: userData.healthMetrics.bmr,
-          tdee: userData.healthMetrics.tdee,
-          activity_level: "moderate", // TODO: Get from profile
-          weight_kg: userData.profile?.weight || null,
-          height_cm: userData.profile?.height || null,
-        }
-        : null,
-
-      // Fallback fields if body_profile not available - ensure required fields are set
-      bmr: userData.healthMetrics?.bmr || userData.profile?.bmr || 1500,
-      tdee: userData.healthMetrics?.tdee || userData.profile?.tdee || 2000,
-      weight_kg: userData.profile?.weight || 70,
-      height_cm: userData.profile?.height || 170,
-      age: userData.profile?.age || 30,
-      gender: userData.profile?.gender || "other",
-      activity_level: "moderate",
-
-      // Recipe database
-      recipe_database: recipes,
+    // Compose user profile for Gemini
+    const userProfile = {
+      age: userData.profile?.age,
+      gender: userData.profile?.gender,
+      height: userData.profile?.height,
+      weight: userData.profile?.weight,
+      goalWeight: userData.profile?.goalWeight,
+      healthGoals: userData.profile?.healthGoals,
+      dietTypes: userData.dietaryPreferences?.dietTypeId
+        ? [userData.dietaryPreferences.dietTypeId]
+        : [],
+      allergens: userData.dietaryPreferences?.allergens || [],
+      restrictions: userData.dietaryPreferences?.restrictions || [],
+      excludedIngredients:
+        userData.dietaryPreferences?.excludedIngredients || [],
+      healthMetrics: userData.healthMetrics || {},
     };
 
-    console.log("Sending meal plan generation request to AI service:", {
-      userId,
+    // Call Gemini client directly
+    const {
+      requestAIMealPlan,
+    } = require("../../integrations/ai/aiMealPlan.service");
+    const geminiResult = await requestAIMealPlan({
+      userProfile,
+      recipeDatabase: recipes,
       days,
-      useML,
-      hasBodyProfile: !!payload.body_profile,
-      hasFallbackFields: !!(
-        payload.bmr &&
-        payload.tdee &&
-        payload.weight_kg &&
-        payload.height_cm &&
-        payload.age &&
-        payload.gender
-      ),
     });
-
-    // Call AI service
+    return geminiResult;
     const response = await aiClient.generateMealPlan(payload);
 
     console.log("Received meal plan from AI service");
@@ -233,7 +200,11 @@ async function saveAIMealPlanToDatabase(userId, aiMealPlan, options = {}) {
     let numDays = options.days || 7;
 
     // If flat array is empty, try to extract from days structure
-    if (allMeals.length === 0 && Array.isArray(daysData) && daysData.length > 0) {
+    if (
+      allMeals.length === 0 &&
+      Array.isArray(daysData) &&
+      daysData.length > 0
+    ) {
       allMeals = daysData.flatMap((day) => day.meals || []);
       numDays = options.days || daysData.length;
     }
@@ -300,7 +271,9 @@ async function saveAIMealPlanToDatabase(userId, aiMealPlan, options = {}) {
 
       // Verify dayIndex is within bounds
       if (dayIndex >= numDays) {
-        console.warn(`⚠️ Meal ${i} assigned to day ${dayIndex}, but only ${numDays} days requested`);
+        console.warn(
+          `⚠️ Meal ${i} assigned to day ${dayIndex}, but only ${numDays} days requested`,
+        );
       }
 
       // Convert recipe_id from string to ObjectId if needed
@@ -308,9 +281,7 @@ async function saveAIMealPlanToDatabase(userId, aiMealPlan, options = {}) {
       try {
         recipeObjectId = new mongoose.Types.ObjectId(meal.recipe_id);
       } catch (error) {
-        console.warn(
-          `⚠️ Invalid recipe ID: ${meal.recipe_id}, skipping meal`,
-        );
+        console.warn(`⚠️ Invalid recipe ID: ${meal.recipe_id}, skipping meal`);
         continue;
       }
 
@@ -442,7 +413,9 @@ async function getLatestMealPlanWithItems(userId) {
       carbs_percent: totalMacroCalories
         ? (carbsCalories / totalMacroCalories) * 100
         : 0,
-      fat_percent: totalMacroCalories ? (fatCalories / totalMacroCalories) * 100 : 0,
+      fat_percent: totalMacroCalories
+        ? (fatCalories / totalMacroCalories) * 100
+        : 0,
       total_macro_calories: totalMacroCalories,
     };
 
@@ -655,12 +628,12 @@ async function getRecommendedRecipes(userId, limit = 10) {
  */
 async function generateAndSaveMealPlan(userId, options = {}) {
   try {
-    const { days = 7, useML = false } = options;
+    const { days = 7 } = options;
 
     console.log(`Starting meal plan generation for user: ${userId}`);
 
-    // Generate meal plan using AI service
-    const aiMealPlan = await generateAIMealPlan(userId, days, useML);
+    // Generate meal plan using Gemini only
+    const aiMealPlan = await generateAIMealPlan(userId, days);
 
     // Save meal plan and items to database
     const result = await saveAIMealPlanToDatabase(userId, aiMealPlan, {
@@ -777,14 +750,16 @@ async function generateMealPlanPreview(userId, aiMealPlan, options = {}) {
     let numDays = options.days || 7;
 
     // If flat array is empty, try to extract from days structure
-    if (allMeals.length === 0 && Array.isArray(daysData) && daysData.length > 0) {
+    if (
+      allMeals.length === 0 &&
+      Array.isArray(daysData) &&
+      daysData.length > 0
+    ) {
       allMeals = daysData.flatMap((day) => day.meals || []);
       numDays = options.days || daysData.length;
     }
 
-    console.log(
-      `Preview: ${allMeals.length} meals for ${numDays} days`,
-    );
+    console.log(`Preview: ${allMeals.length} meals for ${numDays} days`);
 
     // Calculate totals
     const totalCalories = allMeals.reduce(
@@ -833,7 +808,8 @@ async function generateMealPlanPreview(userId, aiMealPlan, options = {}) {
         days: numDays,
         totalCalories,
         avgCaloriesPerDay,
-        dietTypes: aiMealPlan.diet_constraints?.diet_types || options.dietTypes || [],
+        dietTypes:
+          aiMealPlan.diet_constraints?.diet_types || options.dietTypes || [],
         healthGoal: aiMealPlan.goal_profile?.primary_goal || options.healthGoal,
       },
       allMeals, // Keep original meals for later save
@@ -852,7 +828,12 @@ async function generateMealPlanPreview(userId, aiMealPlan, options = {}) {
  * @param {Object} options - Options including days
  * @returns {Promise<Object>} Saved meal plan with items
  */
-async function saveModifiedMealsFromPreview(userId, aiMealPlan, modifiedMeals = {}, options = {}) {
+async function saveModifiedMealsFromPreview(
+  userId,
+  aiMealPlan,
+  modifiedMeals = {},
+  options = {},
+) {
   try {
     console.log(`💾 Saving modified meals for user ${userId}`);
 
@@ -861,12 +842,12 @@ async function saveModifiedMealsFromPreview(userId, aiMealPlan, modifiedMeals = 
     // Convert modifiedMeals object to array and sort by mealId (dayIndex_mealIndex)
     const mealsArray = Object.entries(modifiedMeals)
       .sort((a, b) => {
-        const [aDayIdx, aMealIdx] = a[0].split('_').map(Number);
-        const [bDayIdx, bMealIdx] = b[0].split('_').map(Number);
+        const [aDayIdx, aMealIdx] = a[0].split("_").map(Number);
+        const [bDayIdx, bMealIdx] = b[0].split("_").map(Number);
         return aDayIdx === bDayIdx ? aMealIdx - bMealIdx : aDayIdx - bDayIdx;
       })
       .map(([mealId, mealData]) => {
-        const [dayIdx, mealIdx] = mealId.split('_').map(Number);
+        const [dayIdx, mealIdx] = mealId.split("_").map(Number);
         return {
           ...mealData,
           dayIndex: dayIdx,
@@ -897,7 +878,7 @@ async function saveModifiedMealsFromPreview(userId, aiMealPlan, modifiedMeals = 
         pipelineVersion: aiMealPlan.pipeline_metadata?.pipeline_version,
         stepsExecuted: aiMealPlan.pipeline_metadata?.steps_executed,
         generatedAt: new Date(),
-        hasReplacements: mealsArray.some(m => m.isReplaced),
+        hasReplacements: mealsArray.some((m) => m.isReplaced),
       },
     });
 
@@ -912,9 +893,7 @@ async function saveModifiedMealsFromPreview(userId, aiMealPlan, modifiedMeals = 
       try {
         recipeObjectId = new mongoose.Types.ObjectId(meal.recipeId);
       } catch (error) {
-        console.warn(
-          `⚠️ Invalid recipe ID: ${meal.recipeId}, skipping meal`,
-        );
+        console.warn(`⚠️ Invalid recipe ID: ${meal.recipeId}, skipping meal`);
         continue;
       }
 
@@ -960,7 +939,12 @@ async function saveModifiedMealsFromPreview(userId, aiMealPlan, modifiedMeals = 
  * @param {Object} options - Options including days
  * @returns {Promise<Object>} Saved meal plan with items
  */
-async function saveSelectedMealsFromPreview(userId, aiMealPlan, selectedMealIds = [], options = {}) {
+async function saveSelectedMealsFromPreview(
+  userId,
+  aiMealPlan,
+  selectedMealIds = [],
+  options = {},
+) {
   try {
     console.log(`💾 Saving selected meals for user ${userId}`);
 
@@ -972,7 +956,11 @@ async function saveSelectedMealsFromPreview(userId, aiMealPlan, selectedMealIds 
     let allMeals = meals.length > 0 ? meals : [];
     let numDays = options.days || 7;
 
-    if (allMeals.length === 0 && Array.isArray(daysData) && daysData.length > 0) {
+    if (
+      allMeals.length === 0 &&
+      Array.isArray(daysData) &&
+      daysData.length > 0
+    ) {
       allMeals = daysData.flatMap((day) => day.meals || []);
       numDays = options.days || daysData.length;
     }
@@ -980,8 +968,8 @@ async function saveSelectedMealsFromPreview(userId, aiMealPlan, selectedMealIds 
     // If selectedMealIds is empty, save all (backward compatibility)
     let mealsToSave = allMeals;
     if (selectedMealIds && selectedMealIds.length > 0) {
-      const selectedIndexes = selectedMealIds.map(id => {
-        const [dayIdx, mealIdx] = id.split('_').map(Number);
+      const selectedIndexes = selectedMealIds.map((id) => {
+        const [dayIdx, mealIdx] = id.split("_").map(Number);
         const mealsPerDay = Math.ceil(allMeals.length / numDays);
         return dayIdx * mealsPerDay + mealIdx;
       });
@@ -989,9 +977,7 @@ async function saveSelectedMealsFromPreview(userId, aiMealPlan, selectedMealIds 
       mealsToSave = allMeals.filter((_, idx) => selectedIndexes.includes(idx));
     }
 
-    console.log(
-      `Saving ${mealsToSave.length} out of ${allMeals.length} meals`,
-    );
+    console.log(`Saving ${mealsToSave.length} out of ${allMeals.length} meals`);
 
     const totalCalories = mealsToSave.reduce(
       (sum, meal) => sum + (meal.calories || meal.estimated_calories || 0),
@@ -1036,9 +1022,7 @@ async function saveSelectedMealsFromPreview(userId, aiMealPlan, selectedMealIds 
       try {
         recipeObjectId = new mongoose.Types.ObjectId(meal.recipe_id);
       } catch (error) {
-        console.warn(
-          `⚠️ Invalid recipe ID: ${meal.recipe_id}, skipping meal`,
-        );
+        console.warn(`⚠️ Invalid recipe ID: ${meal.recipe_id}, skipping meal`);
         continue;
       }
 

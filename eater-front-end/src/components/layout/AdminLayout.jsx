@@ -11,7 +11,6 @@ import {
   MessageCircle,
   Star,
   Stethoscope,
-  UserCheck,
 } from "lucide-react";
 import "./AdminLayout.css";
 
@@ -33,11 +32,6 @@ const AdminLayout = () => {
     },
     { name: "Manage Users", path: "/users", icon: <Users size={20} /> },
     {
-      name: "Manage Nutritionists",
-      path: "/nutritionists",
-      icon: <UserCheck size={20} />,
-    },
-    {
       name: "Manage Ingredients",
       path: "/ingredients",
       icon: <Utensils size={20} />,
@@ -54,11 +48,6 @@ const AdminLayout = () => {
       path: "/backups",
       icon: <CloudUpload size={20} />,
     },
-    {
-      name: "Consultations",
-      path: "/consultations",
-      icon: <Stethoscope size={20} />,
-    },
   ];
 
   const nutritionistMenuItems = [
@@ -67,6 +56,7 @@ const AdminLayout = () => {
       name: "Consultations",
       path: "/consultations",
       icon: <Stethoscope size={20} />,
+      roles: ["nutritionist"],
     },
   ];
 
@@ -77,11 +67,13 @@ const AdminLayout = () => {
       {/* SIDEBAR */}
       <aside className="sidebar">
         <div className="sidebar-header">
-          EATER <span>ADMIN</span>
+          EATER <span>{isNutritionist ? "PORTAL" : "ADMIN"}</span>
         </div>
         <div className="profile-section">
           <div className="profile-img"></div>
-          <div className="profile-name">Admin</div>
+          <div className="profile-name">
+            {isNutritionist ? "Nutritionist" : "Admin"}
+          </div>
         </div>
         <ul className="nav-menu">
           {menuItems.map((item, index) => (

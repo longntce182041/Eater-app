@@ -21,6 +21,8 @@ const AdminLayout = () => {
         { name: 'Manage Recipes', path: '/recipes', icon: <BookOpen size={20} /> },
         { name: 'Manage Reviews', path: '/reviews', icon: <Star size={20} /> },
         { name: 'System Backups', path: '/backups', icon: <CloudUpload size={20} /> },
+        { name: 'Manage Nutritionists', path: '/admin/nutritionists', icon: <UserCog size={20} /> },
+        
     ];
 
     const nutritionistMenuItems = [

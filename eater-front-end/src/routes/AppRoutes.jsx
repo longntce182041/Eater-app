@@ -12,6 +12,8 @@ import LoginPage from "../pages/auth/index.jsx";
 import ReviewsPage from "../pages/reviews/index.jsx";
 import { NutritionistScheduleManagement, ScheduleChangeRequests, MySchedule } from "../pages/nutritionist-schedules";
 import ConsultationsPage from "../pages/consultations/index.jsx";
+import NutritionistsManagementPage from "../pages/nutritionists/index.jsx";
+import NutritionistProfessionalProfilePage from "../pages/nutritionists/profile.jsx";
 
 import AdminLayout from "../components/layout/AdminLayout.jsx";
 
@@ -54,6 +56,9 @@ export function AppRoutes() {
                         <Route path="recipes" element={<RecipesPage />} />
                         <Route path="reviews" element={<ReviewsPage />} />
                         <Route path="backups" element={<BackupsPage />} />
+                      <Route path="admin/nutritionists" element={<NutritionistsManagementPage />} />
+                        <Route path="admin/nutritionist-schedules" element={<NutritionistScheduleManagement />} />
+                        <Route path="admin/schedule-requests" element={<ScheduleChangeRequests />} />
                     </Route>
 
                     {/* --- KHU VỰC 2: CHỈ DÀNH CHO NUTRITIONIST --- */}
@@ -61,6 +66,9 @@ export function AppRoutes() {
                     <Route element={<RoleProtectedRoute allowedRoles={['nutritionist']} />}>
                         <Route path="chat" element={<ChatPage />} />
                         <Route path="consultations" element={<ConsultationsPage />} />
+                      <Route path="nutritionist/profile" element={<NutritionistProfessionalProfilePage />} />
+                        <Route path="nutritionist/my-schedule" element={<MySchedule />} />
+
                     </Route>
                 </Route>
             </Route>

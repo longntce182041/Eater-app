@@ -5,6 +5,14 @@ export const nutritionistsApi = {
     return axiosClient.get("/nutritionists", { params });
   },
 
+  getMyProfessionalProfile() {
+    return axiosClient.get("/nutritionists/profile/me");
+  },
+
+  upsertMyProfessionalProfile(data) {
+    return axiosClient.put("/nutritionists/profile/me", data);
+  },
+
   getNutritionistById(id) {
     return axiosClient.get(`/nutritionists/${id}`);
   },

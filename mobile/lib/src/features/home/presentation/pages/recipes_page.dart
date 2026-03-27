@@ -10,6 +10,7 @@ import '../../data/recipe_ingredients_api.dart';
 import '../../../grocery/domain/grocery_models.dart';
 import '../../../grocery/presentation/providers/grocery_list_provider.dart';
 import '../../../../core/utils/notification_service.dart';
+import '../../../cooking/presentation/pages/cooking_mode_screen.dart';
 
 /// Provider to track which recipes are currently being added to grocery list
 final addingRecipeProvider = StateProvider<Set<String>>((ref) => {});
@@ -25,6 +26,7 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
+  RecipeFilter _activeFilter = const RecipeFilter();
 
   @override
   void initState() {
@@ -77,14 +79,19 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
   void _showFilterDialog() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return _FilterBottomSheet(
-          onFilterApplied: (int? maxTime) {
-            ref.read(recipeListProvider.notifier).filterByTime(maxTime);
+          initialFilter: _activeFilter,
+          onFilterApplied: (RecipeFilter filter) {
+            setState(() {
+              _activeFilter = filter;
+            });
+            ref.read(recipeListProvider.notifier).applyFilters(filter);
             Navigator.pop(context);
           },
         );
@@ -157,11 +164,18 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
                     // Filter button
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF9800),
+                        color: _activeFilter.hasAnyFilter
+                            ? const Color(0xFFE65100)
+                            : const Color(0xFFFF9800),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.tune, color: Colors.white),
+                        icon: Icon(
+                          _activeFilter.hasAnyFilter
+                              ? Icons.tune
+                              : Icons.tune_outlined,
+                          color: Colors.white,
+                        ),
                         onPressed: _showFilterDialog,
                       ),
                     ),
@@ -643,86 +657,521 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
 }
 
 // Filter Bottom Sheet
-class _FilterBottomSheet extends StatefulWidget {
-  final Function(int?) onFilterApplied;
+class _FilterBottomSheet extends ConsumerStatefulWidget {
+  final RecipeFilter initialFilter;
+  final Function(RecipeFilter) onFilterApplied;
 
-  const _FilterBottomSheet({required this.onFilterApplied});
+  const _FilterBottomSheet({
+    required this.initialFilter,
+    required this.onFilterApplied,
+  });
 
   @override
-  State<_FilterBottomSheet> createState() => _FilterBottomSheetState();
+  ConsumerState<_FilterBottomSheet> createState() => _FilterBottomSheetState();
 }
 
-class _FilterBottomSheetState extends State<_FilterBottomSheet> {
+class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
   int? _selectedMaxTime;
+  final Set<String> _selectedDietTypes = {};
+  final Set<String> _selectedIngredients = {};
 
-  final List<Map<String, dynamic>> _timeOptions = [
-    {'label': 'All recipes', 'value': null},
-    {'label': 'Under 15 min', 'value': 15},
-    {'label': 'Under 30 min', 'value': 30},
-    {'label': 'Under 45 min', 'value': 45},
-    {'label': 'Under 1 hour', 'value': 60},
-  ];
+  final TextEditingController _minCaloriesController = TextEditingController();
+  final TextEditingController _maxCaloriesController = TextEditingController();
+  final TextEditingController _minProteinController = TextEditingController();
+  final TextEditingController _maxProteinController = TextEditingController();
+  final TextEditingController _minFatController = TextEditingController();
+  final TextEditingController _maxFatController = TextEditingController();
+  final TextEditingController _minCarbsController = TextEditingController();
+  final TextEditingController _maxCarbsController = TextEditingController();
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
+    final filter = widget.initialFilter;
+    _selectedMaxTime = filter.maxCookingTime;
+    _selectedDietTypes.addAll(filter.dietTypes);
+    _selectedIngredients.addAll(filter.ingredientNames);
+
+    _minCaloriesController.text = filter.minCalories?.toStringAsFixed(0) ?? '';
+    _maxCaloriesController.text = filter.maxCalories?.toStringAsFixed(0) ?? '';
+    _minProteinController.text = filter.minProtein?.toStringAsFixed(0) ?? '';
+    _maxProteinController.text = filter.maxProtein?.toStringAsFixed(0) ?? '';
+    _minFatController.text = filter.minFat?.toStringAsFixed(0) ?? '';
+    _maxFatController.text = filter.maxFat?.toStringAsFixed(0) ?? '';
+    _minCarbsController.text =
+        filter.minCarbohydrates?.toStringAsFixed(0) ?? '';
+    _maxCarbsController.text =
+        filter.maxCarbohydrates?.toStringAsFixed(0) ?? '';
+  }
+
+  @override
+  void dispose() {
+    _minCaloriesController.dispose();
+    _maxCaloriesController.dispose();
+    _minProteinController.dispose();
+    _maxProteinController.dispose();
+    _minFatController.dispose();
+    _maxFatController.dispose();
+    _minCarbsController.dispose();
+    _maxCarbsController.dispose();
+    super.dispose();
+  }
+
+  double? _tryParse(TextEditingController controller) {
+    final raw = controller.text.trim();
+    if (raw.isEmpty) return null;
+    return double.tryParse(raw);
+  }
+
+  RecipeFilter _buildFilterFromInputs() {
+    return RecipeFilter(
+      maxCookingTime: _selectedMaxTime,
+      minCalories: _tryParse(_minCaloriesController),
+      maxCalories: _tryParse(_maxCaloriesController),
+      minProtein: _tryParse(_minProteinController),
+      maxProtein: _tryParse(_maxProteinController),
+      minFat: _tryParse(_minFatController),
+      maxFat: _tryParse(_maxFatController),
+      minCarbohydrates: _tryParse(_minCarbsController),
+      maxCarbohydrates: _tryParse(_maxCarbsController),
+      dietTypes: _selectedDietTypes.toList(),
+      ingredientNames: _selectedIngredients.toList(),
+    );
+  }
+
+  Widget _buildRangeInputs(
+    String title,
+    TextEditingController minController,
+    TextEditingController maxController,
+    NumericRange? dbRange,
+  ) {
+    final helper = dbRange != null
+        ? 'Available: ${dbRange.min.toStringAsFixed(0)} - ${dbRange.max.toStringAsFixed(0)}'
+        : null;
+
+    InputDecoration decoration(String label) {
+      return InputDecoration(
+        labelText: label,
+        isDense: true,
+        filled: true,
+        fillColor: const Color(0xFFF8F8F8),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(color: Color(0xFFFF9800), width: 1.5),
+        ),
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
+          if (helper != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              helper,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+          const SizedBox(height: 10),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Filter by cooking time',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Expanded(
+                child: TextField(
+                  controller: minController,
+                  keyboardType: TextInputType.number,
+                  decoration: decoration('Min'),
+                ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: maxController,
+                  keyboardType: TextInputType.number,
+                  decoration: decoration('Max'),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          RadioGroup<int?>(
-            groupValue: _selectedMaxTime,
-            onChanged: (value) {
-              setState(() {
-                _selectedMaxTime = value;
-              });
-            },
-            child: Column(
-              children: _timeOptions.map((option) {
-                return RadioListTile<int?>(
-                  title: Text(option['label'] as String),
-                  value: option['value'] as int?,
-                  activeColor: const Color(0xFFFF9800),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                widget.onFilterApplied(_selectedMaxTime);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF9800),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Apply Filter',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filterOptionsAsync = ref.watch(recipeFilterOptionsProvider);
+
+    final dynamicTimeOptions = filterOptionsAsync.maybeWhen(
+      data: (options) {
+        final values = options.suggestedCookingTimes.toSet().toList()..sort();
+        return [
+          {'label': 'All recipes', 'value': null},
+          ...values.map(
+            (value) => {
+              'label': 'Under $value min',
+              'value': value,
+            },
+          ),
+        ];
+      },
+      orElse: () => [
+        {'label': 'All recipes', 'value': null},
+        {'label': 'Under 15 min', 'value': 15},
+        {'label': 'Under 30 min', 'value': 30},
+        {'label': 'Under 45 min', 'value': 45},
+        {'label': 'Under 60 min', 'value': 60},
+      ],
+    );
+
+    final dynamicDietOptions = filterOptionsAsync.maybeWhen(
+      data: (options) => options.dietTypes,
+      orElse: () => <RecipeDietOption>[],
+    );
+
+    final dynamicIngredientOptions = filterOptionsAsync.maybeWhen(
+      data: (options) => options.ingredients,
+      orElse: () => <RecipeIngredientOption>[],
+    );
+
+    final nutritionRanges = filterOptionsAsync.maybeWhen(
+      data: (options) => options,
+      orElse: () => null,
+    );
+
+    final totalSelected = _selectedDietTypes.length +
+        _selectedIngredients.length +
+        (_selectedMaxTime != null ? 1 : 0);
+
+    return Container(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3E0),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.tune,
+                    color: Color(0xFFFF9800),
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Recipe Filters',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            Text(
+              totalSelected > 0
+                  ? '$totalSelected filters selected'
+                  : 'Customize recipes for your goals',
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Cooking time',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: dynamicTimeOptions.map((option) {
+                      final selected = _selectedMaxTime == option['value'];
+                      return ChoiceChip(
+                        label: Text(option['label'] as String),
+                        selected: selected,
+                        onSelected: (_) {
+                          setState(() {
+                            _selectedMaxTime = option['value'] as int?;
+                          });
+                        },
+                        selectedColor: const Color(0xFFFFE0B2),
+                        labelStyle: TextStyle(
+                          color: selected
+                              ? const Color(0xFFE65100)
+                              : const Color(0xFF4A4A4A),
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                        side: BorderSide(
+                          color: selected
+                              ? const Color(0xFFFF9800)
+                              : Colors.grey.shade300,
+                        ),
+                        backgroundColor: Colors.white,
+                        showCheckmark: false,
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildRangeInputs(
+              'Calories (kcal)',
+              _minCaloriesController,
+              _maxCaloriesController,
+              nutritionRanges?.calories,
+            ),
+            const SizedBox(height: 10),
+            _buildRangeInputs(
+              'Protein (g)',
+              _minProteinController,
+              _maxProteinController,
+              nutritionRanges?.protein,
+            ),
+            const SizedBox(height: 10),
+            _buildRangeInputs(
+              'Fat (g)',
+              _minFatController,
+              _maxFatController,
+              nutritionRanges?.fat,
+            ),
+            const SizedBox(height: 10),
+            _buildRangeInputs(
+              'Carbohydrates (g)',
+              _minCarbsController,
+              _maxCarbsController,
+              nutritionRanges?.carbohydrates,
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Diet types',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: (dynamicDietOptions.isEmpty
+                            ? _selectedDietTypes
+                                .map((item) => RecipeDietOption(
+                                      id: item,
+                                      name: item,
+                                      recipeCount: 0,
+                                    ))
+                                .toList()
+                            : dynamicDietOptions)
+                        .map((diet) {
+                      final selected = _selectedDietTypes.contains(diet.name);
+                      return FilterChip(
+                        label: Text(
+                          diet.recipeCount > 0
+                              ? '${diet.name} (${diet.recipeCount})'
+                              : diet.name,
+                        ),
+                        selected: selected,
+                        onSelected: (value) {
+                          setState(() {
+                            if (value) {
+                              _selectedDietTypes.add(diet.name);
+                            } else {
+                              _selectedDietTypes.remove(diet.name);
+                            }
+                          });
+                        },
+                        selectedColor: const Color(0xFFFFE0B2),
+                        checkmarkColor: const Color(0xFFE65100),
+                        side: BorderSide(
+                          color: selected
+                              ? const Color(0xFFFF9800)
+                              : Colors.grey.shade300,
+                        ),
+                        labelStyle: TextStyle(
+                          color: selected
+                              ? const Color(0xFFE65100)
+                              : const Color(0xFF4A4A4A),
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                        showCheckmark: false,
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Ingredients',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: (dynamicIngredientOptions.isEmpty
+                            ? _selectedIngredients
+                                .map(
+                                  (item) => RecipeIngredientOption(
+                                    id: item,
+                                    name: item,
+                                    recipeCount: 0,
+                                  ),
+                                )
+                                .toList()
+                            : dynamicIngredientOptions)
+                        .map((ingredient) {
+                      final selected =
+                          _selectedIngredients.contains(ingredient.name);
+                      return FilterChip(
+                        label: Text(
+                          ingredient.recipeCount > 0
+                              ? '${ingredient.name} (${ingredient.recipeCount})'
+                              : ingredient.name,
+                        ),
+                        selected: selected,
+                        onSelected: (value) {
+                          setState(() {
+                            if (value) {
+                              _selectedIngredients.add(ingredient.name);
+                            } else {
+                              _selectedIngredients.remove(ingredient.name);
+                            }
+                          });
+                        },
+                        selectedColor: const Color(0xFFFFE0B2),
+                        checkmarkColor: const Color(0xFFE65100),
+                        side: BorderSide(
+                          color: selected
+                              ? const Color(0xFFFF9800)
+                              : Colors.grey.shade300,
+                        ),
+                        labelStyle: TextStyle(
+                          color: selected
+                              ? const Color(0xFFE65100)
+                              : const Color(0xFF4A4A4A),
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                        showCheckmark: false,
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      widget.onFilterApplied(const RecipeFilter());
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(color: Colors.grey.shade400),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Reset'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      widget.onFilterApplied(_buildFilterFromInputs());
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF9800),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.check, size: 16),
+                    label: const Text(
+                      'Apply',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1087,14 +1536,23 @@ class _RecipeDetailSheetState extends ConsumerState<_RecipeDetailSheet> {
                             Expanded(
                               child: ElevatedButton.icon(
                                 onPressed: () {
-                                  
+                                  // Navigate to cooking mode with recipe ID
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CookingModeScreen(
+                                        recipeId: widget.recipe.id,
+                                        servings: _selectedServings,
+                                      ),
+                                    ),
+                                  );
                                 },
                                 icon: const Icon(
                                   Icons.play_arrow,
                                   color: Colors.black,
                                 ),
                                 label: const Text(
-                                  'Start Cooking',
+                                  'Cooking Steps',
                                   style: TextStyle(color: Colors.black),
                                 ),
                                 style: ElevatedButton.styleFrom(
@@ -1296,16 +1754,14 @@ class _RecipeDetailSheetState extends ConsumerState<_RecipeDetailSheet> {
     final isAdding = addingRecipes.contains(recipe.id);
 
     final ingredients = ingredientsAsync.asData?.value ?? const [];
-    final ingredientIdsOfRecipe = ingredients
-        .map((ingredient) => ingredient.ingredient.id)
-        .where((id) => id.isNotEmpty)
-        .toSet();
 
+    // Only check if THIS RECIPE was already added (by recipeId)
+    // Don't check other recipes with same ingredients
     final hasPendingItemsForRecipe = groceryListState.items.any(
       (item) =>
           !item.isPurchased &&
-          ((item.recipeId != null && item.recipeId == recipe.id) ||
-              ingredientIdsOfRecipe.contains(item.ingredientId)),
+          item.recipeId != null &&
+          item.recipeId == recipe.id,
     );
 
     final isDisabled =
@@ -1331,9 +1787,9 @@ class _RecipeDetailSheetState extends ConsumerState<_RecipeDetailSheet> {
                       .map((recipeIngredient) {
                     final quantity =
                         (recipeIngredient.quantityAsDouble ?? 1.0) *
-                        (baseServings > 0
-                            ? selectedServings / baseServings
-                            : 1.0);
+                            (baseServings > 0
+                                ? selectedServings / baseServings
+                                : 1.0);
                     return GroceryItem(
                       id: '${recipe.id}_${recipeIngredient.ingredient.id}_${DateTime.now().millisecondsSinceEpoch}',
                       ingredientId: recipeIngredient.ingredient.id,

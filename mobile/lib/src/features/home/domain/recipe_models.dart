@@ -133,6 +133,123 @@ class RecipeListResponse {
   bool get hasMore => page < totalPages;
 }
 
+class NumericRange {
+  final double min;
+  final double max;
+
+  NumericRange({required this.min, required this.max});
+
+  factory NumericRange.fromJson(Map<String, dynamic> json) {
+    return NumericRange(
+      min: (json['min'] as num?)?.toDouble() ?? 0,
+      max: (json['max'] as num?)?.toDouble() ?? 0,
+    );
+  }
+}
+
+class RecipeDietOption {
+  final String id;
+  final String name;
+  final int recipeCount;
+
+  RecipeDietOption({
+    required this.id,
+    required this.name,
+    required this.recipeCount,
+  });
+
+  factory RecipeDietOption.fromJson(Map<String, dynamic> json) {
+    return RecipeDietOption(
+      id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      recipeCount: (json['recipeCount'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class RecipeIngredientOption {
+  final String id;
+  final String name;
+  final int recipeCount;
+
+  RecipeIngredientOption({
+    required this.id,
+    required this.name,
+    required this.recipeCount,
+  });
+
+  factory RecipeIngredientOption.fromJson(Map<String, dynamic> json) {
+    return RecipeIngredientOption(
+      id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      recipeCount: (json['recipeCount'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class RecipeFilterOptions {
+  final NumericRange calories;
+  final NumericRange protein;
+  final NumericRange fat;
+  final NumericRange carbohydrates;
+  final int minCookingTime;
+  final int maxCookingTime;
+  final List<int> suggestedCookingTimes;
+  final List<RecipeDietOption> dietTypes;
+  final List<RecipeIngredientOption> ingredients;
+
+  RecipeFilterOptions({
+    required this.calories,
+    required this.protein,
+    required this.fat,
+    required this.carbohydrates,
+    required this.minCookingTime,
+    required this.maxCookingTime,
+    required this.suggestedCookingTimes,
+    required this.dietTypes,
+    required this.ingredients,
+  });
+
+  factory RecipeFilterOptions.fromJson(Map<String, dynamic> json) {
+    final cooking =
+        (json['cookingTime'] as Map<String, dynamic>? ?? <String, dynamic>{});
+    final nutrition = (json['nutritionRanges'] as Map<String, dynamic>? ??
+        <String, dynamic>{});
+
+    return RecipeFilterOptions(
+      calories: NumericRange.fromJson(
+        (nutrition['calories'] as Map<String, dynamic>? ?? <String, dynamic>{}),
+      ),
+      protein: NumericRange.fromJson(
+        (nutrition['protein'] as Map<String, dynamic>? ?? <String, dynamic>{}),
+      ),
+      fat: NumericRange.fromJson(
+        (nutrition['fat'] as Map<String, dynamic>? ?? <String, dynamic>{}),
+      ),
+      carbohydrates: NumericRange.fromJson(
+        (nutrition['carbohydrates'] as Map<String, dynamic>? ??
+            <String, dynamic>{}),
+      ),
+      minCookingTime: (cooking['min'] as num?)?.toInt() ?? 0,
+      maxCookingTime: (cooking['max'] as num?)?.toInt() ?? 0,
+      suggestedCookingTimes: ((cooking['suggestedMaxOptions'] as List?) ?? [])
+          .map((item) => (item as num).toInt())
+          .toList(),
+      dietTypes: ((json['dietTypes'] as List?) ?? [])
+          .map(
+              (item) => RecipeDietOption.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      ingredients: ((json['ingredients'] as List?) ?? [])
+          .map(
+            (item) => RecipeIngredientOption.fromJson(
+              item as Map<String, dynamic>,
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
 class RecipeNutrition {
   final String id;
   final String recipeId;

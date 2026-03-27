@@ -4,11 +4,230 @@ const { RecipesIngredient } = require('../../models/recipes_ingredient');
 const { RecipesStep } = require('../../models/recipes_step');
 const { RecipeDietType } = require('../../models/recipe_diet_type');
 const { RecipeNutrition } = require('../../models/recipe_nutrion');
+const { DietType } = require('../../models/diet_types');
+const { Ingredient } = require('../../models/ingredients');
 
 class RecipeService {
+    parseNumber(value) {
+        if (value === undefined || value === null || value === '') return null;
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    buildNutritionFilter(query) {
+        const minCalories = this.parseNumber(query.minCalories);
+        const maxCalories = this.parseNumber(query.maxCalories);
+        const minProtein = this.parseNumber(query.minProtein);
+        const maxProtein = this.parseNumber(query.maxProtein);
+        const minFat = this.parseNumber(query.minFat);
+        const maxFat = this.parseNumber(query.maxFat);
+        const minCarbohydrates = this.parseNumber(query.minCarbohydrates);
+        const maxCarbohydrates = this.parseNumber(query.maxCarbohydrates);
+
+        const rangeFilter = {};
+
+        if (minCalories !== null || maxCalories !== null) {
+            rangeFilter.calories = {
+                ...(minCalories !== null ? { $gte: minCalories } : {}),
+                ...(maxCalories !== null ? { $lte: maxCalories } : {}),
+            };
+        }
+
+        if (minProtein !== null || maxProtein !== null) {
+            rangeFilter.protein = {
+                ...(minProtein !== null ? { $gte: minProtein } : {}),
+                ...(maxProtein !== null ? { $lte: maxProtein } : {}),
+            };
+        }
+
+        if (minFat !== null || maxFat !== null) {
+            rangeFilter.fat = {
+                ...(minFat !== null ? { $gte: minFat } : {}),
+                ...(maxFat !== null ? { $lte: maxFat } : {}),
+            };
+        }
+
+        if (minCarbohydrates !== null || maxCarbohydrates !== null) {
+            rangeFilter.carbohydrates = {
+                ...(minCarbohydrates !== null ? { $gte: minCarbohydrates } : {}),
+                ...(maxCarbohydrates !== null ? { $lte: maxCarbohydrates } : {}),
+            };
+        }
+
+        return rangeFilter;
+    }
+
+    buildSuggestedCookingTimeOptions(minCookingTime, maxCookingTime) {
+        const defaults = [15, 30, 45, 60];
+        const validDefaults = defaults.filter((item) => maxCookingTime >= item);
+
+        if (validDefaults.length === 0 && Number.isFinite(maxCookingTime)) {
+            return [maxCookingTime];
+        }
+
+        if (Number.isFinite(maxCookingTime) && maxCookingTime > 60) {
+            return [...validDefaults, maxCookingTime];
+        }
+
+        return validDefaults;
+    }
+
+    async getRecipeFilterOptions(query = {}) {
+        const { status } = query;
+        const recipeFilter = {};
+
+        if (status) {
+            recipeFilter.status = status;
+        }
+
+        const recipes = await Recipe.find(recipeFilter).select('_id cookingTime');
+
+        if (recipes.length === 0) {
+            return {
+                cookingTime: {
+                    min: 0,
+                    max: 0,
+                    suggestedMaxOptions: [],
+                },
+                nutritionRanges: {
+                    calories: { min: 0, max: 0 },
+                    protein: { min: 0, max: 0 },
+                    fat: { min: 0, max: 0 },
+                    carbohydrates: { min: 0, max: 0 },
+                },
+                dietTypes: [],
+                ingredients: [],
+            };
+        }
+
+        const recipeIds = recipes.map((item) => item._id);
+        const cookingTimes = recipes
+            .map((item) => Number(item.cookingTime || 0))
+            .filter((value) => Number.isFinite(value) && value >= 0);
+
+        const minCookingTime = cookingTimes.length > 0 ? Math.min(...cookingTimes) : 0;
+        const maxCookingTime = cookingTimes.length > 0 ? Math.max(...cookingTimes) : 0;
+
+        const [nutritionStats, dietCountStats, ingredientStats, allDietTypes] = await Promise.all([
+            RecipeNutrition.aggregate([
+                { $match: { recipeId: { $in: recipeIds } } },
+                {
+                    $group: {
+                        _id: null,
+                        minCalories: { $min: '$calories' },
+                        maxCalories: { $max: '$calories' },
+                        minProtein: { $min: '$protein' },
+                        maxProtein: { $max: '$protein' },
+                        minFat: { $min: '$fat' },
+                        maxFat: { $max: '$fat' },
+                        minCarbohydrates: { $min: '$carbohydrates' },
+                        maxCarbohydrates: { $max: '$carbohydrates' },
+                    },
+                },
+            ]),
+            RecipeDietType.aggregate([
+                { $match: { recipeId: { $in: recipeIds } } },
+                {
+                    $group: {
+                        _id: '$dietTypeId',
+                        recipeCount: { $sum: 1 },
+                    },
+                },
+            ]),
+            RecipesIngredient.aggregate([
+                { $match: { recipeId: { $in: recipeIds } } },
+                {
+                    $group: {
+                        _id: '$ingredientId',
+                        recipeCount: { $sum: 1 },
+                    },
+                },
+                {
+                    $lookup: {
+                        from: 'ingredients',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'ingredient',
+                    },
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        id: '$_id',
+                        recipeCount: 1,
+                        name: { $arrayElemAt: ['$ingredient.name', 0] },
+                    },
+                },
+                { $match: { name: { $exists: true, $ne: null } } },
+                { $sort: { recipeCount: -1, name: 1 } },
+            ]),
+            DietType.find({}).select('_id name').sort({ name: 1 }),
+        ]);
+
+        const nutrition = nutritionStats[0] || {};
+        const dietCountMap = new Map(
+            dietCountStats.map((item) => [String(item._id), Number(item.recipeCount || 0)]),
+        );
+
+        const dietTypes = allDietTypes
+            .map((item) => ({
+                id: String(item._id),
+                name: item.name,
+                recipeCount: dietCountMap.get(String(item._id)) || 0,
+            }))
+            .sort((a, b) => {
+                if (b.recipeCount !== a.recipeCount) return b.recipeCount - a.recipeCount;
+                return a.name.localeCompare(b.name);
+            });
+
+        return {
+            cookingTime: {
+                min: Number(minCookingTime || 0),
+                max: Number(maxCookingTime || 0),
+                suggestedMaxOptions: this.buildSuggestedCookingTimeOptions(
+                    Number(minCookingTime || 0),
+                    Number(maxCookingTime || 0),
+                ),
+            },
+            nutritionRanges: {
+                calories: {
+                    min: Number(nutrition.minCalories || 0),
+                    max: Number(nutrition.maxCalories || 0),
+                },
+                protein: {
+                    min: Number(nutrition.minProtein || 0),
+                    max: Number(nutrition.maxProtein || 0),
+                },
+                fat: {
+                    min: Number(nutrition.minFat || 0),
+                    max: Number(nutrition.maxFat || 0),
+                },
+                carbohydrates: {
+                    min: Number(nutrition.minCarbohydrates || 0),
+                    max: Number(nutrition.maxCarbohydrates || 0),
+                },
+            },
+            dietTypes,
+            ingredients: ingredientStats.map((item) => ({
+                id: String(item.id),
+                name: item.name,
+                recipeCount: Number(item.recipeCount || 0),
+            })),
+        };
+    }
+
     // 1. Get All
     async getAllRecipes(query) {
-        const { keyword, status, page = 1, limit = 10, maxCookingTime } = query;
+        const {
+            keyword,
+            status,
+            page = 1,
+            limit = 10,
+            maxCookingTime,
+            dietTypes,
+            dietTypeIds,
+            ingredients,
+        } = query;
         let filter = {};
 
         // Search in both name and description
@@ -27,6 +246,105 @@ class RecipeService {
         // Filter by max cooking time (useful for quick meal searches)
         if (maxCookingTime) {
             filter.cookingTime = { $lte: parseInt(maxCookingTime) };
+        }
+
+        const nutritionFilter = this.buildNutritionFilter(query);
+        const hasNutritionFilter = Object.keys(nutritionFilter).length > 0;
+
+        const dietNames = String(dietTypes || '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+        const dietIdsFromQuery = String(dietTypeIds || '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .filter((item) => mongoose.Types.ObjectId.isValid(item));
+
+        const ingredientNames = String(ingredients || '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+        const hasDietFilter = dietNames.length > 0 || dietIdsFromQuery.length > 0;
+        const hasIngredientFilter = ingredientNames.length > 0;
+
+        let matchedRecipeIds = null;
+
+        if (hasNutritionFilter) {
+            const nutritionMatched = await RecipeNutrition.find(nutritionFilter).select('recipeId');
+            const nutritionRecipeIds = nutritionMatched.map((item) => String(item.recipeId));
+            matchedRecipeIds = new Set(nutritionRecipeIds);
+        }
+
+        if (hasDietFilter) {
+            let finalDietTypeIds = [...dietIdsFromQuery];
+
+            if (dietNames.length > 0) {
+                const exactCaseInsensitiveNames = dietNames.map((name) => new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'));
+                const dietDocs = await DietType.find({ name: { $in: exactCaseInsensitiveNames } }).select('_id');
+                finalDietTypeIds = [
+                    ...new Set([...finalDietTypeIds, ...dietDocs.map((doc) => String(doc._id))]),
+                ];
+            }
+
+            if (finalDietTypeIds.length === 0) {
+                return { recipes: [], total: 0, page: parseInt(page), totalPages: 0 };
+            }
+
+            const dietMatched = await RecipeDietType.find({
+                dietTypeId: { $in: finalDietTypeIds },
+            }).select('recipeId');
+
+            const dietRecipeIds = new Set(dietMatched.map((item) => String(item.recipeId)));
+
+            if (matchedRecipeIds === null) {
+                matchedRecipeIds = dietRecipeIds;
+            } else {
+                matchedRecipeIds = new Set([...matchedRecipeIds].filter((id) => dietRecipeIds.has(id)));
+            }
+        }
+
+        if (hasIngredientFilter) {
+            const exactCaseInsensitiveNames = ingredientNames.map(
+                (name) =>
+                    new RegExp(
+                        `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+                        'i',
+                    ),
+            );
+
+            const ingredientDocs = await Ingredient.find({
+                name: { $in: exactCaseInsensitiveNames },
+            }).select('_id');
+
+            const ingredientIds = ingredientDocs.map((item) => item._id);
+
+            if (ingredientIds.length === 0) {
+                return { recipes: [], total: 0, page: parseInt(page), totalPages: 0 };
+            }
+
+            const ingredientMatched = await RecipesIngredient.find({
+                ingredientId: { $in: ingredientIds },
+            }).select('recipeId');
+
+            const ingredientRecipeIds = new Set(
+                ingredientMatched.map((item) => String(item.recipeId)),
+            );
+
+            if (matchedRecipeIds === null) {
+                matchedRecipeIds = ingredientRecipeIds;
+            } else {
+                matchedRecipeIds = new Set(
+                    [...matchedRecipeIds].filter((id) => ingredientRecipeIds.has(id)),
+                );
+            }
+        }
+
+        if (matchedRecipeIds !== null) {
+            const ids = [...matchedRecipeIds].map((id) => new mongoose.Types.ObjectId(id));
+            filter._id = { $in: ids };
         }
 
         const skip = (parseInt(page) - 1) * parseInt(limit);

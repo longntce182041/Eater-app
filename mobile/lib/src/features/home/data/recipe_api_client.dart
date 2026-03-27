@@ -18,12 +18,72 @@ class RecipeApiClient {
 
   RecipeApiClient(this._dio, this.baseUrl);
 
+  Future<RecipeFilterOptions> getRecipeFilterOptions({String? status}) async {
+    try {
+      final url = '$baseUrl/api/recipes/filter-options';
+      final response = await _dio.get(
+        url,
+        queryParameters: {
+          if (status != null && status.isNotEmpty) 'status': status,
+        },
+      );
+
+      return RecipeFilterOptions.fromJson(
+        response.data['data'] as Map<String, dynamic>,
+      );
+    } on DioException catch (e) {
+      debugPrint('Error fetching filter options: ${e.response?.data}');
+      rethrow;
+    }
+  }
+
+  Map<String, dynamic> _buildFilterQueryParams({
+    int? maxCookingTime,
+    double? minCalories,
+    double? maxCalories,
+    double? minProtein,
+    double? maxProtein,
+    double? minFat,
+    double? maxFat,
+    double? minCarbohydrates,
+    double? maxCarbohydrates,
+    List<String>? dietTypes,
+    List<String>? ingredients,
+  }) {
+    return {
+      if (maxCookingTime != null) 'maxCookingTime': maxCookingTime,
+      if (minCalories != null) 'minCalories': minCalories,
+      if (maxCalories != null) 'maxCalories': maxCalories,
+      if (minProtein != null) 'minProtein': minProtein,
+      if (maxProtein != null) 'maxProtein': maxProtein,
+      if (minFat != null) 'minFat': minFat,
+      if (maxFat != null) 'maxFat': maxFat,
+      if (minCarbohydrates != null) 'minCarbohydrates': minCarbohydrates,
+      if (maxCarbohydrates != null) 'maxCarbohydrates': maxCarbohydrates,
+      if (dietTypes != null && dietTypes.isNotEmpty)
+        'dietTypes': dietTypes.join(','),
+      if (ingredients != null && ingredients.isNotEmpty)
+        'ingredients': ingredients.join(','),
+    };
+  }
+
   /// Get all recipes with pagination
   /// Default: status=published, page=1, limit=10
   Future<RecipeListResponse> getAllRecipes({
     int page = 1,
     int limit = 10,
     String? status,
+    int? maxCookingTime,
+    double? minCalories,
+    double? maxCalories,
+    double? minProtein,
+    double? maxProtein,
+    double? minFat,
+    double? maxFat,
+    double? minCarbohydrates,
+    double? maxCarbohydrates,
+    List<String>? dietTypes,
+    List<String>? ingredients,
   }) async {
     try {
       debugPrint('Fetching recipes - page: $page, limit: $limit');
@@ -32,6 +92,19 @@ class RecipeApiClient {
         'page': page,
         'limit': limit,
         if (status != null) 'status': status,
+        ..._buildFilterQueryParams(
+          maxCookingTime: maxCookingTime,
+          minCalories: minCalories,
+          maxCalories: maxCalories,
+          minProtein: minProtein,
+          maxProtein: maxProtein,
+          minFat: minFat,
+          maxFat: maxFat,
+          minCarbohydrates: minCarbohydrates,
+          maxCarbohydrates: maxCarbohydrates,
+          dietTypes: dietTypes,
+          ingredients: ingredients,
+        ),
       };
 
       final url = '$baseUrl/api/recipes';
@@ -55,6 +128,16 @@ class RecipeApiClient {
     int limit = 10,
     String? status,
     int? maxCookingTime,
+    double? minCalories,
+    double? maxCalories,
+    double? minProtein,
+    double? maxProtein,
+    double? minFat,
+    double? maxFat,
+    double? minCarbohydrates,
+    double? maxCarbohydrates,
+    List<String>? dietTypes,
+    List<String>? ingredients,
   }) async {
     try {
       debugPrint('Searching recipes - keyword: "$keyword", page: $page');
@@ -64,7 +147,19 @@ class RecipeApiClient {
         'page': page,
         'limit': limit,
         if (status != null) 'status': status,
-        if (maxCookingTime != null) 'maxCookingTime': maxCookingTime,
+        ..._buildFilterQueryParams(
+          maxCookingTime: maxCookingTime,
+          minCalories: minCalories,
+          maxCalories: maxCalories,
+          minProtein: minProtein,
+          maxProtein: maxProtein,
+          minFat: minFat,
+          maxFat: maxFat,
+          minCarbohydrates: minCarbohydrates,
+          maxCarbohydrates: maxCarbohydrates,
+          dietTypes: dietTypes,
+          ingredients: ingredients,
+        ),
       };
 
       final url = '$baseUrl/api/recipes';

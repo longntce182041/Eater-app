@@ -7,6 +7,7 @@ import '../../features/pro/presentation/pages/pro_upgrade_page.dart';
 import '../../features/reminders/presentation/pages/reminders_page.dart';
 import '../../features/chat/presentation/pages/chat_page.dart';
 import '../../features/meal_plan/presentation/pages/meal_image_scan_page.dart';
+import '../../features/chat/presentation/pages/nutritionist_list_page.dart';
 import '../../features/userHeath/presentation/pages/set_age.dart';
 import '../../features/userHeath/presentation/pages/set_height.dart';
 import '../../features/userHeath/presentation/pages/set_weight.dart';
@@ -152,6 +153,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/ai-scan-meal',
         builder: (context, state) => const MealImageScanPage(),
+      ),
+      GoRoute(
+        path: '/nutritionists',
+        builder: (context, state) => const NutritionistListPage(),
       ),
       GoRoute(
         path: '/chat/:nutritionistId',

@@ -6,7 +6,6 @@ import {
 } from 'recharts';
 
 import StatsWidget from '../../features/dashboard/components/StatsWidget';
-import MacroDistributionCard from '../../features/dashboard/components/MacroDistributionCard';
 import axiosClient from '../../api/axiosClient';
 
 const buildMonthlyRegistrationData = (users = [], months = 6) => {
@@ -58,12 +57,6 @@ const pickTopRecipesFromList = (recipes = [], limit = 5) => {
         }));
 };
 
-const extractMacroDistribution = (response) => (
-    response?.data?.data?.summary?.macroDistribution
-    || response?.data?.summary?.macroDistribution
-    || null
-);
-
 const extractTopRecipesFromAnalytics = (response) => {
     const payload = response?.data?.data || response?.data || null;
     const recipes = payload?.recipePopularity?.topRecipes || payload?.topRecipes || null;
@@ -108,124 +101,6 @@ const extractRegistrationTrendFromAnalytics = (response) => {
     }));
 };
 
-const buildMacroFromNutritionEntries = (entries = []) => {
-    if (!Array.isArray(entries) || entries.length === 0) return null;
-
-    const totals = entries.reduce(
-        (acc, nutrition) => {
-            acc.protein += Number(nutrition?.protein) || 0;
-            acc.carbs += Number(nutrition?.carbs ?? nutrition?.carbohydrates) || 0;
-            acc.fat += Number(nutrition?.fat) || 0;
-            return acc;
-        },
-        { protein: 0, carbs: 0, fat: 0 },
-    );
-
-    const count = entries.length;
-    const protein_g = totals.protein / count;
-    const carbs_g = totals.carbs / count;
-    const fat_g = totals.fat / count;
-
-    const proteinCalories = protein_g * 4;
-    const carbsCalories = carbs_g * 4;
-    const fatCalories = fat_g * 9;
-    const totalMacroCalories = proteinCalories + carbsCalories + fatCalories;
-
-    if (totalMacroCalories <= 0) return null;
-
-    return {
-        protein_g,
-        carbs_g,
-        fat_g,
-        protein_percent: (proteinCalories / totalMacroCalories) * 100,
-        carbs_percent: (carbsCalories / totalMacroCalories) * 100,
-        fat_percent: (fatCalories / totalMacroCalories) * 100,
-        total_macro_calories: totalMacroCalories,
-    };
-};
-
-const buildMacroFromRecipeNutritionApi = async (recipeIds = []) => {
-    if (!Array.isArray(recipeIds) || recipeIds.length === 0) return null;
-
-    const uniqueIds = [...new Set(recipeIds.filter(Boolean))].slice(0, 20);
-    if (uniqueIds.length === 0) return null;
-
-    const responses = await Promise.allSettled(
-        uniqueIds.map((recipeId) => axiosClient.get(`/recipes/${recipeId}/nutrition`)),
-    );
-
-    const nutritions = responses
-        .filter((result) => result.status === 'fulfilled')
-        .map((result) => result.value?.data?.data || result.value?.data)
-        .filter(Boolean);
-
-    return buildMacroFromNutritionEntries(nutritions);
-};
-
-const buildMacroFromRecipes = (recipes = []) => {
-    if (!Array.isArray(recipes) || recipes.length === 0) return null;
-
-    const totals = recipes.reduce(
-        (acc, recipe) => {
-            const nutrition = recipe?.nutritionInfo || recipe?.nutrition || {};
-            acc.protein += Number(nutrition.protein) || 0;
-            acc.carbs += Number(nutrition.carbs ?? nutrition.carbohydrates) || 0;
-            acc.fat += Number(nutrition.fat) || 0;
-            return acc;
-        },
-        { protein: 0, carbs: 0, fat: 0 },
-    );
-
-    const count = recipes.length;
-    const protein_g = totals.protein / count;
-    const carbs_g = totals.carbs / count;
-    const fat_g = totals.fat / count;
-
-    const proteinCalories = protein_g * 4;
-    const carbsCalories = carbs_g * 4;
-    const fatCalories = fat_g * 9;
-    const totalMacroCalories = proteinCalories + carbsCalories + fatCalories;
-
-    if (totalMacroCalories <= 0) return null;
-
-    return {
-        protein_g,
-        carbs_g,
-        fat_g,
-        protein_percent: (proteinCalories / totalMacroCalories) * 100,
-        carbs_percent: (carbsCalories / totalMacroCalories) * 100,
-        fat_percent: (fatCalories / totalMacroCalories) * 100,
-        total_macro_calories: totalMacroCalories,
-    };
-};
-
-const buildEstimatedMacroSummary = (recipes = []) => {
-    if (!Array.isArray(recipes) || recipes.length === 0) return null;
-
-    const caloriesList = recipes
-        .map((recipe) => Number(recipe?.calories || recipe?.nutrition?.calories || recipe?.nutritionInfo?.calories))
-        .filter((value) => Number.isFinite(value) && value > 0);
-
-    const avgCalories = caloriesList.length > 0
-        ? caloriesList.reduce((sum, value) => sum + value, 0) / caloriesList.length
-        : 2000;
-
-    const proteinCalories = avgCalories * 0.3;
-    const carbsCalories = avgCalories * 0.4;
-    const fatCalories = avgCalories * 0.3;
-
-    return {
-        protein_g: proteinCalories / 4,
-        carbs_g: carbsCalories / 4,
-        fat_g: fatCalories / 9,
-        protein_percent: 30,
-        carbs_percent: 40,
-        fat_percent: 30,
-        total_macro_calories: avgCalories,
-        source: 'estimated',
-    };
-};
-
 const DashboardPage = () => {
     const navigate = useNavigate();
 
@@ -244,9 +119,7 @@ const DashboardPage = () => {
 
     const [registrationTrend, setRegistrationTrend] = useState([]);
     const [registrationSource, setRegistrationSource] = useState('N/A');
-    const [macroSummary, setMacroSummary] = useState(null);
-    const [macroLoading, setMacroLoading] = useState(true);
-    const [macroSource, setMacroSource] = useState('N/A');
+
     const [topRecipes, setTopRecipes] = useState([]);
     const [topRecipesSource, setTopRecipesSource] = useState('N/A');
 
@@ -255,7 +128,7 @@ const DashboardPage = () => {
 
         const fetchDashboardData = async () => {
             setStatsLoading(true);
-            setMacroLoading(true);
+
 
             try {
                 const requests = [
@@ -264,7 +137,6 @@ const DashboardPage = () => {
                     axiosClient.get('/users', { params: { role: 'nutritionist', limit: 1 } }),
                     axiosClient.get('/recipes', { params: { limit: 100 } }),
                     axiosClient.get('/chat/contacts'),
-                    axiosClient.get('/ai/meal-plans/latest'),
                     axiosClient.get('/analytics/overview'),
                 ];
 
@@ -277,7 +149,6 @@ const DashboardPage = () => {
                     nutritionistsRes,
                     recipesRes,
                     contactsRes,
-                    macroRes,
                     analyticsRes,
                 ] = results;
 
@@ -313,71 +184,13 @@ const DashboardPage = () => {
                         : 'Users API (createdAt rollup)',
                 );
 
-                let resolvedMacroSummary = macroRes.status === 'fulfilled'
-                    ? extractMacroDistribution(macroRes.value)
-                    : null;
-                let resolvedMacroSource = resolvedMacroSummary ? 'Meal Plans Latest API' : '';
-
-                if (!resolvedMacroSummary && allUsers.length > 0) {
-                    const candidateUserIds = allUsers
-                        .map((user) => user?._id)
-                        .filter(Boolean)
-                        .slice(0, 12);
-
-                    for (const userId of candidateUserIds) {
-                        try {
-                            const candidateMacroRes = await axiosClient.get('/ai/meal-plans/latest', {
-                                params: { userId },
-                            });
-                            const candidateSummary = extractMacroDistribution(candidateMacroRes);
-                            if (candidateSummary) {
-                                resolvedMacroSummary = candidateSummary;
-                                resolvedMacroSource = 'Meal Plans Latest API (candidate users)';
-                                break;
-                            }
-                        } catch (e) {
-                            // Ignore candidate failures and continue trying the next user.
-                        }
-                    }
-                }
-
                 const analyticsTopRecipes = analyticsRes.status === 'fulfilled'
                     ? extractTopRecipesFromAnalytics(analyticsRes.value)
                     : [];
 
-                const fallbackRecipeList = recipesPayload.recipes;
-                const candidateRecipeIds = [
-                    ...analyticsTopRecipes.map((item) => item?.recipeId || item?._id),
-                    ...fallbackRecipeList.map((item) => item?._id),
-                ];
-
-                if (!resolvedMacroSummary) {
-                    resolvedMacroSummary = buildMacroFromRecipes(fallbackRecipeList);
-                    if (resolvedMacroSummary) {
-                        resolvedMacroSource = 'Recipes API (embedded nutrition)';
-                    }
-                }
-
-                if (!resolvedMacroSummary) {
-                    resolvedMacroSummary = await buildMacroFromRecipeNutritionApi(candidateRecipeIds);
-                    if (resolvedMacroSummary) {
-                        resolvedMacroSource = 'Recipe Nutrition API';
-                    }
-                }
-
-                if (!resolvedMacroSummary) {
-                    resolvedMacroSummary = buildEstimatedMacroSummary(fallbackRecipeList);
-                    if (resolvedMacroSummary) {
-                        resolvedMacroSource = 'Estimated fallback';
-                    }
-                }
-
-                setMacroSummary(resolvedMacroSummary);
-                setMacroSource(resolvedMacroSource || 'N/A');
-
                 const resolvedTopRecipes = analyticsTopRecipes.length > 0
                     ? analyticsTopRecipes
-                    : pickTopRecipesFromList(fallbackRecipeList, 5);
+                    : pickTopRecipesFromList(recipesPayload.recipes, 5);
 
                 setTopRecipes(resolvedTopRecipes);
                 setTopRecipesSource(
@@ -385,17 +198,15 @@ const DashboardPage = () => {
                         ? 'Analytics Overview API'
                         : 'Recipes API (rating sort)',
                 );
-            } catch (error) {
+            } catch {
                 if (!isMounted) return;
                 setTopRecipes([]);
                 setTopRecipesSource('N/A');
-                setMacroSummary(null);
-                setMacroSource('N/A');
+
                 setRegistrationSource('N/A');
             } finally {
-                if (!isMounted) return;
-                setStatsLoading(false);
-                setMacroLoading(false);
+                if (!isMounted)
+                    setStatsLoading(false);
             }
         };
 
@@ -435,13 +246,7 @@ const DashboardPage = () => {
             icon: <Utensils size={24} />,
             show: true,
         },
-        {
-            title: 'Private Chat Contacts',
-            count: stats.chatContacts,
-            color: '#f9243f',
-            icon: <MessageCircle size={24} />,
-            show: isNutritionist || isAdmin,
-        },
+
     ].filter((card) => card.show);
 
     return (
@@ -523,9 +328,6 @@ const DashboardPage = () => {
                 </div>
             </div>
 
-            <div style={{ marginBottom: '24px' }}>
-                <MacroDistributionCard data={macroSummary} loading={macroLoading} sourceLabel={macroSource} />
-            </div>
 
             <div
                 style={{

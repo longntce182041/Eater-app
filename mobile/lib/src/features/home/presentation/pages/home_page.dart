@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/home_dashboard_provider.dart';
@@ -318,6 +319,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                   'Discover healthy and delicious recipes',
                   Icons.restaurant_menu,
                   _navigateToRecipes,
+                ),
+                const SizedBox(height: 12),
+                _buildQuickActionCard(
+                  context,
+                  'AI Scan Meal Image',
+                  'Take a meal photo and estimate nutrition instantly',
+                  Icons.camera_alt_outlined,
+                  () => context.push('/ai-scan-meal'),
                 ),
                 const SizedBox(height: 24),
               ],

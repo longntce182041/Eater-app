@@ -245,6 +245,8 @@ async function handlePayOSWebhook(webhookBody) {
     data.transactionId || data.reference || data.paymentLinkId || null;
   await subscription.save();
 
+  console.log("After update:", subscription);
+
   return {
     processed: true,
     orderCode,

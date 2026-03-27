@@ -15,7 +15,12 @@ const toNumber = (value) => {
 const formatPercent = (value) => `${toNumber(value).toFixed(1)}%`;
 const formatGrams = (value) => `${toNumber(value).toFixed(0)}g`;
 
-const MacroDistributionCard = ({ data, loading = false, title = 'Macronutrient Distribution' }) => {
+const MacroDistributionCard = ({
+    data,
+    loading = false,
+    title = 'Macronutrient Distribution',
+    sourceLabel = 'N/A',
+}) => {
     if (loading) {
         return (
             <div style={{
@@ -93,6 +98,8 @@ const MacroDistributionCard = ({ data, loading = false, title = 'Macronutrient D
         },
     ];
 
+    const isEstimated = data?.source === 'estimated';
+
     return (
         <div style={{
             background: 'linear-gradient(135deg, #f7fafc 0%, #eef6ff 100%)',
@@ -109,7 +116,33 @@ const MacroDistributionCard = ({ data, loading = false, title = 'Macronutrient D
                 marginBottom: '16px',
             }}>
                 <h3 style={{ margin: 0, color: '#243b53', fontSize: '18px', fontWeight: 700 }}>{title}</h3>
-                <span style={{ color: '#6b7280', fontSize: '13px' }}>Total macros: {toNumber(totalMacroCalories).toFixed(0)} kcal</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{
+                        fontSize: '12px',
+                        color: '#475467',
+                        background: '#eef2ff',
+                        border: '1px solid #d9e1ff',
+                        borderRadius: '999px',
+                        padding: '2px 8px',
+                    }}>
+                        Source: {sourceLabel}
+                    </span>
+                    {isEstimated && (
+                        <span style={{
+                            fontSize: '12px',
+                            color: '#8a6d1f',
+                            background: '#fff7d6',
+                            border: '1px solid #f1dd93',
+                            borderRadius: '999px',
+                            padding: '2px 8px',
+                        }}>
+                            Estimated
+                        </span>
+                    )}
+                    <span style={{ color: '#6b7280', fontSize: '13px' }}>
+                        Total macros: {toNumber(totalMacroCalories).toFixed(0)} kcal
+                    </span>
+                </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 260px) 1fr', gap: '20px', alignItems: 'center' }}>

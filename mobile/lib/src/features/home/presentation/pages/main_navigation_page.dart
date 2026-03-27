@@ -19,12 +19,9 @@ class MainNavigationPage extends ConsumerStatefulWidget {
 }
 
 class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
-  late int _currentIndex;
-
   @override
   void initState() {
     super.initState();
-    _currentIndex = 0;
 
     // Listen to targetTabIndexProvider for auto-navigation
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -32,9 +29,8 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
       ref.listen(targetTabIndexProvider, (previous, next) {
         if (!mounted) return;
         if (next != null) {
-          setState(() {
-            _currentIndex = next;
-          });
+          final safeIndex = next.clamp(0, _pages.length - 1);
+          ref.read(mainNavigationIndexProvider.notifier).state = safeIndex;
           print('[main_navigation_page] Auto-navigated to tab: $next');
           // Clear the target tab after using it (delayed to avoid provider modification during build)
           Future.microtask(() {
@@ -56,54 +52,59 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final currentIndex = ref.watch(mainNavigationIndexProvider);
+    final safeIndex = currentIndex.clamp(0, _pages.length - 1);
+    const tabCount = 6;
+    final showBottomBar = safeIndex < tabCount;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
-      body: _pages[currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (index) =>
-            ref.read(mainNavigationIndexProvider.notifier).state = index,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFFFF9800),
-        unselectedItemColor: Colors.grey[400],
-        elevation: 8,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_outlined),
-            activeIcon: Icon(Icons.restaurant),
-            label: 'Meals',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'Plans',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu_outlined),
-            activeIcon: Icon(Icons.restaurant_menu),
-            label: 'Recipes',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag_outlined),
-            activeIcon: Icon(Icons.shopping_bag),
-            label: 'Groceries',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outlined),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
+      body: _pages[safeIndex],
+      bottomNavigationBar: showBottomBar
+          ? BottomNavigationBar(
+              currentIndex: safeIndex,
+              onTap: (index) =>
+                  ref.read(mainNavigationIndexProvider.notifier).state = index,
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: Colors.white,
+              selectedItemColor: const Color(0xFFFF9800),
+              unselectedItemColor: Colors.grey[400],
+              elevation: 8,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.restaurant_outlined),
+                  activeIcon: Icon(Icons.restaurant),
+                  label: 'Meals',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.calendar_today_outlined),
+                  activeIcon: Icon(Icons.calendar_today),
+                  label: 'Plans',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.restaurant_menu_outlined),
+                  activeIcon: Icon(Icons.restaurant_menu),
+                  label: 'Recipes',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.shopping_bag_outlined),
+                  activeIcon: Icon(Icons.shopping_bag),
+                  label: 'Groceries',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outlined),
+                  activeIcon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ],
+            )
+          : null,
     );
   }
 }

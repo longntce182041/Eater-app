@@ -42,7 +42,6 @@ class MealPlanItemModel {
   final double carbohydrates;
   final double fat;
   final int dayIndex;
-  final String? recipeId;
   final String? recipeName;
   final String? recipeImageUrl;
   // NEW FIELDS FOR OPTIMIZATION
@@ -63,7 +62,6 @@ class MealPlanItemModel {
     required this.carbohydrates,
     required this.fat,
     required this.dayIndex,
-    this.recipeId,
     this.recipeName,
     this.recipeImageUrl,
     this.userRating,
@@ -80,7 +78,7 @@ class MealPlanItemModel {
 
     return MealPlanItemModel(
       id: json['_id']?.toString() ?? '',
-      recipeId: recipe?['_id']?.toString(),
+      recipeId: recipe?['_id']?.toString() ?? json['recipeId']?.toString(),
       mealType: json['mealType']?.toString() ?? 'snack',
       servings: (json['servings'] as num?)?.toInt() ?? 1,
       calories: (json['calories'] as num?)?.toDouble() ?? 0,
@@ -88,7 +86,6 @@ class MealPlanItemModel {
       carbohydrates: (json['carbohydrates'] as num?)?.toDouble() ?? 0,
       fat: (json['fat'] as num?)?.toDouble() ?? 0,
       dayIndex: (json['dayIndex'] as num?)?.toInt() ?? 0,
-      recipeId: recipe?['_id']?.toString(),
       recipeName: recipe?['name']?.toString(),
       recipeImageUrl: recipe?['imageUrl']?.toString(),
       userRating: (json['userRating'] as num?)?.toInt(),

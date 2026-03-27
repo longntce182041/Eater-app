@@ -344,7 +344,16 @@ const ConsultationsPage = () => {
                                 <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', fontWeight: 'bold' }}>Private Notes (Optional)</label>
                                 <input type="text" value={diagForm.notes} onChange={e => setDiagForm({...diagForm, notes: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
                             </div>
-                            <button type="submit" style={{ width: '100%', padding: '12px', background: '#ffb53e', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Send Diagnosis</button>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDiagnoseModal(false)}
+                                    style={{ flex: 1, padding: '12px', background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" style={{ flex: 1, padding: '12px', background: '#ffb53e', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Send Diagnosis</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -458,7 +467,16 @@ const ConsultationsPage = () => {
                                 {recipesLoading && <p style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>Loading recipes...</p>}
                                 {!recipesLoading && recipes.length === 0 && <p style={{ fontSize: '12px', color: '#dc3545', marginTop: '8px' }}>No recipes available to assign.</p>}
                             </div>
-                            <button type="submit" style={{ width: '100%', padding: '12px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Assign Plan</button>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowMealPlanModal(false)}
+                                    style={{ flex: 1, padding: '12px', background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" style={{ flex: 1, padding: '12px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Assign Plan</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -528,6 +546,9 @@ const ConsultationsPage = () => {
                         ) : <p style={{color: '#999', fontStyle: 'italic'}}>No diet plans found.</p>}
 
                         <div style={{ marginTop: '30px', textAlign: 'center', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                            <button onClick={() => setShowReportModal(false)} style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                                Cancel
+                            </button>
                             <button onClick={handleSendReportEmail} style={{ background: '#28a745', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <Mail size={16} /> Send Report Email
                             </button>

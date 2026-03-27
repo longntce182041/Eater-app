@@ -53,6 +53,6 @@ const HealthGuideSchema = new mongoose.Schema(
 HealthGuideSchema.index({ category: 1, isActive: 1, order: 1 });
 HealthGuideSchema.index({ isActive: 1 });
 
-const HealthGuide = mongoose.model('HealthGuide', HealthGuideSchema);
+const HealthGuide = mongoose.model("HealthGuide", HealthGuideSchema);
 
 module.exports = { HealthGuide };

@@ -42,9 +42,10 @@ class _UnitConverterWidgetState extends State<UnitConverterWidget> {
   void initState() {
     super.initState();
     // Ensure _selectedUnit is always a valid unit from conversions map
-    _selectedUnit = (widget.baseUnit.isNotEmpty && conversions.containsKey(widget.baseUnit))
-        ? widget.baseUnit
-        : 'grams';
+    _selectedUnit =
+        (widget.baseUnit.isNotEmpty && conversions.containsKey(widget.baseUnit))
+            ? widget.baseUnit
+            : 'grams';
     _updateConversion();
   }
 
@@ -162,7 +163,7 @@ class _UnitConverterWidgetState extends State<UnitConverterWidget> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF9800).withOpacity(0.1),
+                color: const Color(0xFFFF9800).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: const Color(0xFFFF9800),

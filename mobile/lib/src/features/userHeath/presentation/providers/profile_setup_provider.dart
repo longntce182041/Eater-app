@@ -104,7 +104,7 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
   final String _userId;
 
   ProfileSetupNotifier(this._dio, this._userId)
-    : super(ProfileSetupState(data: ProfileSetupData(userId: _userId)));
+      : super(ProfileSetupState(data: ProfileSetupData(userId: _userId)));
 
   void setFirstName(String firstName) {
     state = state.copyWith(
@@ -189,7 +189,6 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
       final response = await _dio.post(
         '/api/health/user-profile',
         data: state.data.toJson(),
-        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -239,13 +238,9 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
 }
 
 // Provider
-final profileSetupProvider =
-    StateNotifierProvider.family<
-      ProfileSetupNotifier,
-      ProfileSetupState,
-      String
-    >((ref, userId) {
-      // Use the shared Dio provider that includes authentication
-      final dio = ref.watch(dioProvider);
-      return ProfileSetupNotifier(dio, userId);
-    });
+final profileSetupProvider = StateNotifierProvider.family<ProfileSetupNotifier,
+    ProfileSetupState, String>((ref, userId) {
+  // Use the shared Dio provider that includes authentication
+  final dio = ref.watch(dioProvider);
+  return ProfileSetupNotifier(dio, userId);
+});

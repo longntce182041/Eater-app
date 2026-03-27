@@ -31,7 +31,7 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
         if (next != null) {
           final safeIndex = next.clamp(0, _pages.length - 1);
           ref.read(mainNavigationIndexProvider.notifier).state = safeIndex;
-          print('[main_navigation_page] Auto-navigated to tab: $next');
+          debugPrint('[main_navigation_page] Auto-navigated to tab: $next');
           // Clear the target tab after using it (delayed to avoid provider modification during build)
           Future.microtask(() {
             ref.read(targetTabIndexProvider.notifier).clearTargetTab();

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../domain/entities/meal_log.dart';
 
@@ -13,16 +14,18 @@ class MealLogService {
   /// Returns the saved meal log with ID from the server
   Future<MealLog> saveMealLog(MealLog mealLog) async {
     try {
-      print('[saveMealLog] Creating meal with loggedAt: ${mealLog.loggedAt.toString()}');
-      
+      debugPrint(
+          '[saveMealLog] Creating meal with loggedAt: ${mealLog.loggedAt.toString()}');
+
       // Format date string WITHOUT timezone conversion
       // Extract year/month/day from local DateTime, don't use toIso8601String() which converts to UTC
       final year = mealLog.loggedAt.year;
       final month = mealLog.loggedAt.month.toString().padLeft(2, '0');
       final day = mealLog.loggedAt.day.toString().padLeft(2, '0');
       final loggedAtString = '$year-$month-${day}T00:00:00.000Z';
-      print('[saveMealLog] Formatted loggedAt string (no timezone conversion): $loggedAtString');
-      
+      debugPrint(
+          '[saveMealLog] Formatted loggedAt string (no timezone conversion): $loggedAtString');
+
       final response = await dio.post(
         baseUrl,
         data: {
@@ -42,25 +45,26 @@ class MealLogService {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         // Debug: Print raw response
-        print('[saveMealLog] Response status: ${response.statusCode}');
-        print('[saveMealLog] Full response: ${response.data}');
-        
+        debugPrint('[saveMealLog] Response status: ${response.statusCode}');
+        debugPrint('[saveMealLog] Full response: ${response.data}');
+
         // Return the saved meal log (server may return additional fields like ID)
         final data = response.data['data'] ?? response.data;
-        print('[saveMealLog] Parsed data: $data');
-        
+        debugPrint('[saveMealLog] Parsed data: $data');
+
         final savedMeal = MealLog.fromJson(data as Map<String, dynamic>);
-        print('[saveMealLog] Parsed MealLog - ID: ${savedMeal.id}, name: ${savedMeal.mealName}, loggedAt: ${savedMeal.loggedAt}');
-        
+        debugPrint(
+            '[saveMealLog] Parsed MealLog - ID: ${savedMeal.id}, name: ${savedMeal.mealName}, loggedAt: ${savedMeal.loggedAt}');
+
         return savedMeal;
       } else {
         throw Exception('Failed to save meal log: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      print('[saveMealLog] DioException: ${e.message}');
+      debugPrint('[saveMealLog] DioException: ${e.message}');
       throw Exception('Error saving meal log: ${e.message}');
     } catch (e) {
-      print('[saveMealLog] Exception: $e');
+      debugPrint('[saveMealLog] Exception: $e');
       throw Exception('Unexpected error saving meal log: $e');
     }
   }
@@ -113,8 +117,7 @@ class MealLogService {
             .map((m) => MealLog.fromJson(m as Map<String, dynamic>))
             .toList();
       } else {
-        throw Exception(
-            'Failed to fetch meal logs: ${response.statusCode}');
+        throw Exception('Failed to fetch meal logs: ${response.statusCode}');
       }
     } on DioException catch (e) {
       throw Exception('Error fetching meal logs: ${e.message}');
@@ -141,8 +144,7 @@ class MealLogService {
             .map((m) => MealLog.fromJson(m as Map<String, dynamic>))
             .toList();
       } else {
-        throw Exception(
-            'Failed to fetch meal logs: ${response.statusCode}');
+        throw Exception('Failed to fetch meal logs: ${response.statusCode}');
       }
     } on DioException catch (e) {
       throw Exception('Error fetching meal logs: ${e.message}');
@@ -159,8 +161,7 @@ class MealLogService {
       if (response.statusCode == 200) {
         return true;
       } else {
-        throw Exception(
-            'Failed to delete meal log: ${response.statusCode}');
+        throw Exception('Failed to delete meal log: ${response.statusCode}');
       }
     } on DioException catch (e) {
       throw Exception('Error deleting meal log: ${e.message}');

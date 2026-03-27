@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/meal_log.dart';
 import '../../data/providers/meal_log_service_provider.dart';
 
@@ -124,7 +125,7 @@ final allMealLogsFromBackendProvider =
   try {
     return await mealLogService.getAllMealLogs();
   } catch (e) {
-    print('Error fetching meal logs from backend: $e');
+    debugPrint('Error fetching meal logs from backend: $e');
     return [];
   }
 });

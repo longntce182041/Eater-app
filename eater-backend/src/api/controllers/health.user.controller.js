@@ -1,5 +1,10 @@
 const healthUserService = require("../../api/services/health.user.service");
 
+function extractUserId(user) {
+  if (!user) return null;
+  return user.sub || user.id || user.userId || null;
+}
+
 // New health status function
 async function getHealthStatus(req, res) {
   res.status(200).json({ status: "Healthy" });
@@ -7,15 +12,15 @@ async function getHealthStatus(req, res) {
 
 async function getDietaryReferences(req, res) {
   try {
+    const userId = extractUserId(req.user);
     // Validate that user is authenticated
-    if (!req.user || !req.user.sub) {
+    if (!userId) {
       return res.status(401).json({
         message: "Unauthorized",
         error: "User authentication required. Please provide a valid token.",
       });
     }
 
-    const userId = req.user.sub;
     const dietaryReferences =
       await healthUserService.getUserDietaryReferences(userId);
     res.status(200).json(dietaryReferences);
@@ -35,15 +40,15 @@ async function getDietTypes(req, res) {
 
 async function setUserProfile(req, res) {
   try {
+    const userId = extractUserId(req.user);
     // Validate that user is authenticated
-    if (!req.user || !req.user.sub) {
+    if (!userId) {
       return res.status(401).json({
         message: "Unauthorized",
         error: "User authentication required. Please provide a valid token.",
       });
     }
 
-    const userId = req.user.sub;
     const userProfile = await healthUserService.setUserProfile(
       userId,
       req.body,
@@ -56,15 +61,15 @@ async function setUserProfile(req, res) {
 
 async function setDietaryReference(req, res) {
   try {
+    const userId = extractUserId(req.user);
     // Validate that user is authenticated
-    if (!req.user || !req.user.sub) {
+    if (!userId) {
       return res.status(401).json({
         message: "Unauthorized",
         error: "User authentication required. Please provide a valid token.",
       });
     }
 
-    const userId = req.user.sub;
     const dietaryRef = await healthUserService.setDietaryReference(
       userId,
       req.body,

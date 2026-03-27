@@ -24,42 +24,45 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
     final targetDate = ref.read(targetMealDateProvider);
     if (targetDate != null) {
       _selectedDate = targetDate;
-      print('[meal_logging_page initState] Using target date from navigation: ${_selectedDate.toString().split(' ')[0]}');
+      debugPrint(
+          '[meal_logging_page initState] Using target date from navigation: ${_selectedDate.toString().split(' ')[0]}');
       // Clear the target date after using it (delayed to avoid provider modification during build)
       Future.microtask(() {
         ref.read(targetMealDateProvider.notifier).clearTargetDate();
       });
     } else {
       _selectedDate = DateTime.now();
-      print('[meal_logging_page initState] Using today\'s date: ${_selectedDate.toString().split(' ')[0]}');
+      debugPrint(
+          '[meal_logging_page initState] Using today\'s date: ${_selectedDate.toString().split(' ')[0]}');
     }
-    
+
     // Initialize meal logs from backend on first load (only if local state is empty)
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      
+
       final notifier = ref.read(mealLogsProvider.notifier);
       final currentLogs = ref.read(mealLogsProvider);
-      
+
       // Only fetch from backend if local state is empty
       if (currentLogs.isEmpty) {
         try {
           final service = ref.read(mealLogServiceProvider);
           final logs = await service.getAllMealLogs();
-          
+
           if (mounted) {
             notifier.setMealLogs(logs);
           }
         } catch (e) {
-          print('Error initializing meal logs: $e');
+          debugPrint('Error initializing meal logs: $e');
         }
       }
-      
+
       // Set selected date to latest meal date if meals exist (most recent first) - but only if we didn't set a target date
       if (ref.read(targetMealDateProvider) == null) {
         final logs = ref.read(mealLogsProvider);
         if (logs.isNotEmpty) {
-          logs.sort((a, b) => b.loggedAt.compareTo(a.loggedAt)); // Sort descending - most recent first
+          logs.sort((a, b) => b.loggedAt
+              .compareTo(a.loggedAt)); // Sort descending - most recent first
           final latestMealDate = logs.first.loggedAt;
           setState(() {
             _selectedDate = DateTime(
@@ -68,7 +71,8 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
               latestMealDate.day,
             );
           });
-          print('[meal_logging_page initState] Set selected date to latest meal: ${_selectedDate.toString().split(' ')[0]}');
+          debugPrint(
+              '[meal_logging_page initState] Set selected date to latest meal: ${_selectedDate.toString().split(' ')[0]}');
         }
       }
     });
@@ -78,23 +82,24 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
       if (!mounted) return;
       ref.listen(mealLogsProvider, (previous, next) {
         if (!mounted) return;
-        
-        print('[meal_logging_page] Logs changed - previous: ${previous?.length ?? 0}, next: ${next.length}');
-        
+
+        debugPrint(
+            '[meal_logging_page] Logs changed - previous: ${previous?.length ?? 0}, next: ${next.length}');
+
         // If we have logs but selected date has no meals, auto-adjust to latest
         if (next.isNotEmpty) {
-          final selectedDateLogs =
-              next.where((log) {
-                return log.loggedAt.year == _selectedDate.year &&
-                    log.loggedAt.month == _selectedDate.month &&
-                    log.loggedAt.day == _selectedDate.day;
-              }).toList();
+          final selectedDateLogs = next.where((log) {
+            return log.loggedAt.year == _selectedDate.year &&
+                log.loggedAt.month == _selectedDate.month &&
+                log.loggedAt.day == _selectedDate.day;
+          }).toList();
 
           if (selectedDateLogs.isEmpty) {
             // No meals for current selected date, auto-jump to latest meal date
             final sortedLogs = List<MealLog>.from(next);
-            sortedLogs.sort((a, b) => b.loggedAt.compareTo(a.loggedAt)); // Most recent first
-            
+            sortedLogs.sort((a, b) =>
+                b.loggedAt.compareTo(a.loggedAt)); // Most recent first
+
             final latestMealDate = sortedLogs.first.loggedAt;
             setState(() {
               _selectedDate = DateTime(
@@ -103,7 +108,8 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
                 latestMealDate.day,
               );
             });
-            print('[meal_logging_page listener] Auto-adjusted date to latest: ${_selectedDate.toString().split(' ')[0]}');
+            debugPrint(
+                '[meal_logging_page listener] Auto-adjusted date to latest: ${_selectedDate.toString().split(' ')[0]}');
           }
         }
       });
@@ -115,26 +121,28 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
     // Watch mealLogsProvider to rebuild when meals change
     final allLogs = ref.watch(mealLogsProvider);
 
-    print('[meal_logging_page] All logs count: ${allLogs.length}');
+    debugPrint('[meal_logging_page] All logs count: ${allLogs.length}');
     for (final log in allLogs) {
-      print('[meal_logging_page] Log - ID: ${log.id}, name: ${log.mealName}, loggedAt: ${log.loggedAt}, mealType: ${log.mealType}');
+      debugPrint(
+          '[meal_logging_page] Log - ID: ${log.id}, name: ${log.mealName}, loggedAt: ${log.loggedAt}, mealType: ${log.mealType}');
     }
 
     // Compute selected date logs based on watched all logs
-    final selectedDateLogs =
-        allLogs.where((log) {
-          final matches = log.loggedAt.year == _selectedDate.year &&
-              log.loggedAt.month == _selectedDate.month &&
-              log.loggedAt.day == _selectedDate.day;
-          
-          if (!matches) {
-            print('[meal_logging_page] Date mismatch - log date: ${log.loggedAt}, selected: $_selectedDate, log year/month/day: ${log.loggedAt.year}/${log.loggedAt.month}/${log.loggedAt.day} vs ${_selectedDate.year}/${_selectedDate.month}/${_selectedDate.day}');
-          }
-          
-          return matches;
-        }).toList();
+    final selectedDateLogs = allLogs.where((log) {
+      final matches = log.loggedAt.year == _selectedDate.year &&
+          log.loggedAt.month == _selectedDate.month &&
+          log.loggedAt.day == _selectedDate.day;
 
-    print('[meal_logging_page] Selected date "${_selectedDate.toString().split(' ')[0]}" has ${selectedDateLogs.length} meals');
+      if (!matches) {
+        debugPrint(
+            '[meal_logging_page] Date mismatch - log date: ${log.loggedAt}, selected: $_selectedDate, log year/month/day: ${log.loggedAt.year}/${log.loggedAt.month}/${log.loggedAt.day} vs ${_selectedDate.year}/${_selectedDate.month}/${_selectedDate.day}');
+      }
+
+      return matches;
+    }).toList();
+
+    debugPrint(
+        '[meal_logging_page] Selected date "${_selectedDate.toString().split(' ')[0]}" has ${selectedDateLogs.length} meals');
 
     // Compute daily totals
     double totalCalories = 0;
@@ -354,8 +362,9 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
     IconData icon,
     List<MealLog> allLogs,
   ) {
-    final mealLogs =
-        allLogs.where((log) => log.mealType.toLowerCase() == mealType.toLowerCase()).toList();
+    final mealLogs = allLogs
+        .where((log) => log.mealType.toLowerCase() == mealType.toLowerCase())
+        .toList();
 
     if (mealLogs.isEmpty) {
       return Padding(
@@ -622,8 +631,8 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
                 } catch (e) {
                   // Rollback: Re-add to local state on error
                   // (Note: We don't have the full meal data, but we deleted it from UI)
-                  print('Error deleting from backend: $e');
-                  
+                  debugPrint('Error deleting from backend: $e');
+
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).clearSnackBars();
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -646,11 +655,6 @@ class _MealLoggingPageState extends ConsumerState<MealLoggingPage> {
 
   /// Date navigation widget
   Widget _buildDateNavigation(BuildContext context) {
-    final today = DateTime.now();
-    final isToday = _selectedDate.year == today.year &&
-        _selectedDate.month == today.month &&
-        _selectedDate.day == today.day;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(

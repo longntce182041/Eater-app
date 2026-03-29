@@ -138,7 +138,8 @@ async function getRecipesForAI(filters = {}) {
     });
 
     // Apply filters if provided
-    let filteredRecipes = formattedRecipes;
+    let filteredRecipes = formattedRecipes;//Filter Recipes 
+
 
     // Filter by diet types if specified
     if (filters.dietTypes && filters.dietTypes.length > 0) {

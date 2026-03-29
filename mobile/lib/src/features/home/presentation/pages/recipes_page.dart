@@ -27,7 +27,7 @@ class _RecipesPageState extends ConsumerState<RecipesPage>
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   RecipeFilter _activeFilter = const RecipeFilter();
-
+//Filter Recipes
   @override
   void initState() {
     super.initState();

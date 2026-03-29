@@ -104,6 +104,9 @@ const extractRegistrationTrendFromAnalytics = (response) => {
 const DashboardPage = () => {
     const navigate = useNavigate();
 
+    // Dashboard dùng role để quyết định widget/khối chức năng nào được hiển thị.
+    // - admin: xem đầy đủ analytics + quản trị nutritionist
+    // - nutritionist: chỉ xem các phần phù hợp vai trò
     const userRole = localStorage.getItem('userRole');
     const isAdmin = userRole === 'admin';
     const isNutritionist = userRole === 'nutritionist';
@@ -131,6 +134,8 @@ const DashboardPage = () => {
 
 
             try {
+                // Gom nhiều API thành một batch để giảm thời gian tải dashboard.
+                // Dùng Promise.allSettled để dashboard vẫn render được dù một vài API lỗi.
                 const requests = [
                     axiosClient.get('/users', { params: { role: 'user', limit: 1000 } }),
                     axiosClient.get('/users', { params: { role: 'user', proOnly: true, limit: 1 } }),
@@ -152,6 +157,7 @@ const DashboardPage = () => {
                     analyticsRes,
                 ] = results;
 
+                // Chuẩn hóa dữ liệu trả về từ nhiều endpoint khác nhau về cùng một format.
                 const usersPayload = usersRes.status === 'fulfilled'
                     ? extractUsersPayload(usersRes.value)
                     : { users: [], total: 0 };
@@ -165,6 +171,7 @@ const DashboardPage = () => {
                     ? extractRegistrationTrendFromAnalytics(analyticsRes.value)
                     : [];
 
+                // Bộ số liệu tổng quan hiển thị ở hàng widget trên cùng.
                 setStats({
                     totalUsers: usersPayload.total,
                     proUsers: proUsersRes.status === 'fulfilled' ? (proUsersRes.value?.data?.data?.total || 0) : 0,
@@ -173,6 +180,7 @@ const DashboardPage = () => {
                     chatContacts: contactsRes.status === 'fulfilled' ? (contactsRes.value?.data?.data?.length || 0) : 0,
                 });
 
+                // Ưu tiên trend từ analytics API; nếu không có thì tự rollup từ users API.
                 setRegistrationTrend(
                     analyticsRegistrationTrend.length > 0
                         ? analyticsRegistrationTrend
@@ -184,6 +192,7 @@ const DashboardPage = () => {
                         : 'Users API (createdAt rollup)',
                 );
 
+                // Tương tự, ưu tiên top recipes từ analytics API, fallback từ danh sách recipes.
                 const analyticsTopRecipes = analyticsRes.status === 'fulfilled'
                     ? extractTopRecipesFromAnalytics(analyticsRes.value)
                     : [];
@@ -275,6 +284,12 @@ const DashboardPage = () => {
                 <div style={{ marginBottom: '30px' }}>
                     <h3 style={{ marginBottom: '15px' }}>Nutritionist Management</h3>
 
+                                        {/*
+                                            Khối "View Nutritionist Dashboard" trên web admin:
+                                            - Schedule Management: vào trang quản lý lịch nutritionist
+                                            - Change Requests: vào trang duyệt request đổi lịch
+                                            Đây là điểm điều hướng chính từ dashboard sang module nutritionist.
+                                        */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
                         <div
                             onClick={() => navigate('/admin/nutritionist-schedules')}

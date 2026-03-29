@@ -128,6 +128,7 @@ const NutritionistScheduleManagement = () => {
   });
 
   useEffect(() => {
+    // Admin dashboard page load: cần cả danh sách schedule và nutritionist để quản lý.
     fetchSchedules();
     fetchNutritionists();
   }, []);
@@ -144,6 +145,7 @@ const NutritionistScheduleManagement = () => {
   const fetchSchedules = async () => {
     try {
       setLoading(true);
+      // Nguồn dữ liệu chính cho list/card ở trang Manage Schedule của admin.
       const data = await getAllNutritionistSchedules();
       setSchedules(data || []);
       setError(null);
@@ -240,6 +242,7 @@ const NutritionistScheduleManagement = () => {
         return;
       }
 
+      // Action Edit của admin: cập nhật workDays/specialDays theo schedule hiện tại.
       await updateNutritionistSchedule(editingSchedule._id, {
         ...formData,
         workDays: normalizedWorkDays,
@@ -256,6 +259,7 @@ const NutritionistScheduleManagement = () => {
   };
 
   const handleDeleteSchedule = async (scheduleId) => {
+    // Action Delete của admin luôn có bước confirm để tránh xóa nhầm lịch.
     if (!confirm("Are you sure you want to delete this schedule?")) return;
 
     try {
@@ -283,6 +287,7 @@ const NutritionistScheduleManagement = () => {
   };
 
   const handleEditClick = (schedule) => {
+    // Khi admin bấm Edit, nạp dữ liệu schedule vào form để chỉnh trực tiếp.
     const monthValue = getMonthFromWorkDays(schedule.workDays);
     setSelectedMonth(monthValue);
     setEditingSchedule(schedule);
@@ -434,6 +439,7 @@ const NutritionistScheduleManagement = () => {
               <div className="schedule-actions">
                 <button
                   className="btn btn-secondary"
+                  // View Details chỉ mở modal xem nhanh, không gọi API mới.
                   onClick={() => setSelectedSchedule(schedule)}
                 >
                   View Details
@@ -606,6 +612,7 @@ const ScheduleDetailModal = ({ schedule, onClose }) => {
         </div>
 
         <div className="detail-content">
+          {/* Modal phục vụ admin xem chi tiết lịch trước khi quyết định edit/delete. */}
           <div className="detail-info">
             <p>
               <strong>Nutritionist:</strong> {schedule.nutritionistId?.email || "Nutritionist"}

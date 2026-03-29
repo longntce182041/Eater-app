@@ -6,6 +6,7 @@ const { protect, adminOnly, nutritionistOnly } = require("../../middleware/authM
 // ===== Specific routes FIRST (before parameterized routes) =====
 
 // Admin: Get all schedules
+// FE admin page `NutritionistScheduleManagement` dùng endpoint này để render danh sách.
 router.get("/all", protect, adminOnly, nutritionistScheduleController.getAllSchedules);
 
 // Admin: Get all nutritionists for schedule assignment
@@ -44,12 +45,15 @@ router.post("/", protect, adminOnly, nutritionistScheduleController.createSchedu
 router.get("/nutritionist/:nutritionistId", protect, nutritionistScheduleController.getNutritionistSchedule);
 
 // Get schedule by ID
+// FE admin có thể dùng để mở View Schedule Detail theo từng scheduleId.
 router.get("/:scheduleId", protect, nutritionistScheduleController.getScheduleById);
 
 // Update schedule (Admin)
+// FE admin action Edit.
 router.put("/:scheduleId", protect, adminOnly, nutritionistScheduleController.updateSchedule);
 
 // Delete schedule (Admin)
+// FE admin action Delete.
 router.delete("/:scheduleId", protect, adminOnly, nutritionistScheduleController.deleteSchedule);
 
 module.exports = router;

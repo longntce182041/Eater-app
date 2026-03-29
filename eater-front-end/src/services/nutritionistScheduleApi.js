@@ -65,6 +65,7 @@ export const createNutritionistSchedule = async (data) => {
 };
 
 export const getAllNutritionistSchedules = async () => {
+  // Admin Manage Schedule: lấy toàn bộ schedule để hiển thị danh sách + thao tác.
   const response = await apiClient.get(`${API_BASE_URL}/all`);
   return response.data.data || [];
 };
@@ -75,6 +76,7 @@ export const getMySchedule = async () => {
 };
 
 export const getNutritionistScheduleById = async (scheduleId) => {
+  // Admin View Schedule Detail theo ID (khi cần truy vấn chi tiết riêng).
   const response = await apiClient.get(`${API_BASE_URL}/${scheduleId}`);
   return response.data.data;
 };
@@ -85,11 +87,13 @@ export const getNutritionistScheduleByNutritionistId = async (nutritionistId) =>
 };
 
 export const updateNutritionistSchedule = async (scheduleId, data) => {
+  // Admin Update Schedule.
   const response = await apiClient.put(`${API_BASE_URL}/${scheduleId}`, data);
   return response.data.data;
 };
 
 export const deleteNutritionistSchedule = async (scheduleId) => {
+  // Admin Delete Schedule.
   const response = await apiClient.delete(`${API_BASE_URL}/${scheduleId}`);
   return response.data.data;
 };

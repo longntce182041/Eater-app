@@ -3,7 +3,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/cooking_provider.dart';
 import '../../domain/cooking_models.dart';
 
-/// Simple cooking steps display screen
+/// 👨‍🍳 INTERACTIVE COOKING MODE SCREEN
+///
+/// Full-screen UI for guiding users through recipe cooking with:
+/// - Clear step instructions (large, readable text)
+/// - Step-by-step ingredients specific to current step
+/// - Pro tips for the current step
+/// - Progress indicator (step count + percentage bar)
+/// - Next/Previous navigation buttons
+/// - Finish button when all steps completed
+///
+/// User Experience:
+/// 1. User taps recipe → CookingModeScreen opens
+/// 2. Screen fetches recipe details and creates cooking session
+/// 3. Shows current step (1/5) with instruction, ingredients, tips
+/// 4. User performs action, taps "Next Step"
+/// 5. Step marked complete in backend
+/// 6. Screen advances to next step automatically
+/// 7. When on last step, "Next" button changes to "Finish"
+/// 8. Final "Finish" completes session
+///
+/// State Management:
+/// - Watches cookingModeProvider for session state
+/// - Reads cookingModeProvider.notifier for action methods
+/// - Rebuilds when state changes
+///
+/// Architecture:
+/// - Main build() returns ScaffoldUI structure
+/// - Subfunctions: _buildCurrentStep, _buildIngredientsSection, _buildTipsSection, _buildActionButtons
+/// - Separates concerns (UI structure vs content display)
 class CookingModeScreen extends ConsumerStatefulWidget {
   final String recipeId;
   final int servings;
@@ -19,6 +47,22 @@ class CookingModeScreen extends ConsumerStatefulWidget {
 }
 
 class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
+  /// 🚀 Initialize Cooking Session
+  ///
+  /// Called after first frame to ensure widget is mounted
+  /// Pattern: WidgetsBinding.addPostFrameCallback ensures timing is correct
+  ///
+  /// Steps:
+  /// 1. Wait for first frame (widget tree built and ready)
+  /// 2. Call ref.read(notifier).startCooking()
+  /// 3. Backend initializes session and returns CookingModeData
+  /// 4. Screen rebuilds automatically via provider watch
+  /// 5. UI shows current step, ingredients, tips
+  ///
+  /// Why post-frame?
+  /// - Ensures ref is properly initialized
+  /// - Avoids race condition with widget initialization
+  /// - Allows proper error handling via state updates
   @override
   void initState() {
     super.initState();
@@ -33,9 +77,38 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    /// 🏗️ Build Main Cooking UI
+    ///
+    /// Structure:
+    /// ```
+    /// Scaffold
+    ///   ├─ AppBar: Recipe name
+    ///   ├─ Body:
+    ///   │  ├─ LinearProgressIndicator (progress bar)
+    ///   │  ├─ Progress text ("Step 2 of 5", "40% done")
+    ///   │  ├─ SingleChildScrollView (scrollable content)
+    ///   │  │  ├─ Current step (instruction + time)
+    ///   │  │  ├─ Ingredients for this step
+    ///   │  │  ├─ Pro tips
+    ///   │  │  └─ Spacing
+    ///   │  └─ Previous/Next buttons
+    /// ```
+    ///
+    /// State Handling:
+    /// 1. isLoading: Show spinner while fetching
+    /// 2. error: Show error message + back button
+    /// 3. data == null: Show "No data"
+    /// 4. data exists: Show full UI
+    ///
+    /// Watch Flow:
+    /// - ref.watch(cookingModeProvider) triggers rebuild when state changes
+    /// - Shows new step when session.currentStepIndex incremented
+    /// - Updates progress bar in real-time
     final cookingState = ref.watch(cookingModeProvider);
 
-    // Loading state
+    // ⏳ Loading State
+    /// Show spinner while initializing cooking session
+    /// Prevents UI rendering before kitchen data loaded
     if (cookingState.isLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Starting Cooking...')),
@@ -45,7 +118,9 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
       );
     }
 
-    // Error state
+    // ❌ Error State
+    /// Display error message and back button
+    /// Used if session fails to start
     if (cookingState.error != null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Error')),
@@ -67,6 +142,8 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
       );
     }
 
+    // 🔍 Null Check
+    /// Guard against null data (shouldn't happen with proper error handling)
     final data = cookingState.data;
     if (data == null) {
       return Scaffold(
@@ -75,6 +152,8 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
       );
     }
 
+    /// ✅ Success State - Full UI
+    /// Data loaded, display cooking mode interface
     return Scaffold(
       appBar: AppBar(
         title: Text(data.recipe.name),
@@ -82,11 +161,18 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
       ),
       body: Column(
         children: [
-          // Progress bar
+          // 📊 Progress Bar
+          /// Visual indicator of cooking progress
+          /// value: 0.0 to 1.0 (0% to 100%)
+          /// Example: 2/5 steps = 0.4 = 40%
           LinearProgressIndicator(
             value: data.progressPercentage / 100,
             minHeight: 4,
           ),
+
+          // 📍 Step Counter and Percentage
+          /// Shows which step the user is on and overall progress
+          /// Example: "Step 2 of 5", "40% done"
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -100,7 +186,10 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
               ],
             ),
           ),
-          // Steps content
+
+          // 📖 Main Content (Scrollable)
+          /// Display current step instruction, ingredients, and tips
+          /// Wrapped in SingleChildScrollView for long instructions
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -117,13 +206,42 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
               ),
             ),
           ),
-          // Action buttons
+
+          // 🔘 Action Buttons
+          /// Previous/Next buttons for navigation
+          /// Last step shows "Finish" instead of "Next"
           _buildActionButtons(context, data),
         ],
       ),
     );
   }
 
+  /// 🎯 Build Current Step Display
+  ///
+  /// Shows:
+  /// - Large, readable instruction text
+  /// - Step number badge (orange background)
+  /// - Estimated time with icon
+  ///
+  /// Styling:
+  /// - Orange container (#FFF3E0 background, border)
+  /// - Large text (18pt, bold, line-height 1.5 for readability)
+  /// - Time display with clock icon
+  ///
+  /// Example Output:
+  /// ```
+  /// ╔════════════════════════════════════════╗
+  /// ║ ┌────┐                                  ║
+  /// ║ │ 1  │ Step Number                      ║
+  /// ║ └────┘                                  ║
+  /// ║                                         ║
+  /// ║ Mix dry ingredients together in a     ║
+  /// ║ bowl. Add flour, sugar, and baking    ║
+  /// ║ powder. Whisk well.                    ║
+  /// ║                                         ║
+  /// ║ ⏱ ~5 min                                ║
+  /// ╚════════════════════════════════════════╝
+  /// ```
   Widget _buildCurrentStep(CookingModeData data) {
     final step = data.currentStep;
     return Container(
@@ -174,6 +292,24 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
     );
   }
 
+  /// 🥘 Build Ingredients Section
+  ///
+  /// Displays ingredients needed for current step
+  /// Each ingredient shows quantity + name
+  ///
+  /// Example:
+  /// ```
+  /// Ingredients for this step
+  /// • 2 cups all-purpose flour
+  /// • 1 cup sugar
+  /// • 0.5 tsp salt
+  /// ```
+  ///
+  /// Hides section if step has no ingredients (returns empty SizedBox)
+  ///
+  /// Quantities:
+  /// - Already scaled by backend for requested servings
+  /// - Uses StepIngredient.displayQuantity() for formatting
   Widget _buildIngredientsSection(CookingModeData data) {
     final step = data.currentStep;
     if (step.ingredients.isEmpty) return const SizedBox.shrink();
@@ -220,6 +356,19 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
     );
   }
 
+  /// 💡 Build Pro Tips Section
+  ///
+  /// Displays helpful hints for the current step
+  /// Styled with blue background and lightbulb icon
+  ///
+  /// Example:
+  /// ```
+  /// 💡 Pro Tip
+  /// Use medium heat for even cooking. Stir
+  /// frequently to prevent burning.
+  /// ```
+  ///
+  /// Hides if step has no tips
   Widget _buildTipsSection(CookingModeData data) {
     final step = data.currentStep;
     if (step.tips.isEmpty) return const SizedBox.shrink();
@@ -257,6 +406,30 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
     );
   }
 
+  /// 🔘 Build Action Buttons
+  ///
+  /// Shows Previous/Next navigation and completion
+  ///
+  /// Logic:
+  /// - First step: No "Previous" button
+  /// - Middle steps: Both "Previous" and "Next" buttons
+  /// - Last step: "Next" changes to "Finish" button
+  ///
+  /// Button Actions:
+  /// - Previous: Placeholder (currently just shows snackbar)
+  /// - Next: Calls completeStep() → advances to next
+  /// - Finish: Calls finishCooking() → completes session → pops screen
+  ///
+  /// Styling:
+  /// - Orange button ({0xFFFF9800) with white text
+  /// - OutlinedButton for Previous
+  /// - Full-width Expanded button
+  /// - Safe space for notch/rounded corners (padding.bottom)
+  ///
+  /// Example Progression:
+  /// Step 1/5: [Next Step]
+  /// Step 2/5: [Previous] [Next Step]
+  /// Step 5/5: [Previous] [Finish]
   Widget _buildActionButtons(BuildContext context, CookingModeData data) {
     final isLastStep = data.session.currentStepIndex == data.totalSteps - 1;
 
@@ -272,7 +445,9 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
       ),
       child: Row(
         children: [
-          // Previous button
+          // ⬅️ Previous Button
+          /// Only shown if not on first step
+          /// Placeholder implementation (should navigate backward)
           if (data.session.currentStepIndex > 0)
             Expanded(
               child: OutlinedButton(
@@ -285,7 +460,17 @@ class _CookingModeScreenState extends ConsumerState<CookingModeScreen> {
               ),
             ),
           if (data.session.currentStepIndex > 0) const SizedBox(width: 12),
-          // Next/Finish button
+
+          // ➡️ Next/Finish Button
+          /// Changes label based on progress
+          /// - "Next Step" for normal progression
+          /// - "Finish" on last step
+          ///
+          /// Action:
+          /// - Next Step: Call completeStep() → API marks complete →
+          ///   refreshSession() → currentStepIndex++ → UI advances
+          /// - Finish: Call finishCooking() → API marks completed →
+          ///   Pop screen
           Expanded(
             child: ElevatedButton(
               onPressed: () async {

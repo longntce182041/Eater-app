@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import './MicronutrientForm.css';
 
-const MicronutrientForm = ({ initialData, onSubmit, onCancel, isEditing }) => {
+const MicronutrientForm = ({ initialData, unitOptions = [], onSubmit, onCancel, isEditing }) => {
     const [formData, setFormData] = useState({
         name: '',
         unit: '',
@@ -17,12 +17,21 @@ const MicronutrientForm = ({ initialData, onSubmit, onCancel, isEditing }) => {
         }
     }, [initialData]);
 
+    const normalizedUnitOptions = Array.from(
+        new Set([...unitOptions, formData.unit].filter(Boolean)),
+    );
+
     // Validate form
     const validateForm = () => {
         const newErrors = {};
+        const trimmedName = formData.name?.trim() || '';
 
-        if (!formData.name || formData.name.trim() === '') {
+        if (!trimmedName) {
             newErrors.name = 'Name is required';
+        } else if (/^-\d+(\.\d+)?$/.test(trimmedName) || /^-\d/.test(trimmedName)) {
+            newErrors.name = 'Name cannot be a negative number';
+        } else if (/^\s*\d/.test(formData.name)) {
+            newErrors.name = 'Name cannot start with a number';
         } else if (formData.name.length < 2) {
             newErrors.name = 'Name must be at least 2 characters';
         } else if (formData.name.length > 100) {
@@ -31,8 +40,8 @@ const MicronutrientForm = ({ initialData, onSubmit, onCancel, isEditing }) => {
 
         if (!formData.unit || formData.unit.trim() === '') {
             newErrors.unit = 'Unit is required';
-        } else if (formData.unit.length > 20) {
-            newErrors.unit = 'Unit must not exceed 20 characters';
+        } else if (!normalizedUnitOptions.includes(formData.unit)) {
+            newErrors.unit = 'Please choose a unit from the list';
         }
 
         if (formData.description && formData.description.length > 500) {
@@ -46,6 +55,23 @@ const MicronutrientForm = ({ initialData, onSubmit, onCancel, isEditing }) => {
     // Handle input change
     const handleChange = (e) => {
         const { name, value } = e.target;
+
+        if (name === 'name' && /^\s*-\d/.test(value)) {
+            setErrors((prev) => ({
+                ...prev,
+                name: 'Name cannot be a negative number',
+            }));
+            return;
+        }
+
+        if (name === 'name' && /^\s*\d/.test(value)) {
+            setErrors((prev) => ({
+                ...prev,
+                name: 'Name cannot start with a number',
+            }));
+            return;
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: value,
@@ -107,16 +133,19 @@ const MicronutrientForm = ({ initialData, onSubmit, onCancel, isEditing }) => {
                     {/* Unit Field */}
                     <div className="form-group">
                         <label htmlFor="unit">Unit *</label>
-                        <input
-                            type="text"
+                        <select
                             id="unit"
                             name="unit"
                             value={formData.unit}
                             onChange={handleChange}
-                            placeholder="e.g., mg, mcg, g, IU"
                             className={errors.unit ? 'form-input error' : 'form-input'}
                             disabled={loading}
-                        />
+                        >
+                            <option value="">Select unit</option>
+                            {normalizedUnitOptions.map((unit) => (
+                                <option key={unit} value={unit}>{unit}</option>
+                            ))}
+                        </select>
                         {errors.unit && <span className="error-text">{errors.unit}</span>}
                     </div>
 

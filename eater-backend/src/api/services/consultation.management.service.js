@@ -165,6 +165,8 @@ class ConsultationManagementService {
         }
     }
 
+
+    // Task: Diagnose Nutrition Condition + Send Recommendations
     // 1. Chẩn đoán & Gửi khuyến nghị
     async createDiagnosisAndRecommendation(authUserId, data, io) {
         const nutri = await this.getNutritionistProfile(authUserId);
@@ -199,6 +201,8 @@ class ConsultationManagementService {
         return savedConsultation;
     }
 
+
+    // Task: Create Personalized Diet Plan + Assign Meal Plan To User
     // 2. Tạo & Gán Thực Đơn cá nhân hóa (cho 1 ngày hoặc 7 ngày)
     async createAndAssignMealPlan(authUserId, data, io) {
         // Allow both nutritionist and admin
@@ -286,6 +290,7 @@ class ConsultationManagementService {
         };
     }
 
+    // Task: Generate Nutrition Recommendations & Reports
     // 3. Xuất Báo cáo Dinh dưỡng
     async generateNutritionReport(authUserId, patientId, io, options = {}) {
         // Check if user exists (no need to verify nutritionist profile for report generation)
@@ -334,6 +339,8 @@ class ConsultationManagementService {
         return reportData;
     }
 
+
+    // Task: View User Health Data
     // 4. Nutritionist xem dữ liệu sức khỏe user
     async getUserHealthData(authUserId, patientId) {
         await this.getNutritionistProfile(authUserId);

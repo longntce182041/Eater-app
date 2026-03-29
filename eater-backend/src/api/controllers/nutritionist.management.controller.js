@@ -8,6 +8,8 @@ const { getActionMessage } = require("../../utils/actionMessage.util");
 class NutritionistManagementController {
   async getNutritionists(req, res) {
     try {
+      // Endpoint chính để "view dashboard/list nutritionist":
+      // nhận filter/sort/pagination từ query và trả danh sách đã chuẩn hóa.
       const result = await nutritionistService.getAllNutritionists(req.query);
       return res.json({ success: true, data: result });
     } catch (error) {
@@ -17,6 +19,7 @@ class NutritionistManagementController {
 
   async getNutritionistDetail(req, res) {
     try {
+      // Lấy chi tiết một nutritionist để hiển thị modal/trang detail ở frontend.
       const result = await nutritionistService.getNutritionistById(
         req.params.id,
       );
@@ -28,6 +31,8 @@ class NutritionistManagementController {
 
   async createNutritionist(req, res) {
     try {
+      // Validate đầu vào ở controller trước khi đẩy xuống service.
+      // Mục tiêu: trả lỗi rõ ràng cho UI, tránh chạy logic DB khi payload sai.
       const { errors, isValid } = validateCreateNutritionist(req.body);
       if (!isValid) {
         return res.status(400).json({ success: false, errors });
@@ -43,6 +48,8 @@ class NutritionistManagementController {
 
   async updateNutritionist(req, res) {
     try {
+      // Update profile nutritionist hiện có.
+      // Cũng đi qua validator để giữ dữ liệu nhất quán.
       const { errors, isValid } = validateUpdateNutritionist(req.body);
       if (!isValid) {
         return res.status(400).json({ success: false, errors });
@@ -61,6 +68,7 @@ class NutritionistManagementController {
 
   async deleteNutritionist(req, res) {
     try {
+      // Xóa profile nutritionist theo id (phục vụ thao tác quản trị).
       await nutritionistService.deleteNutritionist(req.params.id);
       const message = getActionMessage("delete", "Nutritionist");
       return res.json({ success: true, message });

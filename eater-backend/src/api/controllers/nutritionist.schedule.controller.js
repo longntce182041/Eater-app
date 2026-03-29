@@ -180,6 +180,7 @@ exports.createSchedule = async (req, res) => {
 // Get all schedules (Admin)
 exports.getAllSchedules = async (req, res) => {
   try {
+    // Trả dữ liệu cho màn admin Manage Schedule (list/card + search/filter phía FE).
     const schedules = await NutritionistSchedule.find()
       .populate("nutritionistId", "email role")
       .populate("userId", "email")
@@ -240,6 +241,7 @@ exports.getScheduleById = async (req, res) => {
   try {
     const { scheduleId } = req.params;
 
+    // Hỗ trợ admin xem chi tiết một lịch cụ thể.
     const schedule = await NutritionistSchedule.findById(scheduleId)
       .populate("nutritionistId", "email role")
       .populate("userId", "email");
@@ -267,6 +269,7 @@ exports.updateSchedule = async (req, res) => {
     const { scheduleId } = req.params;
     const { workDays, specialDays, status } = req.body;
 
+    // Chỉ cập nhật các trường FE gửi lên để tránh ghi đè ngoài ý muốn.
     const schedule = await NutritionistSchedule.findByIdAndUpdate(
       scheduleId,
       {
@@ -300,6 +303,7 @@ exports.deleteSchedule = async (req, res) => {
   try {
     const { scheduleId } = req.params;
 
+    // Xóa hẳn schedule theo thao tác Delete từ admin.
     const schedule = await NutritionistSchedule.findByIdAndDelete(scheduleId);
 
     if (!schedule) {

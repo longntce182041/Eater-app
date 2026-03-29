@@ -174,7 +174,7 @@ const RecipesPage = () => {
 
     const handleViewDetail = async (id) => {
         try {
-            const res = await axiosClient.get(`/recipes/${id}`);
+            const res = await axiosClient.get(`/recipes/${id}/full-details`);
             if (res.data.success) {
                 setDetailData(res.data.data);
                 setShowDetail(true);
@@ -367,6 +367,44 @@ const RecipesPage = () => {
                                         </li>
                                     ))}
                                 </ul>
+
+                                <div style={{ marginTop: '14px', background: '#f8faff', border: '1px solid #e6efff', borderRadius: '8px', padding: '10px 12px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#2f4f7f', marginBottom: '8px' }}>
+                                        Micronutrients (Total from selected ingredients)
+                                    </div>
+
+                                    {detailData.micronutrients?.length > 0 ? (
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            {detailData.micronutrients.map((item, idx) => {
+                                                const micro = item?.micronutrientId || {};
+                                                const microName = micro?.name || 'Unknown';
+                                                const microUnit = micro?.unit || '';
+                                                const microAmount = Number(item?.amount || 0);
+
+                                                return (
+                                                    <span
+                                                        key={item?._id || `${microName}-${idx}`}
+                                                        style={{
+                                                            fontSize: '12px',
+                                                            background: '#ffffff',
+                                                            border: '1px solid #dce7ff',
+                                                            borderRadius: '999px',
+                                                            padding: '5px 10px',
+                                                            color: '#334155',
+                                                        }}
+                                                    >
+                                                        {microName}: {Number.isFinite(microAmount) ? microAmount.toFixed(2) : '0.00'} {microUnit}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div style={{ fontSize: '12px', color: '#64748b' }}>
+                                            No micronutrient data available for this recipe.
+                                        </div>
+                                    )}
+                                </div>
+
                                 <h3 style={{ color: '#30a5ff', borderBottom: '2px solid #f0f0f0', paddingBottom: '10px', marginTop: '30px' }}>Instructions</h3>
                                 <div>
                                     {detailData.steps?.map((step, idx) => (

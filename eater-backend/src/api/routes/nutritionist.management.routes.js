@@ -5,6 +5,10 @@ const { protect, authorize } = require("../../middleware/authMiddleware");
 
 const router = express.Router();
 
+// Route cho module "View Nutritionist Dashboard" (phía admin):
+// - Tất cả endpoint đều yêu cầu đăng nhập và role admin.
+// - Frontend trang /admin/nutritionists sẽ gọi các API này để hiển thị danh sách/chi tiết.
+
 router.get(
   "/",
   protect,

@@ -14,7 +14,7 @@ router.get("/favorites/count", protect, favoriteController.getFavoriteCount);
 router.get("/reviews/user/list", protect, reviewController.getUserReviews);
 
 // === RECIPE ROUTES ===
-
+//Filter Recipes 
 // GET Filter options derived from database
 router.get("/filter-options", protect, recipeController.getRecipeFilterOptions);
 // GET List & Search

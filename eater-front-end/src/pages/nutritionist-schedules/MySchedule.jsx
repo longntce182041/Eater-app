@@ -54,6 +54,7 @@ const normalizeDateKey = (value) => {
 
 const MySchedule = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  // Hỗ trợ mở thẳng tab requests từ dashboard bằng query ?tab=requests.
   const initialTab = searchParams.get("tab") === "requests" ? "requests" : "schedule";
   const [schedule, setSchedule] = useState(null);
   const [changeRequests, setChangeRequests] = useState([]);
@@ -68,6 +69,7 @@ const MySchedule = () => {
   }, [searchParams]);
 
   const handleTabChange = (tab) => {
+    // Đồng bộ state tab với URL để refresh vẫn giữ đúng tab đang xem.
     setActiveTab(tab);
     setSearchParams({ tab });
   };
@@ -79,9 +81,10 @@ const MySchedule = () => {
   const fetchScheduleAndRequests = async () => {
     try {
       setLoading(true);
+      // Nutritionist lấy lịch cá nhân theo token hiện tại.
       const schedule = await getMySchedule();
       setSchedule(schedule);
-      // Get change requests if we have a schedule with nutritionistId
+      // Khi có schedule thì tải luôn lịch sử request đổi lịch của chính nutritionist đó.
       if (schedule && schedule.nutritionistId) {
         const nutritionistId =
           typeof schedule.nutritionistId === "object"
@@ -181,6 +184,7 @@ const ScheduleView = ({ schedule }) => {
   });
 
   const workDaysMap = useMemo(() => {
+    // Map theo date giúp render ô lịch theo ngày nhanh hơn O(1) lookup.
     const map = new Map();
     (schedule.workDays || []).forEach((day) => {
       if (day?.date) map.set(day.date, day);
@@ -189,6 +193,7 @@ const ScheduleView = ({ schedule }) => {
   }, [schedule.workDays]);
 
   const specialDaysMap = useMemo(() => {
+    // Special day dùng để override trạng thái ngày trong calendar (off/vacation/special_event).
     const map = new Map();
     (schedule.specialDays || []).forEach((day) => {
       if (day?.date && !map.has(day.date)) map.set(day.date, day);
@@ -212,6 +217,7 @@ const ScheduleView = ({ schedule }) => {
     }
 
     const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+    // Tổng hợp số liệu tháng hiển thị ở các info box phía trên.
     const monthWorkDays = (schedule.workDays || []).filter((d) =>
       String(d?.date || "").startsWith(monthPrefix)
     ).length;
@@ -476,6 +482,7 @@ const RequestSection = ({ title, requests }) => {
 };
 
 const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
+  // Form đổi lịch chỉ cho phép chọn từ ngày mai để tránh tạo request cho ngày quá khứ.
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const minDate = tomorrow.toISOString().split("T")[0];
@@ -484,6 +491,7 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
     () =>
       (schedule.workDays || []).reduce((dates, day) => {
         const dateKey = normalizeDateKey(day?.date);
+        // modify_hours chỉ cho ngày làm việc hợp lệ trong tương lai.
         if (dateKey && dateKey >= minDate) {
           dates.push(dateKey);
         }
@@ -517,6 +525,7 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
     const selectedDate = formData.proposedChanges.date;
     const isSelectedDateValid = modifyHoursAvailableDates.includes(selectedDate);
 
+    // Nếu đổi loại request hoặc lịch thay đổi, tự chọn lại date hợp lệ đầu tiên.
     if (!isSelectedDateValid) {
       setFormData((prev) => ({
         ...prev,
@@ -566,6 +575,7 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
           return;
         }
 
+        // Bảo vệ lần nữa ở submit để tránh bypass bằng chỉnh DOM/input thủ công.
         if (selectedDate < minDate) {
           setError("Modify working hours only supports future dates.");
           setLoading(false);
@@ -597,6 +607,7 @@ const ChangeRequestForm = ({ schedule, onClose, onSuccess }) => {
         }
       }
 
+      // Gửi request sang backend; sau khi thành công sẽ đóng modal và reload list requests.
       await requestScheduleChange(payload);
       onSuccess();
     } catch (err) {

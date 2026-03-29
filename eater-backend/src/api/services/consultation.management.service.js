@@ -334,6 +334,8 @@ class ConsultationManagementService {
         return reportData;
     }
 
+
+    // Task: View User Health Data
     // 4. Nutritionist xem dữ liệu sức khỏe user
     async getUserHealthData(authUserId, patientId) {
         await this.getNutritionistProfile(authUserId);

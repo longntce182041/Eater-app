@@ -560,6 +560,7 @@ const ConsultationsPage = () => {
                 </div>
             )}
 
+            // Task: View User Health Data
             {/* --- 4. MODAL HEALTH DATA --- */}
             {showHealthDataModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100, overflowY: 'auto', padding: '40px 0' }}>

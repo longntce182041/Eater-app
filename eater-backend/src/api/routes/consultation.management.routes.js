@@ -16,6 +16,7 @@ router.post("/meal-plans", consultationController.createMealPlan);
 // 3. Xuất Báo cáo cho 1 User
 router.get("/reports/:patientId", consultationController.getNutritionReport);
 
+// Task: View User Health Data
 // 4. Nutritionist xem dữ liệu sức khỏe user
 router.get("/users/:patientId/health-data", consultationController.getUserHealthData);
 

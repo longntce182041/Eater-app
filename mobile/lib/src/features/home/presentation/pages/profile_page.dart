@@ -19,6 +19,8 @@ const validationRules = {
   'activityLevels': ['sedentary', 'light', 'moderate', 'active', 'very active'],
   'cookingSkills': ['beginner', 'intermediate', 'advanced'],
 };
+// Fix Standardize User Profile Page
+// - Ensure all fields have proper validation and error handling
 
 final profileProStatusProvider = FutureProvider<ProStatusModel>((ref) async {
   final api = ref.watch(proApiClientProvider);

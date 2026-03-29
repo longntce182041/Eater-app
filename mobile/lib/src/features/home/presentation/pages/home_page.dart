@@ -6,6 +6,18 @@ import '../providers/home_dashboard_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../../domain/home_dashboard_models.dart';
 
+/// 🏠 HomePage - Main Home Screen
+///
+/// Displays the dashboard with:
+/// - Welcome message
+/// - Daily nutrition progress
+/// - Upcoming meals preview
+/// - Quick action buttons (meal plan, recipes, etc.)
+///
+/// Uses Riverpod for state management:
+/// - homeDashboardProvider: Fetches dashboard stats
+/// - upcomingMealsDefaultProvider: Fetches upcoming meals
+/// - mainNavigationIndexProvider: Controls bottom navigation
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
@@ -14,12 +26,18 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
+  /// Initialize and load dashboard data on page open
+  ///
+  /// Flow:
+  /// 1. Wait for frame to complete (ensures widget is mounted)
+  /// 2. Invalidate providers to force refresh
+  /// 3. Fetch fresh data from API
   @override
   void initState() {
     super.initState();
     // Load dashboard data when page opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Check if widget is still mounted before using ref
+      // Check if widget is still mounted before using ref (prevent memory leaks)
       if (mounted) {
         ref.invalidate(homeDashboardProvider);
         ref.invalidate(upcomingMealsDefaultProvider);
@@ -27,16 +45,25 @@ class _HomePageState extends ConsumerState<HomePage> {
     });
   }
 
+  /// 📋 Navigate to Meal Plan Tab
+  ///
+  /// Changes bottom navigation to index 1 (Meal Plans tab)
   void _navigateToMealPlan() {
     // Navigate to meal plan page (index 1)
     ref.read(mainNavigationIndexProvider.notifier).state = 1;
   }
 
+  /// 🍽️ Navigate to Recipes Tab
+  ///
+  /// Changes bottom navigation to index 2 (Recipes tab)
   void _navigateToRecipes() {
     // Navigate to recipes page (index 2)
     ref.read(mainNavigationIndexProvider.notifier).state = 2;
   }
 
+  /// 📅 Navigate to Full Upcoming Meals View
+  ///
+  /// Switches to meal plan tab to show all upcoming meals
   void _navigateToFullUpcomingMeals() {
     // Navigate to meal plan page (index 1) to see full upcoming meals
     ref.read(mainNavigationIndexProvider.notifier).state = 1;
@@ -44,6 +71,15 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    /// 🎨 Build Home Page UI
+    ///
+    /// Layout:
+    /// - AppBar: "Eater" title + notification icon
+    /// - RefreshIndicator: Pull-to-refresh to reload data
+    /// - Body: Watch homeDashboardProvider for:
+    ///   * data → Display dashboard content
+    ///   * loading → Show spinner
+    ///   * error → Show error message
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
       appBar: AppBar(
@@ -58,6 +94,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ),
         actions: [
+          // 🔔 Notification icon (placeholder for future notifications)
           IconButton(
             icon: const Icon(
               Icons.notifications_outlined,
@@ -68,6 +105,11 @@ class _HomePageState extends ConsumerState<HomePage> {
         ],
       ),
       body: RefreshIndicator(
+        /// Pull-to-refresh behavior:
+        /// 1. Invalidate providers (mark as stale)
+        /// 2. Watch futures to trigger API requests
+        /// 3. Wait for both futures to complete
+        /// 4. UI rebuilds with fresh data
         onRefresh: () async {
           if (mounted) {
             ref.invalidate(homeDashboardProvider);
@@ -81,18 +123,25 @@ class _HomePageState extends ConsumerState<HomePage> {
           }
         },
         color: const Color(0xFFFF9800),
+
+        /// 📊 Watch dashboard provider and build accordingly
         child: ref.watch(homeDashboardProvider).when(
+              /// ✅ Data loaded successfully
               data: (dashboardData) {
                 return _buildDashboardContent(
                   context,
                   dashboardData,
                 );
               },
+
+              /// ⏳ Loading state
               loading: () => const Center(
                 child: CircularProgressIndicator(
                   color: Color(0xFFFF9800),
                 ),
               ),
+
+              /// ❌ Error state
               error: (error, stack) => _buildErrorWidget(
                 context,
                 error.toString(),

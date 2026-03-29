@@ -1,3 +1,27 @@
+/// 📊 HOME DASHBOARD DATA MODELS
+///
+/// This file contains all data models for the home dashboard feature:
+/// - HomeOverviewData: Main dashboard data container
+/// - HomeD ashboardData: Extended dashboard with today's meals
+/// - UpcomingMealsData: Upcoming meals for next N days
+/// - Supporting models: CalorieData, MealData, MacroData, TodayMeal, etc.
+///
+/// All models implement:
+/// - fromJson() → Parse API JSON to Dart object
+/// - toJson() → Serialize Dart object to JSON
+/// - Null-safety with default values
+
+/// 🏠 Home Overview Data
+///
+/// Contains the main dashboard statistics visible on home page:
+/// - calories: Today's calorie progress (consumed vs target)
+/// - meals: Today's meal count progress
+/// - macros: Macro nutrients breakdown (protein, carbs, fats)
+///
+/// Usage in UI:
+/// ```dart
+/// Text('${overview.calories.consumed}/${overview.calories.target} kcal')
+/// ```
 class HomeOverviewData {
   final CalorieData calories;
   final MealData meals;
@@ -26,6 +50,19 @@ class HomeOverviewData {
   }
 }
 
+/// 🔥 Calorie Data
+///
+/// Tracks daily calorie consumption:
+/// - consumed: Total calories eaten today (integer)
+/// - target: User's daily calorie goal (default: 2000)
+/// - percentage: Consumed as % of target (0-100+)
+///
+/// Example:
+/// ```
+/// consumed: 1500
+/// target: 2000
+/// percentage: 75
+/// ```
 class CalorieData {
   final int consumed;
   final int target;
@@ -54,6 +91,17 @@ class CalorieData {
   }
 }
 
+/// 🍽️ Meal Data
+///
+/// Tracks meal consumption progress:
+/// - consumed: Number of meals logged today
+/// - target: Daily meal goal (default: 3)
+///
+/// Example:
+/// ```
+/// consumed: 2 (breakfast + lunch)
+/// target: 3
+/// ```
 class MealData {
   final int consumed;
   final int target;
@@ -78,6 +126,23 @@ class MealData {
   }
 }
 
+/// 🥗 Macro Data
+///
+/// Macro nutrients breakdown (in grams):
+/// - protein: Total protein today
+/// - carbohydrates: Total carbs today
+/// - fat: Total fat today
+///
+/// Used in:
+/// - Macro pie chart / bar chart
+/// - Nutrition progress display
+///
+/// Example:
+/// ```
+/// protein: 120g
+/// carbohydrates: 150g
+/// fat: 50g
+/// ```
 class MacroData {
   final int protein;
   final int carbohydrates;
@@ -106,6 +171,27 @@ class MacroData {
   }
 }
 
+/// 🍴 Today's Meal
+///
+/// Represents a single meal logged today with:
+/// - id: Unique meal ID
+/// - mealType: "breakfast", "lunch", "dinner", or "snack"
+/// - recipeName: Name of the recipe
+/// - recipeImageUrl: Image of the dish (optional)
+/// - servings: Number of servings
+/// - calories, protein, carbohydrates, fat: Nutrition values
+/// - userRating: User's rating for this meal (1-5, optional)
+///
+/// Used in: Today's meals list on home page
+///
+/// Example:
+/// ```
+/// id: "meal_123"
+/// mealType: "breakfast"
+/// recipeName: "Scrambled Eggs with Toast"
+/// calories: 350
+/// protein: 15
+/// ```
 class TodayMeal {
   final String id;
   final String mealType;

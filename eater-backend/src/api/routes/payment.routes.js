@@ -1,7 +1,6 @@
 const express = require("express");
 const paymentController = require("../controllers/payment.controller");
 const { protect } = require("../../middleware/authMiddleware");
-const { loadProStatus } = require("../../middleware/proMiddleware");
 
 const router = express.Router();
 
@@ -9,18 +8,14 @@ const router = express.Router();
 router.post("/pro/checkout", protect, paymentController.createProCheckout);
 
 // PayOS webhook callback: update Pro status after successful payment
-router.post("/payos/webhook", paymentController.handlePayOSWebhook);
-
-// Get current user's Pro status
-router.get(
-  "/pro/status",
-  protect,
-  loadProStatus,
-  paymentController.getProStatus,
+router.post(
+  "/webhook/payos",
+  express.raw({ type: "application/json" }),
+  paymentController.handlePayOSWebhook,
 );
 
-// Get available Pro plans (monthly/yearly)
-router.get("/pro/plans", protect, paymentController.getProPlans);
+// Get current user's Pro status
+router.get("/pro/status", protect, paymentController.getProStatus);
 
 // Get configured PayOS return/cancel URLs
 router.get("/payos/urls", protect, paymentController.getPayOSUrls);

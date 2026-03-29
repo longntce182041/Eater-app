@@ -14,6 +14,7 @@ import { NutritionistScheduleManagement, ScheduleChangeRequests, MySchedule } fr
 import ConsultationsPage from "../pages/consultations/index.jsx";
 import NutritionistsManagementPage from "../pages/nutritionists/index.jsx";
 import NutritionistProfessionalProfilePage from "../pages/nutritionists/profile.jsx";
+import NutritionistDashboardPage from "../pages/nutritionist-dashboard/index.jsx";
 
 import AdminLayout from "../components/layout/AdminLayout.jsx";
 
@@ -37,6 +38,16 @@ const RoleProtectedRoute = ({ allowedRoles }) => {
   return <Outlet />;
 };
 
+const RoleBasedHomeRedirect = () => {
+  const userRole = localStorage.getItem("userRole");
+  return (
+    <Navigate
+      to={userRole === "nutritionist" ? "/nutritionist/dashboard" : "/dashboard"}
+      replace
+    />
+  );
+};
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -44,8 +55,9 @@ export function AppRoutes() {
 
       <Route element={<PrivateRoute />}>
         <Route path="/" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<RoleBasedHomeRedirect />} />
 
+          {/* Dashboard tổng quan. Admin sẽ thấy block quản trị Nutritionist tại đây. */}
           <Route path="dashboard" element={<DashboardPage />} />
 
                     {/* --- KHU VỰC 1: CHỈ DÀNH CHO ADMIN --- */}
@@ -64,8 +76,11 @@ export function AppRoutes() {
                     {/* --- KHU VỰC 2: CHỈ DÀNH CHO NUTRITIONIST --- */}
                     {/* 👇 ĐÃ XÓA 'admin' KHỎI MẢNG NÀY */}
                     <Route element={<RoleProtectedRoute allowedRoles={['nutritionist']} />}>
+                        {/* Dashboard hồ sơ cho nutritionist tự quản lý thông tin chuyên môn */}
+                        <Route path="nutritionist/dashboard" element={<NutritionistDashboardPage />} />
                         <Route path="chat" element={<ChatPage />} />
                         <Route path="consultations" element={<ConsultationsPage />} />
+                      {/* Route chính cho màn Update Professional Profile của nutritionist. */}
                       <Route path="nutritionist/profile" element={<NutritionistProfessionalProfilePage />} />
                         <Route path="nutritionist/my-schedule" element={<MySchedule />} />
 

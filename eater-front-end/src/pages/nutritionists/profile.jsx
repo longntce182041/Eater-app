@@ -16,6 +16,7 @@ const NutritionistProfessionalProfilePage = () => {
   const [hasProfile, setHasProfile] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
 
+  // Textarea nhập chứng chỉ theo từng dòng, sau đó parse thành mảng URL cho payload backend.
   const certificationsPreview = useMemo(
     () => formData.certificationsText.split("\n").map((s) => s.trim()).filter(Boolean),
     [formData.certificationsText],
@@ -24,6 +25,8 @@ const NutritionistProfessionalProfilePage = () => {
   const loadMyProfile = async () => {
     try {
       setLoading(true);
+      // Luồng "Update Professional Profile" luôn bắt đầu bằng GET /nutritionists/profile/me
+      // để nạp dữ liệu cũ (nếu có) vào form.
       const res = await nutritionistsApi.getMyProfessionalProfile();
       const profile = res?.data?.data;
 
@@ -60,6 +63,7 @@ const NutritionistProfessionalProfilePage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    // Frontend chuẩn hóa dữ liệu trước khi gọi API upsert profile.
     const payload = {
       fullName: formData.fullName.trim(),
       specialization: formData.specialization.trim(),
@@ -74,9 +78,11 @@ const NutritionistProfessionalProfilePage = () => {
 
     try {
       setSaving(true);
+      // Endpoint PUT /nutritionists/profile/me sẽ tự create hoặc update hồ sơ.
       const res = await nutritionistsApi.upsertMyProfessionalProfile(payload);
       toast.success(res?.data?.message || "Professional profile saved successfully");
       setHasProfile(true);
+      // Nạp lại dữ liệu từ server để UI phản ánh đúng trạng thái lưu mới nhất.
       await loadMyProfile();
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to save professional profile");
@@ -95,6 +101,7 @@ const NutritionistProfessionalProfilePage = () => {
         <UserCog size={24} style={{ verticalAlign: "middle", marginRight: "8px" }} />
         Update Professional Profile
       </h2>
+      {/* hasProfile giúp đổi thông điệp giữa trạng thái tạo mới và cập nhật hồ sơ. */}
       <p style={{ color: "#777", marginTop: 0, marginBottom: "18px" }}>
         {hasProfile
           ? "Update your professional details shown to users."

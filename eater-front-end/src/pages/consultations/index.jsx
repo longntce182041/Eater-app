@@ -321,6 +321,7 @@ const ConsultationsPage = () => {
                 )}
             </div>
 
+            // Task: Diagnose Nutrition Condition + Send Recommendations
             {/* --- 1. MODAL DIAGNOSE --- */}
             {showDiagnoseModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
@@ -359,6 +360,7 @@ const ConsultationsPage = () => {
                 </div>
             )}
 
+            // Task: Create Personalized Diet Plan + Assign Meal Plan To User
             {/* --- 2. MODAL MEAL PLAN --- */}
             {showMealPlanModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
@@ -482,6 +484,8 @@ const ConsultationsPage = () => {
                 </div>
             )}
 
+
+            // Task: Generate Comprehensive Nutrition Report + Send Report Email
             {/* --- 3. MODAL REPORT --- */}
             {showReportModal && reportData && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100, overflowY: 'auto', padding: '40px 0' }}>
@@ -560,6 +564,7 @@ const ConsultationsPage = () => {
                 </div>
             )}
 
+            // Task: View User Health Data
             {/* --- 4. MODAL HEALTH DATA --- */}
             {showHealthDataModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100, overflowY: 'auto', padding: '40px 0' }}>

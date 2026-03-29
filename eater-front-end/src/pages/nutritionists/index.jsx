@@ -31,6 +31,7 @@ const NutritionistsPage = () => {
   const fetchNutritionists = async () => {
     try {
       setLoading(true);
+      // Build params từ bộ lọc UI để truy vấn danh sách nutritionist trên server.
       const params = {
         keyword: filters.keyword,
         specialization: filters.specialization,
@@ -53,6 +54,7 @@ const NutritionistsPage = () => {
   };
 
   useEffect(() => {
+    // Debounce đơn giản khi người dùng gõ filter/search để tránh spam API.
     const timer = setTimeout(() => {
       fetchNutritionists();
     }, 350);
@@ -60,6 +62,7 @@ const NutritionistsPage = () => {
   }, [filters]);
 
   const handleOpenCreate = () => {
+    // Mở modal chế độ tạo mới profile nutritionist.
     setIsEditing(false);
     setCurrentNutritionist(null);
     setFormData(DEFAULT_FORM);
@@ -67,6 +70,7 @@ const NutritionistsPage = () => {
   };
 
   const handleOpenEdit = (nutritionist) => {
+    // Mở modal chế độ sửa: map dữ liệu record hiện tại vào form.
     setIsEditing(true);
     setCurrentNutritionist(nutritionist);
     setFormData({
@@ -105,6 +109,7 @@ const NutritionistsPage = () => {
     try {
       let res;
       if (isEditing) {
+        // Luồng UPDATE nutritionist profile hiện có.
         const payload = {
           fullName: formData.fullName.trim(),
           specialization: formData.specialization.trim(),
@@ -117,6 +122,7 @@ const NutritionistsPage = () => {
           payload,
         );
       } else {
+        // Luồng CREATE nutritionist mới (bao gồm tài khoản user + profile nghề nghiệp).
         const payload = {
           email: formData.email.trim(),
           password: formData.password,
@@ -131,6 +137,7 @@ const NutritionistsPage = () => {
 
       toast.success(res.data.message || "Saved successfully");
       setShowModal(false);
+      // Reload danh sách để phản ánh dữ liệu mới nhất sau khi create/update.
       await fetchNutritionists();
     } catch (error) {
       const apiErrors = error.response?.data?.errors;

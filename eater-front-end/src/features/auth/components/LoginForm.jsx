@@ -45,7 +45,7 @@ const LoginForm = () => {
 
           // Chờ 1 chút để lưu xong token rồi mới chuyển trang
           setTimeout(() => {
-            navigate(role === "nutritionist" ? "/chat" : "/dashboard");
+            navigate(role === "nutritionist" ? "/nutritionist/dashboard" : "/dashboard");
           }, 500);
         } else {
           toast.error("Login success but no Token found!");

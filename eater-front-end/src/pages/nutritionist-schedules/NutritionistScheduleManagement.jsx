@@ -33,6 +33,13 @@ const getCurrentMonthValue = () => {
   return `${year}-${month}`;
 };
 
+const getTomorrowStart = () => {
+  const tomorrow = new Date();
+  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow;
+};
+
 const getMonthFromWorkDays = (workDays) => {
   if (!Array.isArray(workDays) || workDays.length === 0 || !workDays[0]?.date) {
     return getCurrentMonthValue();
@@ -56,6 +63,7 @@ const generateWorkDaysForMonth = (monthValue, { includePastDays = false } = {}) 
   const workDays = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const tomorrow = getTomorrowStart();
 
   for (let day = 1; day <= totalDays; day += 1) {
     const date = new Date(year, month - 1, day);
@@ -63,7 +71,7 @@ const generateWorkDaysForMonth = (monthValue, { includePastDays = false } = {}) 
       continue;
     }
 
-    if (!includePastDays && date < today) {
+    if (!includePastDays && date < tomorrow) {
       continue;
     }
 
@@ -120,6 +128,7 @@ const NutritionistScheduleManagement = () => {
   });
 
   useEffect(() => {
+    // Admin dashboard page load: cần cả danh sách schedule và nutritionist để quản lý.
     fetchSchedules();
     fetchNutritionists();
   }, []);
@@ -136,6 +145,7 @@ const NutritionistScheduleManagement = () => {
   const fetchSchedules = async () => {
     try {
       setLoading(true);
+      // Nguồn dữ liệu chính cho list/card ở trang Manage Schedule của admin.
       const data = await getAllNutritionistSchedules();
       setSchedules(data || []);
       setError(null);
@@ -151,9 +161,19 @@ const NutritionistScheduleManagement = () => {
     e.preventDefault();
     try {
       const normalizedWorkDays = normalizeWorkDays(formData.workDays);
+      const tomorrow = getTomorrowStart();
+      const invalidPastOrTodayDay = normalizedWorkDays.find((day) => {
+        const parsedDate = new Date(`${day.date}T00:00:00`);
+        return Number.isNaN(parsedDate.getTime()) || parsedDate < tomorrow;
+      });
 
       if (!Array.isArray(normalizedWorkDays) || normalizedWorkDays.length === 0) {
         setError("Work days are required");
+        return;
+      }
+
+      if (invalidPastOrTodayDay) {
+        setError("When creating a schedule, work days must start from tomorrow.");
         return;
       }
 
@@ -222,6 +242,7 @@ const NutritionistScheduleManagement = () => {
         return;
       }
 
+      // Action Edit của admin: cập nhật workDays/specialDays theo schedule hiện tại.
       await updateNutritionistSchedule(editingSchedule._id, {
         ...formData,
         workDays: normalizedWorkDays,
@@ -238,6 +259,7 @@ const NutritionistScheduleManagement = () => {
   };
 
   const handleDeleteSchedule = async (scheduleId) => {
+    // Action Delete của admin luôn có bước confirm để tránh xóa nhầm lịch.
     if (!confirm("Are you sure you want to delete this schedule?")) return;
 
     try {
@@ -265,6 +287,7 @@ const NutritionistScheduleManagement = () => {
   };
 
   const handleEditClick = (schedule) => {
+    // Khi admin bấm Edit, nạp dữ liệu schedule vào form để chỉnh trực tiếp.
     const monthValue = getMonthFromWorkDays(schedule.workDays);
     setSelectedMonth(monthValue);
     setEditingSchedule(schedule);
@@ -416,6 +439,7 @@ const NutritionistScheduleManagement = () => {
               <div className="schedule-actions">
                 <button
                   className="btn btn-secondary"
+                  // View Details chỉ mở modal xem nhanh, không gọi API mới.
                   onClick={() => setSelectedSchedule(schedule)}
                 >
                   View Details
@@ -459,6 +483,8 @@ const ScheduleForm = ({
   selectedMonth,
   onMonthChange,
 }) => {
+  const currentMonth = getCurrentMonthValue();
+
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -502,11 +528,12 @@ const ScheduleForm = ({
               id="scheduleMonth"
               type="month"
               value={selectedMonth}
+              min={!editingSchedule ? currentMonth : undefined}
               onChange={(e) => onMonthChange(e.target.value)}
               required
             />
             <small className="month-picker-note">
-              Auto-generates all dates in selected month and excludes Sundays.
+              Auto-generates dates in selected month, excludes Sundays, and only includes dates from tomorrow when creating.
             </small>
           </div>
 
@@ -585,6 +612,7 @@ const ScheduleDetailModal = ({ schedule, onClose }) => {
         </div>
 
         <div className="detail-content">
+          {/* Modal phục vụ admin xem chi tiết lịch trước khi quyết định edit/delete. */}
           <div className="detail-info">
             <p>
               <strong>Nutritionist:</strong> {schedule.nutritionistId?.email || "Nutritionist"}

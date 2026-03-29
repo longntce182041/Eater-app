@@ -1,19 +1,29 @@
 import axiosClient from "../api/axiosClient";
 
+// Lớp API client cho module nutritionist.
+// Page/View gọi các hàm này thay vì gọi axios trực tiếp để:
+// - gom endpoint cùng module
+// - dễ đổi endpoint/headers về sau
+// - code page gọn hơn
 export const nutritionistsApi = {
   getNutritionists(params = {}) {
+    // Admin view nutritionist dashboard/list: lấy danh sách nutritionist có filter.
     return axiosClient.get("/nutritionists", { params });
   },
 
   getMyProfessionalProfile() {
+    // Nguồn dữ liệu cho trang "Update Professional Profile" (khi mở trang).
+    // Trả về profile theo user đang đăng nhập qua token.
     return axiosClient.get("/nutritionists/profile/me");
   },
 
   upsertMyProfessionalProfile(data) {
+    // Nút Save Profile gọi endpoint này để update hoặc tạo mới hồ sơ trong một API duy nhất.
     return axiosClient.put("/nutritionists/profile/me", data);
   },
 
   getNutritionistById(id) {
+    // Admin xem chi tiết một nutritionist.
     return axiosClient.get(`/nutritionists/${id}`);
   },
 
@@ -30,6 +40,7 @@ export const nutritionistsApi = {
   },
 
   getNutritionistUsers() {
+    // Hỗ trợ UI cần danh sách user có role nutritionist để gán/liên kết.
     return axiosClient.get("/users", {
       params: {
         role: "nutritionist",

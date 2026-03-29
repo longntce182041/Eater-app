@@ -3,6 +3,7 @@ const { validateDiagnosis, validateDietPlan } = require("../validators/consultat
 
 class ConsultationManagementController {
 
+    // Task: Diagnose Nutrition Condition + Send Recommendations
     // [POST] Chẩn đoán & Gợi ý
     async createConsultation(req, res) {
         try {

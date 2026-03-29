@@ -165,6 +165,8 @@ class ConsultationManagementService {
         }
     }
 
+
+    // Task: Diagnose Nutrition Condition + Send Recommendations
     // 1. Chẩn đoán & Gửi khuyến nghị
     async createDiagnosisAndRecommendation(authUserId, data, io) {
         const nutri = await this.getNutritionistProfile(authUserId);

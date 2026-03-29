@@ -7,6 +7,7 @@ const { protect, authorize } = require("../../middleware/authMiddleware");
 router.use(protect);
 router.use(authorize('nutritionist'));
 
+// Task: Diagnose Nutrition Condition + Send Recommendations
 // 1. Chẩn đoán & Khuyến nghị
 router.post("/diagnose", consultationController.createConsultation);
 

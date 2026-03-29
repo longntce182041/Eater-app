@@ -3,6 +3,7 @@ const { validateDiagnosis, validateDietPlan } = require("../validators/consultat
 
 class ConsultationManagementController {
 
+    // Task: Diagnose Nutrition Condition + Send Recommendations
     // [POST] Chẩn đoán & Gợi ý
     async createConsultation(req, res) {
         try {
@@ -21,6 +22,7 @@ class ConsultationManagementController {
         }
     }
 
+    // Task: Create Personalized Diet Plan + Assign Meal Plan To User
     // [POST] Tạo & Gán Thực Đơn
     async createMealPlan(req, res) {
         try {
@@ -39,6 +41,8 @@ class ConsultationManagementController {
         }
     }
 
+
+    // Task: Generate Nutrition Recommendations & Reports
     // [GET] Xuất Báo Cáo
     async getNutritionReport(req, res) {
         try {
@@ -62,6 +66,7 @@ class ConsultationManagementController {
         }
     }
 
+    // Task: View User Health Data
     // [GET] Nutritionist xem dữ liệu sức khỏe user
     async getUserHealthData(req, res) {
         try {

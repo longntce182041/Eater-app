@@ -8,7 +8,29 @@ import '../../../../shared/providers/app_config_provider.dart'
     as config_provider;
 import '../../../../shared/providers/dio_provider.dart' as dio_provider;
 
-/// State for grocery list
+/// 🛒 GROCERY LIST STATE MODEL
+///
+/// Represents complete state of grocery list feature
+/// Combines items, loading status, and error messages
+/// Used by GroceryListNotifier for state management
+///
+/// Fields:
+/// - items: Current list of grocery items (shopping list)
+/// - isLoading: API request in progress
+/// - errorMessage: Latest error (null if no error)
+///
+/// State Transitions:
+/// ```
+/// Initial: items=[], isLoading=false, error=null
+///   ↓ (Loading from API)
+/// Loading: items=[], isLoading=true, error=null
+///   ↓ (Success)
+/// Loaded: items=[tomato, milk, ...], isLoading=false, error=null
+///   ↓ (User adds item from meal plan)
+/// Syncing: items=[...updated...], isLoading=true, error=null
+///   ↓ (User marks item purchased)
+/// Updated: items=[...updated with purchase...], isLoading=false
+/// ```
 class GroceryListState {
   final List<GroceryItem> items;
   final bool isLoading;
@@ -20,6 +42,26 @@ class GroceryListState {
     this.errorMessage,
   });
 
+  /// ✏️ Create modified copy with specified fields changed
+  ///
+  /// Immutable pattern for state updates
+  /// Returns new GroceryListState instance
+  /// Unchanged fields use current values
+  ///
+  /// Usage:
+  /// ```dart
+  /// // When adding items
+  /// state = state.copyWith(items: [...state.items, newItem]);
+  ///
+  /// // When starting API call
+  /// state = state.copyWith(isLoading: true);
+  ///
+  /// // When API fails
+  /// state = state.copyWith(
+  ///   isLoading: false,
+  ///   errorMessage: 'Failed to load',
+  /// );
+  /// ```
   GroceryListState copyWith({
     List<GroceryItem>? items,
     bool? isLoading,
@@ -32,7 +74,22 @@ class GroceryListState {
     );
   }
 
-  /// Get statistics
+  /// 📊 Get statistics about grocery list completion
+  ///
+  /// Computed property that analyzes items
+  /// Returns GroceryStats with:
+  /// - totalItems: Count of all items
+  /// - purchasedItems: Count of checked items
+  /// - pendingItems: Count of unchecked items
+  ///
+  /// Usage:
+  /// ```dart
+  /// final stats = groceryState.stats;
+  /// print('${stats.completionPercentage}% done');
+  /// if (stats.isComplete) {
+  ///   showCompletionAnimation();
+  /// }
+  /// ```
   GroceryStats get stats {
     final purchased = items.where((item) => item.isPurchased).length;
     return GroceryStats(
@@ -42,7 +99,29 @@ class GroceryListState {
     );
   }
 
-  /// Get items grouped by purchase status
+  /// 📋 Get items grouped by purchase status
+  ///
+  /// Returns filtered lists for display
+  /// Useful for showing pending items first, then purchased
+  ///
+  /// pendingItems: Items user hasn't bought yet
+  /// purchasedItems: Items user has marked as purchased
+  ///
+  /// Usage:
+  /// ```dart
+  /// // Show pending items in main list
+  /// ListView.builder(
+  ///   itemCount: state.pendingItems.length,
+  ///   itemBuilder: (context, index) {
+  ///     return GroceryItemWidget(state.pendingItems[index]);
+  ///   },
+  /// );
+  ///
+  /// // Show completed items in collapsed section
+  /// if (state.purchasedItems.isNotEmpty) {
+  ///   ShowPurchasedItemsSection(state.purchasedItems);
+  /// }
+  /// ```
   List<GroceryItem> get pendingItems =>
       items.where((item) => !item.isPurchased).toList();
 

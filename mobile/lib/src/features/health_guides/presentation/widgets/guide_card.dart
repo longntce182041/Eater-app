@@ -1,7 +1,45 @@
 import 'package:flutter/material.dart';
 import '../../domain/health_guide_models.dart';
 
-/// Card widget for displaying a health guide preview
+/// 🎴 GUIDE CARD WIDGET
+///
+/// Displays a health guide preview in card format
+/// Shows: title, description, difficulty badge, read time, tags
+/// Used in: HealthGuidesScreen guide list
+///
+/// Layout:
+/// ```
+/// ╔─────────────────────────────────╗
+/// ║ 💡 Title              [BEGINNER] ║  ← Icon + title + difficulty
+/// ║                                 ║
+/// ║ Short description of the       ║  ← Description (2 lines max)
+/// ║ guide content goes here...     ║
+/// │                                 ║
+/// ║ ⏱ 8 min read       #fasting    ║  ← Read time + first tag
+/// ╚─────────────────────────────────╝
+/// ```
+///
+/// Features:
+/// - White background with subtle shadow
+/// - Rounded corners (12px)
+/// - Light gray border
+/// - Tappable entire card (GestureDetector)
+/// - Responsive text (maxLines, overflow)
+/// - Color-coded difficulty (green, orange, pink)
+///
+/// Props:
+/// - guide: HealthGuide to display
+/// - onTap: Callback when user taps card
+///
+/// Example Usage:
+/// ```dart
+/// GuideCard(
+///   guide: HealthGuide(...),
+///   onTap: () {
+///     showModalBottomSheet(GuideDetailSheet(guide.id));
+///   },
+/// )
+/// ```
 class GuideCard extends StatelessWidget {
   final HealthGuide guide;
   final VoidCallback onTap;
@@ -14,9 +52,19 @@ class GuideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    /// 🎯 Card Container
+    ///
+    /// Tappable card that opens guide detail sheet
+    /// Supports ripple effect on tap
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        /// 🎨 Styling:
+        /// - White background
+        /// - 12px rounded corners
+        /// - Light gray border (subtle separation)
+        /// - Subtle shadow (0.05 opacity, 4px blur)
+        /// - 16px padding for internal content
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -30,13 +78,30 @@ class GuideCard extends StatelessWidget {
           ],
         ),
         padding: const EdgeInsets.all(16),
+
+        /// 📐 Content Layout
+        ///
+        /// Column structure:
+        /// 1. Header: Icon + title + difficulty badge
+        /// 2. Description: Short preview text
+        /// 3. Footer: Read time + tags
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with icon and difficulty
+            /// 📌 Header Section: Icon + Title + Difficulty
+            ///
+            /// Row layout:
+            /// - Left: Icon in orange container
+            /// - Middle: Title + optional difficulty badge
+            /// - Right: Expand remaining space
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                /// 💡 Icon Badge
+                ///
+                /// Orange circular background (#FFF3E0)
+                /// Shows lightbulb icon (standard for all guides)
+                /// Fixed size: 8px padding around icon
                 Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF3E0),
@@ -50,10 +115,22 @@ class GuideCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
+
+                /// 📝 Title + Difficulty Section
+                ///
+                /// Takes remaining space (Expanded)
+                /// Stack: title on top, difficulty badge below
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      /// 🎯 Guide Title
+                      ///
+                      /// Bold, dark text (16pt)
+                      /// Max 2 lines (ellipsis if overflow)
+                      /// Examples:
+                      /// - "Complete Guide to 16:8 Intermittent Fasting"
+                      /// - "Home Workouts for Beginners"
                       Text(
                         guide.title,
                         style: const TextStyle(
@@ -64,6 +141,15 @@ class GuideCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+
+                      /// 🏅 Difficulty Badge
+                      ///
+                      /// Optional: Only show if guide has difficulty level
+                      /// Color-coded:
+                      /// - Beginner: Green (#4CAF50)
+                      /// - Intermediate: Orange (#FF9800)
+                      /// - Advanced: Pink (#E91E63)
+                      /// White uppercase text (12pt)
                       if (guide.difficulty != null) ...[
                         const SizedBox(height: 4),
                         Container(
@@ -91,7 +177,15 @@ class GuideCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // Description
+
+            /// 📄 Description
+            ///
+            /// Short preview of guide content
+            /// Gray text (13pt), 1.4x line height
+            /// Max 2 lines (ellipsis if longer)
+            /// Examples:
+            /// - "Learn the most popular intermittent fasting..."
+            /// - "Complete guide to strength training at home..."
             Text(
               guide.description,
               style: TextStyle(
@@ -103,10 +197,23 @@ class GuideCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 12),
-            // Footer with read time and tags
+
+            /// 🏷️ Footer: Read Time + Tags
+            ///
+            /// Row layout:
+            /// - Left: Clock icon + read time ("8 min read")
+            /// - Right: First tag in gray box
+            ///
+            /// Balances metadata and visual interest
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                /// ⏱️ Read Time Display
+                ///
+                /// Clock icon (14pt, gray)
+                /// Followed by formatted read time text
+                /// Example: "⏱ 8 min read"
+                /// Uses guide.readTimeText property
                 Row(
                   children: [
                     Icon(
@@ -124,6 +231,13 @@ class GuideCard extends StatelessWidget {
                     ),
                   ],
                 ),
+
+                /// 🏷️ First Tag Display
+                ///
+                /// Shows first tag if available
+                /// Used for quick categorization (fasting, nutrition, etc.)
+                /// Gray background box, max 1 line
+                /// Hidden if no tags
                 if (guide.tags.isNotEmpty)
                   Container(
                     decoration: BoxDecoration(
@@ -152,6 +266,15 @@ class GuideCard extends StatelessWidget {
     );
   }
 
+  /// 🎨 Get Color for Difficulty Badge
+  ///
+  /// Maps difficulty level to color:
+  /// - "beginner" → Green (#4CAF50) - Easy, start here
+  /// - "intermediate" → Orange (#FF9800) - Some knowledge needed
+  /// - "advanced" → Pink (#E91E63) - Expert level needed
+  /// - default → Gray - Unknown/unspecified
+  ///
+  /// Used in: GuideCard difficulty badge
   Color _getDifficultyColor(String difficulty) {
     switch (difficulty.toLowerCase()) {
       case 'beginner':

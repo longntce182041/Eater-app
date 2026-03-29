@@ -290,6 +290,7 @@ class ConsultationManagementService {
         };
     }
 
+    // Task: Generate Nutrition Recommendations & Reports
     // 3. Xuất Báo cáo Dinh dưỡng
     async generateNutritionReport(authUserId, patientId, io, options = {}) {
         // Check if user exists (no need to verify nutritionist profile for report generation)

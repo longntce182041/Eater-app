@@ -15,6 +15,7 @@ router.post("/diagnose", consultationController.createConsultation);
 // 2. Tạo & Gán Meal Plan cá nhân
 router.post("/meal-plans", consultationController.createMealPlan);
 
+// Task: Generate Nutrition Recommendations & Reports
 // 3. Xuất Báo cáo cho 1 User
 router.get("/reports/:patientId", consultationController.getNutritionReport);
 

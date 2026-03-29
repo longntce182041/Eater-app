@@ -41,6 +41,8 @@ class ConsultationManagementController {
         }
     }
 
+
+    // Task: Generate Nutrition Recommendations & Reports
     // [GET] Xuất Báo Cáo
     async getNutritionReport(req, res) {
         try {

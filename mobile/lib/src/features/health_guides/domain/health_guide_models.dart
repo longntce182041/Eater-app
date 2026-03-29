@@ -1,6 +1,42 @@
 import 'package:flutter/material.dart';
 
-/// Health guide category with list of guides
+/// 📚 HEALTH & LIFESTYLE GUIDES DATA MODELS
+///
+/// This file contains all domain models for the health guides feature:
+/// - HealthGuideCategory: Grouped guides by category
+/// - HealthGuide: Individual guide with metadata and content
+///
+/// Data Flow:
+/// 1. Backend returns guides grouped by category (fasting, workouts, nutrition, etc.)
+/// 2. UI displays categories in tabs
+/// 3. User selects category → see guides in that category
+/// 4. User taps guide → fetch full content
+/// 5. Display in bottom sheet modal
+///
+/// All models implement:
+/// - fromJson() → Parse API response to Dart object
+/// - toJson() → Serialize to JSON for requests
+/// - Null-safety with sensible defaults
+
+/// 📁 Health Guide Category Container
+///
+/// Groups guides by category for easier organization and browsing:
+/// - category: Identifier ("fasting", "nutrition", "workouts", etc.)
+/// - guides: List of guides in this category
+///
+/// Used by:
+/// - allHealthGuidesProvider: Fetch all guides grouped by category
+/// - CategoryTabBar: Display as tabs
+/// - HealthGuidesScreen: Show list of guides per selected category
+///
+/// Example:
+/// ```
+/// category: "fasting"
+/// guides: [
+///   HealthGuide(title: "16:8 Intermittent Fasting", ...),
+///   HealthGuide(title: "Fasting for Beginners", ...),
+/// ]
+/// ```
 class HealthGuideCategory {
   final String category;
   final List<HealthGuide> guides;
@@ -10,6 +46,23 @@ class HealthGuideCategory {
     required this.guides,
   });
 
+  /// 📥 Parse category data from backend JSON
+  ///
+  /// Example JSON:
+  /// ```json
+  /// {
+  ///   "category": "fasting",
+  ///   "guides": [
+  ///     {
+  ///       "id": "guide_123",
+  ///       "title": "16:8 Intermittent Fasting",
+  ///       "description": "Learn about popular intermittent fasting protocol",
+  ///       "category": "fasting",
+  ///       ...
+  ///     }
+  ///   ]
+  /// }
+  /// ```
   factory HealthGuideCategory.fromJson(Map<String, dynamic> json) {
     return HealthGuideCategory(
       category: json['category'] as String,
@@ -20,13 +73,42 @@ class HealthGuideCategory {
     );
   }
 
+  /// 📤 Serialize to JSON for API requests
   Map<String, dynamic> toJson() => {
         'category': category,
         'guides': guides.map((e) => e.toJson()).toList(),
       };
 }
 
-/// Single health guide
+/// 📖 Individual Health & Lifestyle Guide
+///
+/// Represents a single educational guide with:
+/// - id: Unique guide identifier
+/// - category: Guide category (fasting, nutrition, workouts, etc.)
+/// - title: Display title ("16:8 Intermittent Fasting")
+/// - description: Short preview text (shown in card)
+/// - content: Full guide text/markdown (fetched separately)
+/// - icon: Icon name for UI display
+/// - estimatedReadTime: How long to read (in minutes)
+/// - tags: Keywords for search/filtering
+/// - difficulty: Skill level (beginner, intermediate, advanced)
+///
+/// Display Flow:
+/// 1. List view shows: title, description, read time, difficulty badge
+/// 2. User taps card
+/// 3. Bottom sheet opens with: title, full content, tags, difficulty
+///
+/// Example:
+/// ```
+/// id: "guide_fasting_101"
+/// category: "fasting"
+/// title: "Complete Guide to 16:8 Intermittent Fasting"
+/// description: "Learn the most popular intermittent fasting method..."
+/// content: "Intermittent fasting is an eating pattern that cycles..."
+/// estimatedReadTime: 8
+/// tags: ["fasting", "beginner", "nutrition"]
+/// difficulty: "beginner"
+/// ```
 class HealthGuide {
   final String id;
   final String category;
@@ -50,6 +132,29 @@ class HealthGuide {
     this.difficulty,
   });
 
+  /// 📥 Parse guide data from backend JSON
+  ///
+  /// Handles:
+  /// - Flexible ID field (id or _id from MongoDB)
+  /// - Safe type casting
+  /// - Default values
+  /// - Nullable fields (content, difficulty, readTime)
+  ///
+  /// Example JSON:
+  /// ```json
+  /// {
+  ///   "_id": "64abc123",
+  ///   "id": "guide_123",
+  ///   "category": "fasting",
+  ///   "title": "16:8 Intermittent Fasting",
+  ///   "description": "Learn the basics of 16:8 fasting",
+  ///   "content": "Intermittent fasting is...",
+  ///   "icon": "schedule",
+  ///   "estimatedReadTime": 8,
+  ///   "tags": ["fasting", "beginner"],
+  ///   "difficulty": "beginner"
+  /// }
+  /// ```
   factory HealthGuide.fromJson(Map<String, dynamic> json) {
     return HealthGuide(
       id: json['id'] as String? ?? json['_id'] as String? ?? '',
@@ -64,6 +169,7 @@ class HealthGuide {
     );
   }
 
+  /// 📤 Serialize to JSON for API requests
   Map<String, dynamic> toJson() => {
         'id': id,
         'category': category,
@@ -76,6 +182,16 @@ class HealthGuide {
         'difficulty': difficulty,
       };
 
+  /// 📋 Create modified copy of this guide
+  ///
+  /// Used to update guide state (e.g., mark as read, add rating)
+  ///
+  /// Example:
+  /// ```dart
+  /// final updatedGuide = guide.copyWith(
+  ///   content: fullContentText,
+  /// );
+  /// ```
   HealthGuide copyWith({
     String? id,
     String? category,
@@ -100,12 +216,34 @@ class HealthGuide {
     );
   }
 
+  /// ⏱️ Format read time for display
+  ///
+  /// Examples:
+  /// - null → ""
+  /// - 1 → "1 min read"
+  /// - 8 → "8 min read"
+  /// - 15 → "15 min read"
   String get readTimeText {
     if (estimatedReadTime == null) return '';
     if (estimatedReadTime == 1) return '1 min read';
     return '$estimatedReadTime min read';
   }
 
+  /// 🎯 Get category display name
+  ///
+  /// Converts category identifier to user-friendly text:
+  /// - "fasting" → "Fasting Guides"
+  /// - "workouts" → "Workouts"
+  /// - "nutrition" → "Nutrition"
+  /// - "meal_prep" → "Meal Prep"
+  /// - "emotional_eating" → "Emotional Eating"
+  /// - "hydration" → "Hydration"
+  /// - "stress_management" → "Stress Management"
+  ///
+  /// Used in:
+  /// - Category tabs
+  /// - Guide cards
+  /// - Headers
   String get categoryDisplayName {
     switch (category) {
       case 'fasting':
@@ -127,6 +265,21 @@ class HealthGuide {
     }
   }
 
+  /// 🎨 Get category icon for UI display
+  ///
+  /// Returns Material Icons based on category:
+  /// - "fasting" → Icons.schedule (clock)
+  /// - "workouts" → Icons.fitness_center (dumbbell)
+  /// - "nutrition" → Icons.restaurant (plate)
+  /// - "meal_prep" → Icons.restaurant
+  /// - "emotional_eating" → Icons.sentiment_satisfied (smiley face)
+  /// - "hydration" → Icons.local_drink (glass)
+  /// - "stress_management" → Icons.spa (leaf)
+  ///
+  /// Used in:
+  /// - Category tabs
+  /// - Guide cards
+  /// - Headers
   IconData get categoryIcon {
     switch (category) {
       case 'fasting':

@@ -30,6 +30,7 @@ const AdminLayout = () => {
       { name: 'Dashboard', path: '/nutritionist/dashboard', icon: <LayoutDashboard size={20} /> },
         { name: 'Live Chat', path: '/chat', icon: <MessageCircle size={20} /> },
         { name: 'Consultations', path: '/consultations', icon: <Stethoscope size={20}/>, roles: ['nutritionist'] },
+        // Điểm vào trực tiếp trang Update Professional Profile.
         { name: 'Professional Profile', path: '/nutritionist/profile', icon: <UserCog size={20} /> },
         { name: 'View Work Schedule', path: '/nutritionist/my-schedule?tab=schedule', icon: <CalendarDays size={20} /> },
         

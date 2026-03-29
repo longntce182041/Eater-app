@@ -8,7 +8,9 @@ const { protect, nutritionistOnly } = require("../../middleware/authMiddleware")
 // Bắt buộc: đã đăng nhập + đúng role nutritionist.
 router.use(protect, nutritionistOnly);
 
+// Trang frontend profile gọi endpoint này để nạp dữ liệu vào form ban đầu.
 router.get("/profile/me", nutritionistProfileController.getMyProfessionalProfile);
+// Nút Save Profile trên frontend gọi endpoint này để upsert hồ sơ.
 router.put("/profile/me", nutritionistProfileController.upsertMyProfessionalProfile);
 
 module.exports = router;

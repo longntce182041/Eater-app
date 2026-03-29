@@ -12,12 +12,13 @@ export const nutritionistsApi = {
   },
 
   getMyProfessionalProfile() {
-    // Nutritionist tự xem hồ sơ nghề nghiệp của chính mình.
+    // Nguồn dữ liệu cho trang "Update Professional Profile" (khi mở trang).
+    // Trả về profile theo user đang đăng nhập qua token.
     return axiosClient.get("/nutritionists/profile/me");
   },
 
   upsertMyProfessionalProfile(data) {
-    // Nutritionist cập nhật hoặc tạo mới hồ sơ nghề nghiệp.
+    // Nút Save Profile gọi endpoint này để update hoặc tạo mới hồ sơ trong một API duy nhất.
     return axiosClient.put("/nutritionists/profile/me", data);
   },
 

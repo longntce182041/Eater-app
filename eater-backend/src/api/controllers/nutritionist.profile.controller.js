@@ -7,6 +7,7 @@ exports.getMyProfessionalProfile = async (req, res) => {
     const userId = req.user?.id;
 
     // Mỗi nutritionist có tối đa 1 profile theo userId.
+    // Nếu chưa có profile, frontend sẽ hiển thị trạng thái "Create your professional profile".
     const profile = await Nutritionist.findOne({ userId });
 
     return res.status(200).json({
@@ -28,7 +29,7 @@ exports.upsertMyProfessionalProfile = async (req, res) => {
     const userId = req.user?.id;
     const { fullName, specialization, experience, certifications_url } = req.body;
 
-    // Validate field bắt buộc.
+    // Validate field bắt buộc để tránh lưu profile thiếu thông tin cốt lõi.
     if (!fullName || !specialization || experience === undefined || experience === null) {
       return res.status(400).json({
         success: false,
@@ -65,6 +66,7 @@ exports.upsertMyProfessionalProfile = async (req, res) => {
     // Upsert để giảm số nhánh xử lý:
     // - Có profile rồi thì update
     // - Chưa có thì tạo mới
+    // Frontend luôn gọi cùng một endpoint PUT cho cả 2 trường hợp.
     const profile = await Nutritionist.findOneAndUpdate(
       { userId },
       {

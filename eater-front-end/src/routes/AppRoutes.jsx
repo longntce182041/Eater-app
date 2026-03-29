@@ -80,6 +80,7 @@ export function AppRoutes() {
                         <Route path="nutritionist/dashboard" element={<NutritionistDashboardPage />} />
                         <Route path="chat" element={<ChatPage />} />
                         <Route path="consultations" element={<ConsultationsPage />} />
+                      {/* Route chính cho màn Update Professional Profile của nutritionist. */}
                       <Route path="nutritionist/profile" element={<NutritionistProfessionalProfilePage />} />
                         <Route path="nutritionist/my-schedule" element={<MySchedule />} />
 

@@ -3,8 +3,10 @@ const { Nutritionist } = require("../../models/nutritionist");
 // GET /api/nutritionists/profile/me
 exports.getMyProfessionalProfile = async (req, res) => {
   try {
+    // Lấy userId từ token đăng nhập hiện tại.
     const userId = req.user?.id;
 
+    // Mỗi nutritionist có tối đa 1 profile theo userId.
     const profile = await Nutritionist.findOne({ userId });
 
     return res.status(200).json({
@@ -22,9 +24,11 @@ exports.getMyProfessionalProfile = async (req, res) => {
 // Upsert: create profile if it does not exist, otherwise update it.
 exports.upsertMyProfessionalProfile = async (req, res) => {
   try {
+    // Đây là endpoint chính khi nutritionist nhấn "Save Profile" trên dashboard.
     const userId = req.user?.id;
     const { fullName, specialization, experience, certifications_url } = req.body;
 
+    // Validate field bắt buộc.
     if (!fullName || !specialization || experience === undefined || experience === null) {
       return res.status(400).json({
         success: false,
@@ -32,6 +36,7 @@ exports.upsertMyProfessionalProfile = async (req, res) => {
       });
     }
 
+    // Chuẩn hóa specialization và giới hạn ký tự để dữ liệu sạch.
     const normalizedSpecialization = String(specialization).trim();
     const specializationPattern = /^[\p{L}\s]+$/u;
     if (!specializationPattern.test(normalizedSpecialization)) {
@@ -41,10 +46,12 @@ exports.upsertMyProfessionalProfile = async (req, res) => {
       });
     }
 
+    // Lọc các URL chứng chỉ rỗng/không hợp lệ kiểu string.
     const normalizedCerts = Array.isArray(certifications_url)
       ? certifications_url.filter((url) => typeof url === "string" && url.trim())
       : [];
 
+    // Không cho phép link chứng chỉ trùng nhau sau khi normalize.
     const normalizeUrl = (value) =>
       String(value).trim().toLowerCase().replace(/\/+$/, "");
     const normalizedForCompare = normalizedCerts.map(normalizeUrl);
@@ -55,6 +62,9 @@ exports.upsertMyProfessionalProfile = async (req, res) => {
       });
     }
 
+    // Upsert để giảm số nhánh xử lý:
+    // - Có profile rồi thì update
+    // - Chưa có thì tạo mới
     const profile = await Nutritionist.findOneAndUpdate(
       { userId },
       {

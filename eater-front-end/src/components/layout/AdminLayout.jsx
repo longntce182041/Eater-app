@@ -27,6 +27,7 @@ const AdminLayout = () => {
     ];
 
     const nutritionistMenuItems = [
+      { name: 'Dashboard', path: '/nutritionist/dashboard', icon: <LayoutDashboard size={20} /> },
         { name: 'Live Chat', path: '/chat', icon: <MessageCircle size={20} /> },
         { name: 'Consultations', path: '/consultations', icon: <Stethoscope size={20}/>, roles: ['nutritionist'] },
         { name: 'Professional Profile', path: '/nutritionist/profile', icon: <UserCog size={20} /> },

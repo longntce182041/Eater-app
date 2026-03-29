@@ -4,6 +4,9 @@ const bcrypt = require("bcryptjs");
 
 class NutritionistManagementService {
   async getAllNutritionists(query) {
+    // Hàm lõi cho màn "View Nutritionist Dashboard/List":
+    // - nhận filter/sort/page từ query
+    // - truy vấn DB và trả về danh sách + metadata phân trang
     const {
       keyword,
       specialization,
@@ -18,6 +21,7 @@ class NutritionistManagementService {
 
     const filter = {};
 
+    // Tìm kiếm theo tên hoặc chuyên môn (keyword tổng quát).
     if (keyword) {
       filter.$or = [
         { fullName: { $regex: keyword, $options: "i" } },
@@ -25,14 +29,17 @@ class NutritionistManagementService {
       ];
     }
 
+    // Lọc chuyên môn.
     if (specialization) {
       filter.specialization = { $regex: specialization, $options: "i" };
     }
 
+    // Lọc trạng thái verified.
     if (verified !== undefined) {
       filter.verified = String(verified).toLowerCase() === "true";
     }
 
+    // Lọc theo khoảng năm kinh nghiệm.
     if (minExperience !== undefined || maxExperience !== undefined) {
       filter.experience = {};
       if (minExperience !== undefined) {
@@ -43,11 +50,13 @@ class NutritionistManagementService {
       }
     }
 
+    // Tính toán phân trang và thứ tự sắp xếp.
     const currentPage = parseInt(page, 10);
     const pageSize = parseInt(limit, 10);
     const skip = (currentPage - 1) * pageSize;
     const sortOrder = String(order).toLowerCase() === "asc" ? 1 : -1;
 
+    // Populate userId để frontend có email/role/isActive khi render bảng.
     const nutritionists = await Nutritionist.find(filter)
       .populate("userId", "email role isActive")
       .sort({ [sort]: sortOrder })
@@ -65,6 +74,7 @@ class NutritionistManagementService {
   }
 
   async getNutritionistById(id) {
+    // Dùng cho trang/ô chi tiết nutritionist.
     const nutritionist = await Nutritionist.findById(id).populate(
       "userId",
       "email role isActive",
@@ -78,6 +88,8 @@ class NutritionistManagementService {
   }
 
   async createNutritionist(data) {
+    // Tạo user account + profile nutritionist theo mô hình 2 bảng:
+    // Users (đăng nhập) và Nutritionist (thông tin nghiệp vụ).
     const email = String(data.email || "")
       .trim()
       .toLowerCase();
@@ -87,9 +99,11 @@ class NutritionistManagementService {
       throw new Error("Email already exists");
     }
 
+    // Mã hóa mật khẩu trước khi lưu.
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(data.password, salt);
 
+    // Tạo tài khoản đăng nhập role nutritionist.
     const user = await User.create({
       email,
       passwordHash,
@@ -97,6 +111,7 @@ class NutritionistManagementService {
       isActive: true,
     });
 
+    // Tạo profile chuyên môn gắn với user vừa tạo.
     const nutritionist = new Nutritionist({
       userId: user._id,
       fullName: data.fullName,
@@ -109,17 +124,23 @@ class NutritionistManagementService {
     try {
       return await nutritionist.save();
     } catch (error) {
+      // Rollback user nếu lưu profile lỗi để tránh dữ liệu mồ côi.
       await User.findByIdAndDelete(user._id);
       throw error;
     }
   }
 
   async updateNutritionist(id, data) {
+    // Cập nhật profile nutritionist hiện có.
     const nutritionist = await Nutritionist.findById(id);
     if (!nutritionist) {
       throw new Error("Nutritionist not found");
     }
 
+    // Nếu đổi liên kết userId, phải kiểm tra:
+    // - user tồn tại
+    // - role đúng là nutritionist
+    // - chưa bị profile khác sử dụng
     if (data.userId && String(data.userId) !== String(nutritionist.userId)) {
       const user = await User.findById(data.userId);
       if (!user) {
@@ -157,6 +178,7 @@ class NutritionistManagementService {
   }
 
   async deleteNutritionist(id) {
+    // Xóa profile nutritionist (không xóa user account ở đây).
     const nutritionist = await Nutritionist.findByIdAndDelete(id);
     if (!nutritionist) {
       throw new Error("Nutritionist not found");

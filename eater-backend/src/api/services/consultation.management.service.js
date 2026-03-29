@@ -201,6 +201,8 @@ class ConsultationManagementService {
         return savedConsultation;
     }
 
+
+    // Task: Create Personalized Diet Plan + Assign Meal Plan To User
     // 2. Tạo & Gán Thực Đơn cá nhân hóa (cho 1 ngày hoặc 7 ngày)
     async createAndAssignMealPlan(authUserId, data, io) {
         // Allow both nutritionist and admin

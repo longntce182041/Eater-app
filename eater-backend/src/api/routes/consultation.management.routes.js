@@ -11,6 +11,7 @@ router.use(authorize('nutritionist'));
 // 1. Chẩn đoán & Khuyến nghị
 router.post("/diagnose", consultationController.createConsultation);
 
+// Task: Create Personalized Diet Plan + Assign Meal Plan To User
 // 2. Tạo & Gán Meal Plan cá nhân
 router.post("/meal-plans", consultationController.createMealPlan);
 

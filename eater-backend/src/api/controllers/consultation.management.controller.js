@@ -22,6 +22,7 @@ class ConsultationManagementController {
         }
     }
 
+    // Task: Create Personalized Diet Plan + Assign Meal Plan To User
     // [POST] Tạo & Gán Thực Đơn
     async createMealPlan(req, res) {
         try {

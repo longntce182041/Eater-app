@@ -14,6 +14,7 @@ router.post(
   paymentController.handlePayOSWebhook,
 );
 
+router.get("/pro/plans", protect, paymentController.getProPlans);
 // Get current user's Pro status
 router.get("/pro/status", protect, paymentController.getProStatus);
 

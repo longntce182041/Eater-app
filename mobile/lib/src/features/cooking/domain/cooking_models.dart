@@ -21,6 +21,7 @@
 /// - toJson() → Serialize to JSON for API requests
 /// - copyWith() → Create modified copy (immutability pattern)
 /// - Null-safety with sensible defaults
+library;
 
 /// 📍 Cooking Recipe Step
 ///

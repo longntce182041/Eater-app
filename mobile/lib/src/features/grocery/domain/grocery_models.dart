@@ -6,6 +6,7 @@
 /// Models:
 /// - GroceryItem: Individual item in grocery list
 /// - GroceryStats: Aggregated statistics about list completion
+library;
 
 /// 📦 GROCERY ITEM MODEL
 ///

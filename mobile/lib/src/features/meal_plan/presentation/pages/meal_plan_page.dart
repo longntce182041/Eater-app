@@ -1832,8 +1832,8 @@ class _MealPlanPageState extends ConsumerState<MealPlanPage>
     final plannedServings = meal.servings > 0 ? meal.servings.toDouble() : 1.0;
     final ratio = consumedServings / plannedServings;
 
-    print('[_onMealChecked] DateTime.now(): ${DateTime.now().toString()}');
-    print(
+    debugPrint('[_onMealChecked] DateTime.now(): ${DateTime.now().toString()}');
+    debugPrint(
         '[_onMealChecked] Meal date (year/month/day): ${mealDate.toString()}');
     debugPrint(
         '[_onMealChecked] Meal date ISO8601: ${mealDate.toIso8601String()}');

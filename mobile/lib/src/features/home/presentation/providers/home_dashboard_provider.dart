@@ -36,7 +36,7 @@ final homeDashboardApiClientProvider = Provider<HomeDashboardApiClient>((ref) {
 ///
 /// Usage: ref.watch(homeDashboardProvider)
 ///
-/// Returns: AsyncValue<HomeDashboardData>
+/// Returns: `AsyncValue<HomeDashboardData>`
 /// - loading: ⏳ First load
 /// - data: ✅ Dashboard data loaded
 /// - error: ❌ API or parsing error
@@ -54,7 +54,7 @@ final homeDashboardProvider = FutureProvider<HomeDashboardData>((ref) async {
 ///
 /// Usage: ref.watch(upcomingMealsProvider(7))
 ///
-/// Returns: AsyncValue<UpcomingMealsData>
+/// Returns: `AsyncValue<UpcomingMealsData>`
 /// - Meals grouped by date
 /// - Nutrition totals per day
 final upcomingMealsProvider =

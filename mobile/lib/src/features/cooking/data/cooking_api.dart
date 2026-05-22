@@ -270,7 +270,7 @@ class CookingAPI {
   /// - Meal prep previews
   /// - Recipe details view
   ///
-  /// Returns: List<RecipeStep>
+  /// Returns: `List<RecipeStep>`
   /// - Each step has scaled ingredients based on servings
   /// - Estimated times are per step
   ///

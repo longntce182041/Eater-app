@@ -10,6 +10,7 @@
 /// - fromJson() → Parse API JSON to Dart object
 /// - toJson() → Serialize Dart object to JSON
 /// - Null-safety with default values
+library;
 
 /// 🏠 Home Overview Data
 ///

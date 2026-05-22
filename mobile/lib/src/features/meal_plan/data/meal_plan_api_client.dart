@@ -341,7 +341,7 @@ class MealPlanApiClient {
   /// ```
   ///
   /// Returns:
-  /// - List<Map<String, dynamic>>: Array of recipe suggestions
+  /// - `List<Map<String, dynamic>>`: Array of recipe suggestions
   ///
   /// Throws:
   /// - Exception: If success != true or endpoint fails
@@ -722,7 +722,7 @@ class MealPlanApiClient {
   /// - Not yet a MealPlanGenerationResult (that comes after save)
   ///
   /// Returns:
-  /// - Map<String, dynamic>: Preview data for modification
+  /// - `Map<String, dynamic>`: Preview data for modification
   ///
   /// Throws:
   /// - Exception: If generation fails

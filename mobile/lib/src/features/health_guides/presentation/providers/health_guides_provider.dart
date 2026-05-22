@@ -55,7 +55,7 @@ final healthGuidesApiProvider = Provider<HealthGuidesAPI>((ref) {
 /// Flow:
 /// 1. User opens Health Guides screen
 /// 2. ref.watch(allHealthGuidesProvider) triggers API request
-/// 3. Returns List<HealthGuideCategory>
+/// 3. Returns `List<HealthGuideCategory>`
 /// 4. HealthGuidesScreen displays categories as tabs
 /// 5. User selects category → display guides in that category
 ///

@@ -81,7 +81,7 @@ class MealPlanToGroceryConverter {
   ///   (built by caller before calling this method)
   ///
   /// Returns:
-  /// - List<GroceryItem>: Consolidated grocery items, one per unique ingredient
+  /// - `List<GroceryItem>`: Consolidated grocery items, one per unique ingredient
   ///
   /// Example Flow:
   /// ```

@@ -145,7 +145,7 @@ class _HealthGuidesScreenState extends ConsumerState<HealthGuidesScreen> {
   /// ```
   ///
   /// Inputs:
-  /// - categories: List<HealthGuideCategory> from API
+  /// - categories: `List<HealthGuideCategory>` from API
   ///
   /// Logic:
   /// 1. Check if empty → show "no guides" message

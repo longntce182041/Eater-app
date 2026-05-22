@@ -9,6 +9,7 @@
 /// - MealPlanItemModel: Individual meal within a plan
 /// - MealPlanSummary: Aggregated plan statistics
 /// - MealPlanGenerationResult: Complete generated meal plan with items and summary
+library;
 
 /// 📋 CORE MEAL PLAN MODEL
 ///

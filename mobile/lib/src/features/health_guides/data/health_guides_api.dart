@@ -44,7 +44,7 @@ class HealthGuidesAPI {
   /// - Group by category server-side
   /// - Used when initializing health guides screen
   ///
-  /// Returns: List<HealthGuideCategory>
+  /// Returns: `List<HealthGuideCategory>`
   /// - Each category contains list of guides
   /// - Guides include preview (no full content)
   ///
